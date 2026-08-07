@@ -1,83 +1,64 @@
-# Bounce BTTS League V2
+# Bounce BTTS League — Production Build
 
-A production-oriented Next.js starter for a private, cross-platform football prediction league.
+Private, mobile-friendly weekly BTTS prediction league for iPhone, Android and desktop.
 
-## What is already implemented
+## Live features included
 
-- Mobile-first sports-broadcast visual design
-- Works as a web app in Safari, Chrome, iOS and Android
-- Demo navigation for home, eligible fixtures, league table and admin control room
-- One prediction per member per gameweek
-- Database uniqueness rule preventing two members selecting the same fixture
-- Automatic points:
-  - BTTS: +3
-  - One side scores and one side nil: +1
-  - 0-0: -1
-- Tiebreak order:
-  1. Most points
-  2. Fewest 0-0s
-  3. Most BTTS wins
-  4. Alphabetical
-- Supabase schema with Row Level Security
-- Approved-member and admin roles
-- Members can alter only their own prediction
-- Admin-only fixture/member/gameweek control
-- API-Football fixture importer
-- Filters to UK countries, exactly 15:00 Europe/London, no Heart of Midlothian
-- Automatic final-score importer
-- Scheduled-job configuration
-- Audit log table
+- Username/password login using reusable `user1`–`user12` slots
+- `user1` permanently assigned to DTB as an active administrator
+- Admin → Users shows the stored league usernames and passwords, with controls to change, generate and copy them
+- Dave S starts as the second administrator
+- Current roster: DTB, Dave S, Turnsy Fitchett, Ryan, Dave Pickup, Yacky, Ian and Kevin Pickup
+- One unique fixture per player per gameweek
+- UK Saturday 3pm fixtures only; Heart of Midlothian fixtures are rejected
+- Members can change only their own pick before the deadline
+- Admin fixture entry, fractional BTTS odds, results, scoring and gameweek controls
+- Scoring: BTTS +3, one-sided score +1, 0–0 −1
+- Tiebreaks: points, fewest 0–0s, most BTTS wins, alphabetical
+- Public read-only `/table` page for WhatsApp sharing
+- Weekly WhatsApp-ready pick sharing grouped by competition, with fractional and combined odds
+- One daily automation route for provider fixtures/results when `API_FOOTBALL_KEY` is configured
+- Manual operation remains fully available when no football-provider key is present
+- Edinburgh/Hearts concept styling, permanent desktop sidebar, left slide-out mobile menu, EST 2024 branding
 
-## Current demo
+## Existing infrastructure
 
-`app/page.tsx` contains realistic demo data so the design can be reviewed immediately. It does not pretend to be connected to a live database.
+The production Supabase project and its schema have already been prepared. Do not put secret keys in GitHub.
 
-## Accounts required before it can be live
+## Vercel environment variables
 
-1. A Supabase project
-2. An API-Football key
-3. A Vercel account or equivalent hosting
-4. A domain is optional
+Required:
 
-No service credentials are included in this ZIP.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CRON_SECRET`
 
-## Run locally
+Optional for automated fixture/result checks:
 
-Install Node.js 20 or newer, then:
+- `API_FOOTBALL_KEY`
 
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
+Without `API_FOOTBALL_KEY`, admins can still add fixtures, odds and results manually from the app.
 
-Open http://localhost:3000.
+## First launch
 
-The visual demo works with `NEXT_PUBLIC_DEMO_MODE=true`.
+1. Deploy the repository to Vercel.
+2. Open the live site. With no users yet, it redirects to `/setup`.
+3. Choose the simple password for `user1` / DTB.
+4. Press **Create league accounts**.
+5. Save or copy the generated usernames and passwords.
+6. Continue to login and sign in as `user1`.
 
-## Connect Supabase
+After setup, passwords remain available to administrators under **Admin → Users**. They are encrypted in the database and are never exposed to ordinary members or public visitors.
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL editor.
-3. Add the public URL, anonymous key and service-role key to `.env.local`.
-4. Enable email OTP or magic-link authentication.
-5. Create the first user, then set their `profiles.role` to `admin` and `approved` to `true`.
-6. Keep the service-role key server-side only.
+## Daily operation
 
-## Deploy
+- Admin → Fixtures: add a fixture and fractional BTTS odds.
+- Admin → Gameweek: set the lock deadline, lock/complete a week or create the next gameweek.
+- Admin → Results: enter full-time scores; points update automatically.
+- Share weekly picks from the dashboard or fixtures page.
+- Share `/table` with non-members for read-only standings.
 
-Import the repository into Vercel, add the environment variables and deploy. The application then has one permanent URL suitable for WhatsApp.
+## Deployment
 
-## Important production work still needed
-
-The package provides the architecture, database security, synchronisation routes and polished demo interface. Before inviting real users, the frontend data layer must be switched from its in-file demo arrays to Supabase queries/mutations, and authentication screens must be wired to Supabase Auth. This cannot be completed responsibly without the actual Supabase project URL and keys.
-
-The result-sync cron in `vercel.json` runs every ten minutes during Saturday afternoon. Confirm the selected hosting plan supports that cadence; otherwise use Supabase scheduled functions or a paid Vercel plan.
-
-## Recommended league rules to confirm later
-
-- Exact weekly lock time
-- Treatment of postponed, abandoned and rescheduled fixtures
-- Whether selections are visible before lock
-- Which UK competitions are approved
-- Whether members may change picks before lock
+Upload the contents of this project to the top level of the `dtb1874/Bounce-btts` GitHub repository. Vercel is connected to the repository and should deploy the new commit automatically.
