@@ -1,22 +1,20 @@
-BOUNCE BTTS — TYNECASTLE BUILDING + ACTUAL HEARTS BADGE UPDATE
-==============================================================
+BOUNCE BTTS — FULL GOLD LEAGUE TABLE UPDATE
+================================================
 
-This revision removes the line-art ground outline.
+Upload both files into the app folder of the Bounce-btts repository:
 
-Instead, it uses a cropped watermark based on the Tynecastle building photo,
-so the watermark now shows:
-- the actual Tynecastle building frontage
-- the actual Hearts badge in the centre
+1. app/layout.tsx
+   Replace the existing file.
 
-Upload and replace these files in the root of your Bounce-btts GitHub repository:
+2. app/league-table.css
+   Add this file, or replace the existing version if already uploaded.
 
-1. app/tynecastle-watermark.css
-2. app/ShareTableButton.tsx
-3. public/assets/tynecastle-building-watermark.png
+This full package:
+- keeps all league tables narrower
+- applies the same layout across the main table, public table, dashboard and history
+- makes the table headers larger
+- uses gold header styling
+- removes the extra explanatory text beneath the headings
+- includes the layout import required for the CSS to load
 
-You can ignore the older SVG watermark file from the previous package.
-
-After upload
-------------
-Commit the replacement files to main.
-Vercel should redeploy automatically.
+Commit both files to main. Vercel should redeploy automatically.

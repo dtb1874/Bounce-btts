@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./tynecastle-watermark.css";
+import "./league-table.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {

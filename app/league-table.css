@@ -1,0 +1,340 @@
+/*
+ * Bounce BTTS — compact league tables with larger gold headers
+ */
+
+/* Full-size tables */
+.publicTableCard {
+  width: min(830px, calc(100% - 24px));
+  padding: 22px 24px 20px;
+}
+
+.largeTable {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(199, 163, 92, 0.42);
+  border-radius: 11px;
+  background: rgba(12, 13, 18, 0.72);
+  box-shadow:
+    0 13px 34px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.largeTableRow {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns:
+    48px
+    minmax(180px, 1fr)
+    52px
+    54px
+    64px
+    54px
+    64px;
+  gap: 0;
+  align-items: center;
+  padding: 0 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.largeTableRow:last-child {
+  border-bottom: 0;
+}
+
+.largeTableRow > * {
+  min-width: 0;
+}
+
+.largeTableRow > span:not(:nth-child(2)),
+.largeTableRow > b {
+  text-align: center;
+}
+
+.largeTableRow > strong {
+  overflow: hidden;
+  padding-right: 10px;
+  color: #f2ede7;
+  font-size: 0.92rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.largeTableRow:not(.header):nth-child(odd) {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.largeTableRow.leader {
+  background:
+    linear-gradient(90deg, rgba(102, 30, 47, 0.94), rgba(68, 23, 34, 0.58));
+  box-shadow: inset 4px 0 0 #d6b86f;
+}
+
+.largeTableRow b {
+  justify-self: center;
+  min-width: 38px;
+  padding: 5px 7px;
+  border: 1px solid rgba(214, 184, 111, 0.42);
+  border-radius: 999px;
+  background: rgba(73, 43, 30, 0.48);
+  color: #f0cf7b;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+/* Bigger gold headers, no explanatory sub-labels */
+.largeTableRow.header {
+  min-height: 58px;
+  border-bottom: 1px solid #b88b3d;
+  background:
+    linear-gradient(180deg, rgba(67, 24, 34, 0.98), rgba(36, 16, 23, 0.98));
+  color: #e8c86f;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 -1px 0 rgba(232, 200, 111, 0.25),
+    0 5px 15px rgba(0, 0, 0, 0.16);
+}
+
+.largeTableRow.header > span:nth-child(2) {
+  text-align: left;
+}
+
+.largeTableRow.header > span::after {
+  display: none !important;
+  content: none !important;
+}
+
+.largeTableRow:not(:has(> :nth-child(7))) {
+  grid-template-columns:
+    48px
+    minmax(190px, 1fr)
+    58px
+    58px
+    58px
+    66px;
+}
+
+.pagePanel > .largeTable,
+.historyPanel .largeTable {
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+/* Dashboard mini table */
+.miniTable {
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 10px 0;
+}
+
+.miniTableRow {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns:
+    34px
+    minmax(92px, 1fr)
+    39px
+    46px
+    42px
+    48px;
+  gap: 3px;
+  align-items: center;
+  padding: 0 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.79rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.miniTableRow > * {
+  min-width: 0;
+}
+
+.miniTableRow > span:not(:nth-child(2)),
+.miniTableRow > b {
+  text-align: center;
+}
+
+.miniTableRow strong {
+  overflow: hidden;
+  color: #eee8e1;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miniTableRow.header {
+  min-height: 50px;
+  margin: 0 -2px;
+  padding: 0 7px;
+  border: 1px solid rgba(184, 139, 61, 0.72);
+  border-radius: 7px 7px 3px 3px;
+  background:
+    linear-gradient(180deg, rgba(70, 25, 36, 0.98), rgba(39, 17, 24, 0.98));
+  color: #e8c86f;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+}
+
+.miniTableRow.header > span:nth-child(2) {
+  text-align: left;
+}
+
+.miniTableRow.header > span::after {
+  display: none !important;
+  content: none !important;
+}
+
+.miniTableRow.leader {
+  margin: 0;
+  padding: 0 5px;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgba(101, 30, 47, 0.92), rgba(68, 23, 34, 0.52));
+  box-shadow: inset 3px 0 0 #d6b86f;
+}
+
+.miniTableRow b {
+  justify-self: center;
+  min-width: 31px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: rgba(87, 51, 32, 0.52);
+  color: #f0cf7b;
+  font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .publicTableCard {
+    width: calc(100% - 14px);
+    margin: -18px auto 18px;
+    padding: 12px 7px 15px;
+    border-radius: 10px;
+  }
+
+  .largeTable {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .largeTableRow {
+    min-height: 48px;
+    grid-template-columns:
+      29px
+      minmax(86px, 1fr)
+      31px
+      34px
+      40px
+      35px
+      42px;
+    padding: 0 5px;
+    font-size: 0.75rem;
+  }
+
+  .largeTableRow > strong {
+    padding-right: 5px;
+    font-size: 0.78rem;
+  }
+
+  .largeTableRow.header {
+    min-height: 52px;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+
+  .largeTableRow b {
+    min-width: 32px;
+    padding: 4px 5px;
+    font-size: 0.78rem;
+  }
+
+  .largeTableRow:not(:has(> :nth-child(7))) {
+    grid-template-columns:
+      29px
+      minmax(100px, 1fr)
+      36px
+      36px
+      40px
+      44px;
+  }
+
+  .miniTable {
+    padding: 7px 7px 0;
+  }
+
+  .miniTableRow {
+    grid-template-columns:
+      31px
+      minmax(82px, 1fr)
+      36px
+      42px
+      38px
+      43px;
+    gap: 2px;
+    padding: 0 4px;
+    font-size: 0.73rem;
+  }
+
+  .miniTableRow.header {
+    min-height: 48px;
+    padding: 0 5px;
+    font-size: 0.67rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .largeTableRow {
+    grid-template-columns:
+      27px
+      minmax(78px, 1fr)
+      29px
+      31px
+      37px
+      33px
+      39px;
+    padding: 0 4px;
+    font-size: 0.71rem;
+  }
+
+  .largeTableRow > strong {
+    font-size: 0.74rem;
+  }
+
+  .largeTableRow.header {
+    font-size: 0.66rem;
+  }
+
+  .largeTableRow:not(:has(> :nth-child(7))) {
+    grid-template-columns:
+      27px
+      minmax(92px, 1fr)
+      33px
+      34px
+      37px
+      41px;
+  }
+
+  .miniTableRow {
+    grid-template-columns:
+      29px
+      minmax(74px, 1fr)
+      33px
+      39px
+      36px
+      40px;
+    font-size: 0.69rem;
+  }
+
+  .miniTableRow.header {
+    font-size: 0.63rem;
+  }
+}
