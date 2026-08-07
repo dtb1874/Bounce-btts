@@ -5,8 +5,17 @@ import { runFootballImport } from "@/lib/api-football";
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  try { return NextResponse.json(await runFootballImport("admin")); }
-  catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Import failed" }, { status: 500 }); }
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const gameweekIds = Array.isArray(body?.gameweekIds)
+      ? body.gameweekIds.filter((value: unknown): value is string => typeof value === "string" && value.length > 0)
+      : undefined;
+
+    return NextResponse.json(await runFootballImport("admin", gameweekIds));
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Import failed" }, { status: 500 });
+  }
 }
 
 export async function GET(request: Request) {

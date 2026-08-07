@@ -1784,3 +1784,218 @@ a,
 .dangerButton { border-color:#8b3948 !important; color:#f3cbd2 !important; }
 .dangerButton:hover { background:#5b1f2b !important; }
 @media(max-width:760px){ .userAdminHeader{align-items:stretch;flex-direction:column}.userAdminHeader .primaryButton{width:100%}.navBadge{margin-left:auto} }
+
+/* Dashboard weekly-picks sharing belongs to the Everyone's Picks panel. */
+.dashboardPicksActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+}
+.dashboardPicksShareButton {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 30px auto;
+  grid-template-areas:
+    "icon title"
+    "icon note";
+  align-items: center;
+  column-gap: 10px;
+  margin-top: 12px;
+  padding: 7px 16px;
+  border: 1px solid #b28a45;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #5c421a, #2c2012);
+  color: #fff0bd;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 255, 255, .08);
+}
+.dashboardPicksShareButton > span {
+  grid-area: icon;
+  font-size: 1.45rem;
+}
+.dashboardPicksShareButton strong {
+  grid-area: title;
+  font-weight: 900;
+  letter-spacing: .025em;
+}
+.dashboardPicksShareButton small {
+  grid-area: note;
+  color: #d6bd86;
+}
+.dashboardPicksShareButton:hover {
+  border-color: #e0bd71;
+  color: #fff8df;
+}
+
+@media (max-width: 760px) {
+  .dashboardPicksActions {
+    display: block;
+    padding: 0 10px 10px;
+  }
+  .dashboardPicksShareButton {
+    width: 100%;
+  }
+}
+
+/* Narrow, time-first fixture list */
+.fixturesListPage {
+  width: min(1080px, calc(100% - 40px));
+  margin: 20px auto;
+}
+.fixturesListPage .fixtureSearch {
+  max-width: 720px;
+}
+.fixtureTable {
+  overflow: hidden;
+  border: 1px solid #353039;
+  border-radius: 9px;
+  background: rgba(9, 10, 14, .72);
+}
+.fixtureTableHeader,
+.fixtureTableRow {
+  display: grid;
+  grid-template-columns: 78px minmax(150px, 210px) minmax(280px, 1fr) 70px 96px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+}
+.fixtureTableHeader {
+  min-height: 38px;
+  background: rgba(255, 255, 255, .055);
+  color: #9f9691;
+  font-size: .65rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.fixtureTableRow {
+  min-height: 60px;
+  border-top: 1px solid #2c2930;
+}
+.fixtureKickoffTime {
+  color: #f2dfb2;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.fixtureCompetitionName {
+  overflow: hidden;
+  color: #c8a86b;
+  font-size: .76rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fixtureTeamsCompact {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+.fixtureTeamsCompact strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fixtureTeamsCompact strong:first-child { text-align: right; }
+.fixtureTeamsCompact b { color: #7e7470; text-align: center; }
+.fixtureOddsCompact {
+  color: #f7e7c8;
+  text-align: center;
+}
+
+/* Admin fixture refresh and manual-entry separation */
+.adminFixturesTools {
+  display: grid;
+  gap: 18px;
+  padding: 0 24px 28px;
+}
+.adminFixtureSyncCard {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #80653a;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #211912, #111116);
+}
+.adminFixtureSyncCard > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+.adminFixtureSyncCard span,
+.adminFixtureFormHeading span {
+  color: #c8a86b;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.adminFixtureSyncCard strong,
+.adminFixtureFormHeading strong {
+  color: #f2dfb2;
+  font-size: 1rem;
+}
+.adminFixtureSyncCard p {
+  max-width: 760px;
+  margin: 0;
+  color: #b6aaa2;
+  line-height: 1.5;
+}
+.adminFixtureSyncCard > small { color: #9d9189; }
+.adminFixtureSyncActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.adminFixtureSyncActions button {
+  min-height: 44px;
+  padding: 0 16px;
+}
+.adminManualFixtureForm {
+  padding: 18px !important;
+  border: 1px solid #3d3438;
+  border-radius: 10px;
+  background: rgba(12, 12, 15, .7);
+}
+.adminFixtureFormHeading {
+  display: grid;
+  gap: 5px;
+}
+
+@media (max-width: 760px) {
+  .fixturesListPage {
+    width: auto;
+    margin: 12px;
+  }
+  .fixtureTableHeader { display: none; }
+  .fixtureTableRow {
+    grid-template-columns: 58px minmax(0, 1fr) 54px;
+    grid-template-areas:
+      "time competition status"
+      "time fixture odds";
+    gap: 5px 10px;
+    min-height: 76px;
+    padding: 10px 12px;
+  }
+  .fixtureKickoffTime { grid-area: time; align-self: center; }
+  .fixtureCompetitionName { grid-area: competition; }
+  .fixtureTeamsCompact {
+    grid-area: fixture;
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  .fixtureTeamsCompact strong:first-child,
+  .fixtureTeamsCompact strong { text-align: left; font-size: .78rem; }
+  .fixtureTeamsCompact b { display: none; }
+  .fixtureOddsCompact { grid-area: odds; text-align: right; }
+  .fixtureTableRow .fixtureStatus {
+    grid-area: status;
+    justify-self: end;
+    min-width: 0;
+    padding: 5px 7px;
+    font-size: .6rem;
+  }
+  .adminFixturesTools { padding: 0 12px 22px; }
+  .adminFixtureSyncActions { display: grid; }
+  .adminFixtureSyncActions button { width: 100%; }
+}

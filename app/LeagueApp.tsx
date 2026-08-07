@@ -137,6 +137,14 @@ function sortFixturesForBookmaker(a: Fixture, b: Fixture) {
     || a.home_team.localeCompare(b.home_team);
 }
 
+function sortFixturesByKickoffThenCompetition(a: Fixture, b: Fixture) {
+  return new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()
+    || competitionRank(a.competition) - competitionRank(b.competition)
+    || a.competition.localeCompare(b.competition)
+    || a.home_team.localeCompare(b.home_team)
+    || a.away_team.localeCompare(b.away_team);
+}
+
 function initials(name: string) {
   return name.split(/\s+/).map((part) => part[0] ?? "").join("").slice(0, 2).toUpperCase();
 }
@@ -572,7 +580,7 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
   return <div className="dashboardGrid">
     <section className="contentColumn">
       <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div></article>
+      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><button className="dashboardPicksShareButton" onClick={sharePicks}><span aria-hidden="true">↗</span><strong>Share weekly picks</strong><small>WhatsApp ready · fractional odds</small></button></div></article>
       <article className="panel formPanel brandedPanel">
         <div className="panelTitle rowTitle">
           <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
@@ -599,7 +607,6 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
       <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee).toFixed(0)}</small></article>
       <article className="panel tablePanel brandedPanel"><div className="panelTitle">{isFuture ? `STANDINGS BEFORE GW ${gameweek?.number}` : `LEAGUE TABLE AFTER GW ${tableThroughNumber ?? gameweek?.number ?? "—"}`}</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee} /></div></article>
       <article className="panel resultsPanel brandedPanel"><div className="panelTitle">LATEST RESULTS</div>{recent.slice(0,5).map((fixture: Fixture)=><div className="resultRow" key={fixture.id}><span>GW{gameweek?.number}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"yes":"no"}>{(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"✓":"–"}</i></div>)}{!recent.length&&<div className="emptyState compact">No completed results yet.</div>}</article>
-      <button className="shareCard" onClick={sharePicks}><span>↗</span><div><strong>Share weekly picks</strong><small>League-sorted · fractional odds · WhatsApp ready</small></div></button>
     </aside>
   </div>;
 }
@@ -631,31 +638,28 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
     });
 
     const byDay = new Map<string, Fixture[]>();
-    for (const fixture of filtered.sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime() || sortFixturesForBookmaker(a, b))) {
+    for (const fixture of [...filtered].sort(sortFixturesByKickoffThenCompetition)) {
       const key = dateKeyFormatter.format(new Date(fixture.kickoff_at));
       byDay.set(key, [...(byDay.get(key) ?? []), fixture]);
     }
 
-    return <section className="pagePanel panel brandedPanel">
-      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>All fixtures stored for the current week and following week. Matches are grouped by day, then by league.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div>
+    return <section className="pagePanel panel brandedPanel fixturesListPage">
+      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>Fixtures are ordered by kickoff time, then by the Bet365-style UK competition order.</p></div></div>
       <div className="fixtureSearch"><label htmlFor="fixture-search-all">Search fixtures</label><input id="fixture-search-all" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>
       {Array.from(byDay.entries()).map(([dateKey, dayFixtures]) => {
         const dayDate = new Date(dayFixtures[0].kickoff_at);
-        const dayCompetitions = Array.from(new Set(dayFixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b));
         return <section className="fixtureDaySection" key={dateKey}>
           <div className="fixtureDayHeading"><span>{dayFormatter.format(dayDate)}</span><small>{dayFixtures.length} fixture{dayFixtures.length === 1 ? "" : "s"}</small></div>
-          {dayCompetitions.map((competition) => {
-            const competitionFixtures = dayFixtures.filter((fixture) => fixture.competition === competition).sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime() || a.home_team.localeCompare(b.home_team));
-            return <details className="competitionSection competitionDisclosure" key={`${dateKey}-${competition}-${query}`} open={Boolean(query)}>
-              <summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length === 1 ? "" : "s"}</small><b aria-hidden="true">⌄</b></summary>
-              <div className="competitionFixtures">{competitionFixtures.map((fixture) => <div className="fullFixture" key={fixture.id}>
-                <div><span>{dayFormatter.format(new Date(fixture.kickoff_at)).split(" ")[0]}</span><strong>{timeFormatter.format(new Date(fixture.kickoff_at))}</strong></div>
-                <div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div>
-                <div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div>
-                <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible pick" : "Fixture") : fixture.status}</span>
-              </div>)}</div>
-            </details>;
-          })}
+          <div className="fixtureTable">
+            <div className="fixtureTableHeader"><span>Kickoff</span><span>Competition</span><span>Fixture</span><span>BTTS</span><span>Status</span></div>
+            {dayFixtures.map((fixture) => <div className="fixtureTableRow" key={fixture.id}>
+              <strong className="fixtureKickoffTime">{timeFormatter.format(new Date(fixture.kickoff_at))}</strong>
+              <span className="fixtureCompetitionName">{fixture.competition}</span>
+              <div className="fixtureTeamsCompact"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div>
+              <strong className="fixtureOddsCompact">{fixture.odds_fractional ?? "—"}</strong>
+              <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible" : "Fixture") : fixture.status}</span>
+            </div>)}
+          </div>
         </section>;
       })}
       {!filtered.length && <div className="emptyState">No fixtures are currently stored for this two-week period.</div>}
@@ -701,7 +705,7 @@ function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any
 
 function AdminPanel({ active, setActive, gameweek, gameweeks, selectedGameweekId, setSelectedGameweekId, fixtures, profiles, predictions, adjustments, onChanged, notice, isUltimateAdmin }: any) {
   const safeActive = active;
-  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs"><button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="seasons"?"active":""} onClick={()=>setActive("seasons")}>Seasons</button></div>{safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="seasons"&&<AdminSeasons notice={notice} onChanged={onChanged}/>}</section>;
+  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs"><button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="seasons"?"active":""} onClick={()=>setActive("seasons")}>Seasons</button></div>{safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} nextGameweek={(gameweeks as Gameweek[]).find((item) => item.number === (gameweek?.number ?? 0) + 1) ?? null} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="seasons"&&<AdminSeasons notice={notice} onChanged={onChanged}/>}</section>;
 }
 
 function AdminUsers({ notice }: { notice: (message:string)=>void }) {
@@ -904,10 +908,60 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
     </div>
   </div>;
 }
-function AdminFixtures({ gameweek, onChanged, notice }: any) {
-  const [form,setForm]=useState({competition:"Scottish Premiership",country:"Scotland",homeTeam:"",awayTeam:"",kickoffLocal:"",oddsFractional:""});const [busy,setBusy]=useState(false);
-  async function submit(event:FormEvent){event.preventDefault();if(!gameweek)return;setBusy(true);const kickoffAt=new Date(form.kickoffLocal).toISOString();const response=await fetch("/api/admin/fixtures",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({...form,kickoffAt,gameweekId:gameweek.id})});const payload=await response.json();notice(response.ok?"Fixture added":payload.error);setBusy(false);if(response.ok)onChanged();}
-  return <form className="adminForm" onSubmit={submit}><div className="adminNote">Add any eligible UK Saturday 3pm match. Hearts and Hibs fixtures are excluded. Fractional odds can be entered now or later.</div><div className="formGrid"><label>Competition<input value={form.competition} onChange={e=>setForm({...form,competition:e.target.value})}/></label><label>Country<input value={form.country} onChange={e=>setForm({...form,country:e.target.value})}/></label><label>Home team<input value={form.homeTeam} onChange={e=>setForm({...form,homeTeam:e.target.value})} required/></label><label>Away team<input value={form.awayTeam} onChange={e=>setForm({...form,awayTeam:e.target.value})} required/></label><label>Kickoff<input type="datetime-local" value={form.kickoffLocal} onChange={e=>setForm({...form,kickoffLocal:e.target.value})} required/></label><label>BTTS fractional odds<input placeholder="e.g. 8/11" value={form.oddsFractional} onChange={e=>setForm({...form,oddsFractional:e.target.value})}/></label></div><button className="primaryButton" disabled={busy||!gameweek}>{busy?"Adding…":"Add fixture"}</button></form>;
+function AdminFixtures({ gameweek, nextGameweek, onChanged, notice }: any) {
+  const [form, setForm] = useState({ competition: "Scottish Premiership", country: "Scotland", homeTeam: "", awayTeam: "", kickoffLocal: "", oddsFractional: "" });
+  const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState<"selected" | "next" | "">("");
+
+  async function runFixtureUpdate(target: Gameweek | null, mode: "selected" | "next") {
+    if (!target) return notice(mode === "next" ? "There is no following gameweek to update." : "Choose a gameweek first.");
+    setSyncing(mode);
+    const response = await fetch("/api/admin/provider-sync", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ gameweekIds: [target.id] }),
+    });
+    const payload = await response.json();
+    notice(response.ok
+      ? `GW ${target.number} update complete: ${payload.fixturesAdded} added, ${payload.fixturesUpdated} updated, ${payload.oddsUpdated} odds and ${payload.alertsCreated} alerts.`
+      : payload.error);
+    setSyncing("");
+    if (response.ok) onChanged();
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!gameweek) return;
+    setBusy(true);
+    const kickoffAt = new Date(form.kickoffLocal).toISOString();
+    const response = await fetch("/api/admin/fixtures", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ ...form, kickoffAt, gameweekId: gameweek.id }),
+    });
+    const payload = await response.json();
+    notice(response.ok ? "Fixture added" : payload.error);
+    setBusy(false);
+    if (response.ok) onChanged();
+  }
+
+  return <div className="adminFixturesTools">
+    <section className="adminFixtureSyncCard">
+      <div><span>AUTOMATIC IMPORT / UPDATE</span><strong>Refresh fixtures from API-FOOTBALL</strong><p>Import missing fixtures and refresh kickoff times, statuses, scores and available BTTS odds. The second button prepares the following gameweek early.</p></div>
+      <div className="adminFixtureSyncActions">
+        <button className="primaryButton" type="button" disabled={!gameweek || Boolean(syncing)} onClick={() => runFixtureUpdate(gameweek, "selected")}>{syncing === "selected" ? `Updating GW ${gameweek?.number ?? ""}…` : `Update selected GW ${gameweek?.number ?? "—"}`}</button>
+        <button type="button" disabled={!nextGameweek || Boolean(syncing)} onClick={() => runFixtureUpdate(nextGameweek, "next")}>{syncing === "next" ? `Updating GW ${nextGameweek?.number ?? ""}…` : nextGameweek ? `Update next GW ${nextGameweek.number}` : "No next gameweek"}</button>
+      </div>
+      <small>To update another week, change the gameweek selector at the top first.</small>
+    </section>
+
+    <form className="adminForm adminManualFixtureForm" onSubmit={submit}>
+      <div className="adminFixtureFormHeading"><span>MANUAL FIXTURE ENTRY</span><strong>Add one fixture to GW {gameweek?.number ?? "—"}</strong></div>
+      <div className="adminNote">Use this only when a fixture is missing from the automatic import. Add any eligible UK Saturday 3pm match. Hearts and Hibs fixtures are excluded. Fractional odds can be entered now or later.</div>
+      <div className="formGrid"><label>Competition<input value={form.competition} onChange={e => setForm({ ...form, competition: e.target.value })}/></label><label>Country<input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}/></label><label>Home team<input value={form.homeTeam} onChange={e => setForm({ ...form, homeTeam: e.target.value })} required/></label><label>Away team<input value={form.awayTeam} onChange={e => setForm({ ...form, awayTeam: e.target.value })} required/></label><label>Kickoff<input type="datetime-local" value={form.kickoffLocal} onChange={e => setForm({ ...form, kickoffLocal: e.target.value })} required/></label><label>BTTS fractional odds<input placeholder="e.g. 8/11" value={form.oddsFractional} onChange={e => setForm({ ...form, oddsFractional: e.target.value })}/></label></div>
+      <button className="primaryButton" disabled={busy || !gameweek}>{busy ? "Adding…" : "Add fixture manually"}</button>
+    </form>
+  </div>;
 }
 
 function AdminResults({ fixtures, onChanged, notice }: any) {
