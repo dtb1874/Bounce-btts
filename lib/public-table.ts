@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
 export type PublicStandingRow = {
   id: string;
@@ -16,12 +17,20 @@ export type PublicTableData = {
 };
 
 type PublicPrediction = {
+  gameweek_id: string;
   member_id: string;
   points_awarded: number | null;
 };
 
+type PublicAdjustment = {
+  gameweek_id: string;
+  member_id: string;
+  points: number;
+};
+
 export async function loadPublicTableData(): Promise<PublicTableData> {
   const admin = createAdminClient();
+  await applyMissedPickPenalties(admin).catch(() => 0);
   const { data: settings } = await admin
     .from("league_settings")
     .select("current_season_label,entry_fee")
@@ -46,12 +55,20 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
     .eq("active", true);
 
   let predictions: PublicPrediction[] = [];
+  let adjustments: PublicAdjustment[] = [];
   if (gameweekIds.length) {
-    const response = await admin
-      .from("predictions")
-      .select("member_id,points_awarded")
-      .in("gameweek_id", gameweekIds);
-    predictions = (response.data ?? []) as PublicPrediction[];
+    const [predictionResponse, adjustmentResponse] = await Promise.all([
+      admin
+        .from("predictions")
+        .select("gameweek_id,member_id,points_awarded")
+        .in("gameweek_id", gameweekIds),
+      admin
+        .from("score_adjustments")
+        .select("gameweek_id,member_id,points")
+        .in("gameweek_id", gameweekIds),
+    ]);
+    predictions = (predictionResponse.data ?? []) as PublicPrediction[];
+    adjustments = (adjustmentResponse.data ?? []) as PublicAdjustment[];
   }
 
   const rows = (profiles ?? [])
@@ -59,16 +76,21 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
       const memberPredictions = predictions.filter(
         (prediction) => prediction.member_id === profile.id && prediction.points_awarded !== null,
       );
+      const memberAdjustments = adjustments.filter((adjustment) => adjustment.member_id === profile.id);
       return {
         id: profile.id,
         name: profile.display_name,
-        played: memberPredictions.length,
+        played: new Set([
+          ...memberPredictions.map((prediction) => prediction.gameweek_id),
+          ...memberAdjustments.map((adjustment) => adjustment.gameweek_id),
+        ]).size,
         wins: memberPredictions.filter((prediction) => prediction.points_awarded === 3).length,
         zeroZeroCount: memberPredictions.filter((prediction) => prediction.points_awarded === -1).length,
-        points: memberPredictions.reduce(
-          (sum, prediction) => sum + Number(prediction.points_awarded ?? 0),
-          0,
-        ),
+        points:
+          memberPredictions.reduce(
+            (sum, prediction) => sum + Number(prediction.points_awarded ?? 0),
+            0,
+          ) + memberAdjustments.reduce((sum, adjustment) => sum + Number(adjustment.points), 0),
       };
     })
     .sort(

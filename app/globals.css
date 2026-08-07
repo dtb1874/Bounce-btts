@@ -1153,3 +1153,139 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .publicTableActions .tableShareControl button { width: 100%; }
   .publicTableActions .tableShareControl small { max-width: none; text-align: center; }
 }
+
+/* Admin selection overrides */
+.adminSelectionLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, .8fr);
+  gap: 22px;
+  padding: 0 24px 30px;
+}
+.adminSelectionForm {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #3d3036;
+  border-radius: 10px;
+  background: rgba(12, 13, 18, .7);
+}
+.adminSelectionForm label {
+  display: grid;
+  gap: 7px;
+  color: #bfb6b0;
+  font-size: .8rem;
+  letter-spacing: .04em;
+}
+.adminSelectionForm select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #4b3940;
+  border-radius: 7px;
+  background: #111217;
+  color: #f0e7df;
+}
+.adminSelectionActions { display: flex; gap: 10px; flex-wrap: wrap; }
+.adminSelectionActions .primaryButton { width: auto; min-width: 180px; }
+.dangerButton {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #7a3040;
+  border-radius: 7px;
+  background: transparent;
+  color: #f3c8d0;
+  cursor: pointer;
+}
+.dangerButton:disabled { opacity: .42; cursor: not-allowed; }
+.adminPickList {
+  overflow: hidden;
+  border: 1px solid #3d3036;
+  border-radius: 10px;
+  background: rgba(12, 13, 18, .7);
+}
+.adminPickList h3 {
+  margin: 0;
+  padding: 16px;
+  border-bottom: 1px solid #3d3036;
+  color: #efe4dc;
+  font-family: Georgia, serif;
+}
+.adminPickRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid #2f282c;
+  background: transparent;
+  color: #eee5df;
+  text-align: left;
+  cursor: pointer;
+}
+.adminPickRow:last-child { border-bottom: 0; }
+.adminPickRow:hover,.adminPickRow.active { background: rgba(100, 30, 46, .28); }
+.adminPickRow > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #65404a;
+  border-radius: 50%;
+  color: #d8c4bd;
+}
+.adminPickRow div { min-width: 0; display: grid; gap: 3px; }
+.adminPickRow small { overflow: hidden; color: #9f9691; text-overflow: ellipsis; white-space: nowrap; }
+.adminPickRow b { font-size: .7rem; letter-spacing: .06em; }
+.adminPickRow b.picked { color: #7fd6a2; }
+.adminPickRow b.pending { color: #d1a06a; }
+@media (max-width: 900px) {
+  .adminSelectionLayout { grid-template-columns: 1fr; padding: 0 14px 24px; }
+}
+@media (max-width: 520px) {
+  .adminPickRow { grid-template-columns: 28px minmax(0, 1fr); }
+  .adminPickRow b { grid-column: 2; }
+  .adminSelectionActions { display: grid; }
+  .adminSelectionActions .primaryButton,.adminSelectionActions .dangerButton { width: 100%; }
+}
+
+/* Missed-selection penalties */
+.missed { color: #e0a36e; }
+.adminPickRow b.missed { color: #e0a36e; }
+.adminAdjustmentBox {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 15px;
+  border: 1px solid #5d4048;
+  border-radius: 8px;
+  background: rgba(87, 25, 41, .16);
+}
+.adminAdjustmentBox h3 {
+  margin: 0;
+  color: #f0e3dc;
+  font-family: Georgia, serif;
+  font-size: 1rem;
+}
+.adminAdjustmentBox input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #4b3940;
+  border-radius: 7px;
+  background: #111217;
+  color: #f0e7df;
+}
+.missedPickDisplay {
+  min-height: 170px;
+  display: grid;
+  place-content: center;
+  gap: 9px;
+  text-align: center;
+  color: #e9ddd5;
+}
+.missedPickDisplay strong { letter-spacing: .12em; color: #d5a16f; }
+.missedPickDisplay b { font-family: Georgia, serif; font-size: 2rem; color: #f1e6df; }
+.missedPickDisplay small { color: #a89d97; }

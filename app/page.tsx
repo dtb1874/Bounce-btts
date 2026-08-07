@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import LeagueApp from "./LeagueApp";
 import PublicLeagueTable from "./PublicLeagueTable";
 import { loadPublicTableData } from "@/lib/public-table";
+import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,17 @@ type PredictionRow = {
   updated_at: string;
 };
 
+type ScoreAdjustmentRow = {
+  id: string;
+  gameweek_id: string;
+  member_id: string;
+  points: number;
+  reason: string;
+  source: "automatic" | "admin";
+  created_at: string;
+  updated_at: string;
+};
+
 export default async function HomePage() {
   const admin = createAdminClient();
   const { count } = await admin.from("profiles").select("id", { count: "exact", head: true });
@@ -45,6 +57,9 @@ export default async function HomePage() {
     .eq("id", user.id)
     .maybeSingle();
   if (!profile?.approved) redirect("/login");
+
+  // Make any overdue no-pick penalties visible as soon as the site is opened.
+  await applyMissedPickPenalties(admin).catch(() => 0);
 
   const { data: settings } = await supabase.from("league_settings").select("*").eq("id", true).maybeSingle();
   const { data: seasons } = await supabase
@@ -83,15 +98,24 @@ export default async function HomePage() {
   }
 
   let allPredictions: PredictionRow[] = [];
+  let allAdjustments: ScoreAdjustmentRow[] = [];
   if (allGameweekIds.length) {
-    const response = await supabase
-      .from("predictions")
-      .select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at")
-      .in("gameweek_id", allGameweekIds);
-    allPredictions = (response.data ?? []) as PredictionRow[];
+    const [predictionResponse, adjustmentResponse] = await Promise.all([
+      supabase
+        .from("predictions")
+        .select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at")
+        .in("gameweek_id", allGameweekIds),
+      supabase
+        .from("score_adjustments")
+        .select("id,gameweek_id,member_id,points,reason,source,created_at,updated_at")
+        .in("gameweek_id", allGameweekIds),
+    ]);
+    allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
+    allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
   }
 
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
+  const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));
   const profileRows = (profiles ?? []) as ProfileRow[];
 
   const seasonHistory = (seasons ?? []).map((season) => {
@@ -100,18 +124,28 @@ export default async function HomePage() {
     const scored = allPredictions.filter((prediction) =>
       gameweekIds.has(prediction.gameweek_id) && prediction.points_awarded !== null
     );
-    const participantIds = new Set(scored.map((prediction) => prediction.member_id));
+    const seasonAdjustments = allAdjustments.filter((adjustment) => gameweekIds.has(adjustment.gameweek_id));
+    const participantIds = new Set([
+      ...scored.map((prediction) => prediction.member_id),
+      ...seasonAdjustments.map((adjustment) => adjustment.member_id),
+    ]);
     const standings = profileRows
       .filter((member) => participantIds.has(member.id))
       .map((member) => {
         const memberPredictions = scored.filter((prediction) => prediction.member_id === member.id);
+        const memberAdjustments = seasonAdjustments.filter((adjustment) => adjustment.member_id === member.id);
         return {
           id: member.id,
           name: member.display_name,
-          played: memberPredictions.length,
+          played: new Set([
+            ...memberPredictions.map((prediction) => prediction.gameweek_id),
+            ...memberAdjustments.map((adjustment) => adjustment.gameweek_id),
+          ]).size,
           wins: memberPredictions.filter((prediction) => prediction.points_awarded === 3).length,
           zeroZeroCount: memberPredictions.filter((prediction) => prediction.points_awarded === -1).length,
-          points: memberPredictions.reduce((sum, prediction) => sum + Number(prediction.points_awarded ?? 0), 0),
+          points:
+            memberPredictions.reduce((sum, prediction) => sum + Number(prediction.points_awarded ?? 0), 0) +
+            memberAdjustments.reduce((sum, adjustment) => sum + Number(adjustment.points), 0),
         };
       })
       .sort((a, b) =>
@@ -126,7 +160,10 @@ export default async function HomePage() {
       label: season.label,
       isCurrent: season.is_current,
       gameweeks: gameweeks.length,
-      completedPicks: scored.length,
+      completedPicks: new Set([
+        ...scored.map((prediction) => `${prediction.gameweek_id}:${prediction.member_id}`),
+        ...seasonAdjustments.map((adjustment) => `${adjustment.gameweek_id}:${adjustment.member_id}`),
+      ]).size,
       standings,
     };
   });
@@ -138,6 +175,7 @@ export default async function HomePage() {
       initialGameweek={gameweek ?? null}
       initialFixtures={fixtures}
       initialPredictions={predictions}
+      initialAdjustments={adjustments}
       seasonLabel={currentSeason?.label ?? settings?.current_season_label ?? "2026/27"}
       entryFee={Number(settings?.entry_fee ?? 20)}
       seasonHistory={seasonHistory}

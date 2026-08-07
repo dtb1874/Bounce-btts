@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pointsForScore } from "@/lib/scoring";
+import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
 const UK_COUNTRIES = new Set(["England", "Scotland", "Wales", "Northern-Ireland", "Northern Ireland"]);
 const FINISHED = new Set(["FT", "AET", "PEN"]);
@@ -28,11 +29,12 @@ function nextSaturdayDate() {
   return base.toISOString().slice(0, 10);
 }
 
-function isExcludedEdinburghFixture(home: string, away: string) {
+function isExcludedFixture(home: string, away: string) {
   const teams = `${home} ${away}`.toLowerCase();
   return teams.includes("heart of midlothian")
+    || /(^|\s)hearts($|\s)/.test(teams)
     || teams.includes("hibernian")
-    || /(^|\s)(hearts|hibs)($|\s)/.test(teams);
+    || /(^|\s)hibs($|\s)/.test(teams);
 }
 
 async function providerFixtures(date: string) {
@@ -50,11 +52,23 @@ async function providerFixtures(date: string) {
 
 export async function GET(request: NextRequest) {
   if (!authorised(request)) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  if (!process.env.API_FOOTBALL_KEY) {
-    return NextResponse.json({ ok: true, mode: "manual", message: "API_FOOTBALL_KEY is not configured. Manual fixtures and results remain available." });
+  const admin = createAdminClient();
+  let penaltiesApplied = 0;
+  try {
+    penaltiesApplied = await applyMissedPickPenalties(admin);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not apply missed-selection penalties." }, { status: 500 });
   }
 
-  const admin = createAdminClient();
+  if (!process.env.API_FOOTBALL_KEY) {
+    return NextResponse.json({
+      ok: true,
+      mode: "manual",
+      penaltiesApplied,
+      message: "API_FOOTBALL_KEY is not configured. Manual fixtures and results remain available.",
+    });
+  }
+
   let resultsUpdated = 0;
   let fixturesImported = 0;
   const errors: string[] = [];
@@ -118,7 +132,7 @@ export async function GET(request: NextRequest) {
         const status = String(item.fixture?.status?.short ?? "");
         return UK_COUNTRIES.has(country)
           && kickoff.slice(11, 16) === "15:00"
-          && !isExcludedEdinburghFixture(home, away)
+          && !isExcludedFixture(home, away)
           && ["NS", "TBD"].includes(status);
       }).map((item: any) => ({
         gameweek_id: gameweek.id,
@@ -143,5 +157,5 @@ export async function GET(request: NextRequest) {
     errors.push(error instanceof Error ? error.message : "Fixture import failed");
   }
 
-  return NextResponse.json({ ok: errors.length === 0, fixturesImported, resultsUpdated, errors });
+  return NextResponse.json({ ok: errors.length === 0, fixturesImported, resultsUpdated, penaltiesApplied, errors });
 }

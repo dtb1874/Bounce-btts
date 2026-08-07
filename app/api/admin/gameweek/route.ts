@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
+import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
 function validStatus(value: unknown) {
   return ["open", "locked", "complete"].includes(String(value)) ? String(value) : "open";
@@ -56,8 +57,20 @@ export async function PATCH(request: Request) {
   if (!id || !locksAt || Number.isNaN(new Date(locksAt).getTime())) {
     return NextResponse.json({ error: "Gameweek and deadline are required." }, { status: 400 });
   }
-  const { error } = await admin.from("gameweeks").update({ status, locks_at: new Date(locksAt).toISOString() }).eq("id", id);
+  const normalisedDeadline = new Date(locksAt).toISOString();
+  const { error } = await admin.from("gameweeks").update({ status, locks_at: normalisedDeadline }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (status !== "open" || new Date(normalisedDeadline) <= new Date()) {
+    await applyMissedPickPenalties(admin, id);
+  } else {
+    // Extending/reopening the deadline removes only automatic penalties.
+    // Explicit admin adjustments remain untouched.
+    await admin
+      .from("score_adjustments")
+      .delete()
+      .eq("gameweek_id", id)
+      .eq("source", "automatic");
+  }
   await admin.from("audit_log").insert({ actor_id: user.id, action: "gameweek_updated", entity_type: "gameweek", entity_id: id, details: { status, locksAt } });
   return NextResponse.json({ ok: true });
 }

@@ -6,7 +6,7 @@ import { combinedFractional } from "@/lib/fractional";
 import ShareTableButton from "./ShareTableButton";
 
 type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "admin";
-type AdminView = "users" | "fixtures" | "results" | "gameweek";
+type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek";
 
 type Profile = {
   id: string;
@@ -48,6 +48,17 @@ type Prediction = {
   member_id: string;
   fixture_id: string;
   points_awarded: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ScoreAdjustment = {
+  id: string;
+  gameweek_id: string;
+  member_id: string;
+  points: number;
+  reason: string;
+  source: "automatic" | "admin";
   created_at: string;
   updated_at: string;
 };
@@ -140,6 +151,7 @@ export default function LeagueApp({
   initialGameweek,
   initialFixtures,
   initialPredictions,
+  initialAdjustments,
   seasonLabel,
   entryFee,
   seasonHistory,
@@ -149,6 +161,7 @@ export default function LeagueApp({
   initialGameweek: Gameweek | null;
   initialFixtures: Fixture[];
   initialPredictions: Prediction[];
+  initialAdjustments: ScoreAdjustment[];
   seasonLabel: string;
   entryFee: number;
   seasonHistory: SeasonHistory[];
@@ -158,6 +171,7 @@ export default function LeagueApp({
   const [mobileMenu, setMobileMenu] = useState(false);
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [predictions, setPredictions] = useState(initialPredictions);
+  const adjustments = initialAdjustments;
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
   const profiles = initialProfiles.filter((profile) => profile.active);
@@ -166,6 +180,7 @@ export default function LeagueApp({
   const predictionByFixture = useMemo(() => new Map(predictions.map((prediction) => [prediction.fixture_id, prediction])), [predictions]);
   const currentPrediction = gameweek ? predictions.find((prediction) => prediction.gameweek_id === gameweek.id && prediction.member_id === initialProfile.id) : undefined;
   const currentFixture = currentPrediction ? fixtures.find((fixture) => fixture.id === currentPrediction.fixture_id) : undefined;
+  const currentAdjustment = gameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === gameweek.id && adjustment.member_id === initialProfile.id) : undefined;
   const submitted = gameweek ? predictions.filter((prediction) => prediction.gameweek_id === gameweek.id).length : 0;
   const isOpen = Boolean(gameweek && gameweek.status === "open" && new Date(gameweek.locks_at) > new Date());
   const competitions = useMemo(() => Array.from(new Set(fixtures.map((fixture) => fixture.competition))), [fixtures]);
@@ -184,10 +199,21 @@ export default function LeagueApp({
       if (prediction.points_awarded === 1) row.oneSided += 1;
       if (prediction.points_awarded === -1) row.zeroZeroCount += 1;
     }
+    for (const adjustment of adjustments) {
+      const row = map.get(adjustment.member_id);
+      if (!row) continue;
+      const hasScoredPick = predictions.some((prediction) =>
+        prediction.member_id === adjustment.member_id &&
+        prediction.gameweek_id === adjustment.gameweek_id &&
+        prediction.points_awarded !== null
+      );
+      if (!hasScoredPick) row.played += 1;
+      row.points += adjustment.points;
+    }
     return Array.from(map.values()).sort((a, b) =>
       b.points - a.points || a.zeroZeroCount - b.zeroZeroCount || b.wins - a.wins || a.name.localeCompare(b.name)
     );
-  }, [profiles, predictions]);
+  }, [profiles, predictions, adjustments]);
 
   function notice(message: string) {
     setToast(message);
@@ -278,13 +304,13 @@ export default function LeagueApp({
           <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{gameweek ? `GW ${gameweek.number}` : "NO GW"}</strong></div><small>{gameweek ? `${gameweek.status.toUpperCase()} · Locks ${formatKickoff(gameweek.locks_at)}` : "Create a gameweek"}</small></div>
         </header>
 
-        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} selectFixture={selectFixture} sharePicks={sharePicks} isOpen={isOpen} />}
+        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} currentAdjustment={currentAdjustment} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} selectFixture={selectFixture} sharePicks={sharePicks} isOpen={isOpen} />}
         {(view === "pick" || view === "fixtures") && <FixturesPage fixtures={fixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} />}
         {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} entryFee={entryFee} />}
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
         {view === "history" && <LeagueHistory seasons={seasonHistory} />}
-        {view === "players" && <Players profiles={profiles} predictions={predictions} fixtures={fixtures} gameweek={gameweek} />}
-        {view === "admin" && initialProfile.role === "admin" && <AdminPanel active={adminView} setActive={setAdminView} gameweek={gameweek} fixtures={fixtures} onChanged={() => window.location.reload()} notice={notice} />}
+        {view === "players" && <Players profiles={profiles} predictions={predictions} adjustments={adjustments} fixtures={fixtures} gameweek={gameweek} />}
+        {view === "admin" && initialProfile.role === "admin" && <AdminPanel active={adminView} setActive={setAdminView} gameweek={gameweek} fixtures={fixtures} profiles={profiles} predictions={predictions} adjustments={adjustments} onChanged={() => window.location.reload()} notice={notice} />}
 
         <footer className="siteFooter"><span>♡</span><strong>MADE BY THE ARTIST, FOR THE BOUNCE</strong></footer>
       </section>
@@ -293,11 +319,11 @@ export default function LeagueApp({
   );
 }
 
-function Dashboard({ gameweek, currentFixture, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, selectFixture, sharePicks, isOpen }: any) {
+function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, selectFixture, sharePicks, isOpen }: any) {
   const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
   return <div className="dashboardGrid">
     <section className="contentColumn">
-      <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : <button className="emptySelection" onClick={() => setView("fixtures")}>{isOpen ? "Choose your Saturday 3pm BTTS fixture" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
+      <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("fixtures")}>{isOpen ? "Choose your Saturday 3pm BTTS fixture" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
       <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>UPCOMING FIXTURES</span><button onClick={() => setView("fixtures")}>View all →</button></div><div className="fixtureRows">{fixtures.slice(0,5).map((fixture: Fixture) => { const prediction = predictions.find((p: Prediction) => p.fixture_id === fixture.id && p.gameweek_id === gameweek?.id); const player = profiles.find((p: Profile) => p.id === prediction?.member_id); return <div className="dashboardFixture" key={fixture.id}><div className="fixtureDate"><strong>{formatKickoff(fixture.kickoff_at).split(",")[0]}</strong><span>15:00</span></div><div className="fixtureTeams"><strong>{fixture.home_team}</strong><span className="miniBadge">{initials(fixture.home_team)}</span><b>v</b><span className="miniBadge">{initials(fixture.away_team)}</span><strong>{fixture.away_team}</strong></div><div className="fixtureOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><button disabled={Boolean(player)} onClick={() => selectFixture(fixture.id)}>{player ? `Taken · ${player.display_name}` : "Select"}</button></div>})}{!fixtures.length && <div className="emptyState">No fixtures yet. An admin can add them under Admin → Fixtures.</div>}</div></article>
     </section>
     <aside className="rightColumn">
@@ -342,12 +368,12 @@ function Results({ fixtures, predictions, profiles }: any) {
   return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>COMPLETED FIXTURES</span><h2>Results</h2></div></div>{completed.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="largeResult" key={fixture.id}><span>{player?.display_name??"Unselected"}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={prediction?.points_awarded===3?"yes":"no"}>{prediction?.points_awarded==null?"—":`${prediction.points_awarded>0?"+":""}${prediction.points_awarded} PTS`}</i></div>})}{!completed.length&&<div className="emptyState">No completed results yet.</div>}</section>;
 }
 
-function Players({ profiles, predictions, fixtures, gameweek }: any) {
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{predictions.filter((p:Prediction)=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted a pick.</p></div></div><div className="playerGrid">{profiles.map((profile:Profile)=>{const prediction=predictions.find((p:Prediction)=>p.member_id===profile.id&&p.gameweek_id===gameweek?.id);const fixture=fixtures.find((f:Fixture)=>f.id===prediction?.fixture_id);return <article key={profile.id}><span>{initials(profile.display_name)}</span><div><strong>{profile.display_name}</strong><small>{fixture?`${fixture.home_team} v ${fixture.away_team} · ${fixture.odds_fractional??"Odds unavailable"}`:"Awaiting selection"}</small></div><b className={fixture?"picked":"pending"}>{fixture?"PICKED ✓":"PENDING"}</b></article>})}</div></section>;
+function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any) {
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{predictions.filter((p:Prediction)=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted a pick.</p></div></div><div className="playerGrid">{profiles.map((profile:Profile)=>{const prediction=predictions.find((p:Prediction)=>p.member_id===profile.id&&p.gameweek_id===gameweek?.id);const adjustment=(adjustments as ScoreAdjustment[]).find((item)=>item.member_id===profile.id&&item.gameweek_id===gameweek?.id);const fixture=fixtures.find((f:Fixture)=>f.id===prediction?.fixture_id);return <article key={profile.id}><span>{initials(profile.display_name)}</span><div><strong>{profile.display_name}</strong><small>{fixture?`${fixture.home_team} v ${fixture.away_team} · ${fixture.odds_fractional??"Odds unavailable"}`:adjustment?`${adjustment.reason}: ${adjustment.points>0?"+":""}${adjustment.points} point${Math.abs(adjustment.points)===1?"":"s"}`:"Awaiting selection"}</small></div><b className={fixture?"picked":adjustment?"missed":"pending"}>{fixture?"PICKED ✓":adjustment?`MISSED ${adjustment.points>0?"+":""}${adjustment.points}`:"PENDING"}</b></article>})}</div></section>;
 }
 
-function AdminPanel({ active, setActive, gameweek, fixtures, onChanged, notice }: any) {
-  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>Manage users, passwords, fixtures, results and gameweek settings.</p></div></div><div className="adminTabs"><button className={active==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={active==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={active==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={active==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button></div>{active==="users"&&<AdminUsers notice={notice}/>} {active==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {active==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {active==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>}</section>;
+function AdminPanel({ active, setActive, gameweek, fixtures, profiles, predictions, adjustments, onChanged, notice }: any) {
+  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>Manage users, selections, fixtures, results and gameweek settings.</p></div></div><div className="adminTabs"><button className={active==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={active==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={active==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={active==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={active==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button></div>{active==="users"&&<AdminUsers notice={notice}/>} {active==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {active==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {active==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {active==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>}</section>;
 }
 
 function AdminUsers({ notice }: { notice: (message:string)=>void }) {
@@ -359,6 +385,140 @@ function AdminUsers({ notice }: { notice: (message:string)=>void }) {
   async function copy(user:UserAdminRow){await navigator.clipboard.writeText(`${user.display_name}\nUsername: ${user.username}\nPassword: ${user.password}`);notice("Login details copied");}
   if(loading)return <div className="emptyState">Loading users…</div>;
   return <div className="userAdminList"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "admin"|"member"})}><option value="member">Member</option><option value="admin">Admin</option></select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button></div></article>)}</div>;
+}
+
+function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustments, onChanged, notice }: any) {
+  const activeProfiles = (profiles as Profile[]).filter((profile) => profile.active).sort((a, b) => (a.slot_number ?? 99) - (b.slot_number ?? 99));
+  const currentPredictions = (predictions as Prediction[]).filter((prediction) => prediction.gameweek_id === gameweek?.id);
+  const currentAdjustments = (adjustments as ScoreAdjustment[]).filter((adjustment) => adjustment.gameweek_id === gameweek?.id);
+  const [memberId, setMemberId] = useState(activeProfiles[0]?.id ?? "");
+  const existingPrediction = currentPredictions.find((prediction) => prediction.member_id === memberId);
+  const existingAdjustment = currentAdjustments.find((adjustment) => adjustment.member_id === memberId);
+  const [fixtureId, setFixtureId] = useState(existingPrediction?.fixture_id ?? "");
+  const [adjustmentPoints, setAdjustmentPoints] = useState(String(existingAdjustment?.points ?? -1));
+  const [adjustmentReason, setAdjustmentReason] = useState(existingAdjustment?.reason ?? "Missed selection");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const existing = currentPredictions.find((prediction) => prediction.member_id === memberId);
+    const adjustment = currentAdjustments.find((item) => item.member_id === memberId);
+    setFixtureId(existing?.fixture_id ?? "");
+    setAdjustmentPoints(String(adjustment?.points ?? -1));
+    setAdjustmentReason(adjustment?.reason ?? "Missed selection");
+  }, [memberId]);
+
+  const sortedCompetitions = useMemo(() => Array.from(new Set((fixtures as Fixture[]).map((fixture) => fixture.competition))).sort((a, b) => a.localeCompare(b)), [fixtures]);
+  const selectedMember = activeProfiles.find((profile) => profile.id === memberId);
+
+  async function saveSelection() {
+    if (!gameweek || !memberId || !fixtureId) return notice("Choose a player and fixture.");
+    setBusy(true);
+    const response = await fetch("/api/admin/predictions", {
+      method: "PUT",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ gameweekId: gameweek.id, memberId, fixtureId }),
+    });
+    const payload = await response.json();
+    notice(response.ok ? `${selectedMember?.display_name ?? "Player"} selection saved` : payload.error);
+    setBusy(false);
+    if (response.ok) onChanged();
+  }
+
+  async function removeSelection() {
+    if (!gameweek || !memberId || !existingPrediction) return notice("This player has no selection to remove.");
+    if (!window.confirm(`Remove ${selectedMember?.display_name ?? "this player's"} current selection?`)) return;
+    setBusy(true);
+    const response = await fetch("/api/admin/predictions", {
+      method: "DELETE",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ gameweekId: gameweek.id, memberId }),
+    });
+    const payload = await response.json();
+    notice(response.ok ? "Selection removed" : payload.error);
+    setBusy(false);
+    if (response.ok) onChanged();
+  }
+
+  async function saveAdjustment() {
+    if (!gameweek || !memberId || !Number.isInteger(Number(adjustmentPoints))) return notice("Enter a whole-number points adjustment.");
+    setBusy(true);
+    const response = await fetch("/api/admin/adjustments", {
+      method: "PUT",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ gameweekId: gameweek.id, memberId, points: Number(adjustmentPoints), reason: adjustmentReason }),
+    });
+    const payload = await response.json();
+    notice(response.ok ? `${selectedMember?.display_name ?? "Player"} points adjustment saved` : payload.error);
+    setBusy(false);
+    if (response.ok) onChanged();
+  }
+
+  async function removeAdjustment() {
+    if (!gameweek || !memberId || !existingAdjustment) return notice("This player has no points adjustment.");
+    setBusy(true);
+    const response = await fetch("/api/admin/adjustments", {
+      method: "DELETE",
+      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ gameweekId: gameweek.id, memberId }),
+    });
+    const payload = await response.json();
+    notice(response.ok ? "Points adjustment removed" : payload.error);
+    setBusy(false);
+    if (response.ok) onChanged();
+  }
+
+  if (!gameweek) return <div className="emptyState">Create a gameweek before entering selections.</div>;
+
+  return <div className="adminSelectionLayout">
+    <div className="adminSelectionForm">
+      <div className="adminNote">A player who misses the deadline automatically receives −1. Admins can change that value, remove it, or enter a late selection on the player&apos;s behalf. A valid selection removes the automatic missed-pick penalty.</div>
+      <label>Player
+        <select value={memberId} onChange={(event) => setMemberId(event.target.value)}>
+          {activeProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.slot_number}. {profile.display_name}</option>)}
+        </select>
+      </label>
+      <label>Fixture
+        <select value={fixtureId} onChange={(event) => setFixtureId(event.target.value)}>
+          <option value="">Choose an available fixture</option>
+          {sortedCompetitions.map((competition) => <optgroup key={competition} label={competition}>
+            {(fixtures as Fixture[]).filter((fixture) => fixture.competition === competition).sort((a, b) => a.home_team.localeCompare(b.home_team)).map((fixture) => {
+              const taken = currentPredictions.find((prediction) => prediction.fixture_id === fixture.id && prediction.member_id !== memberId);
+              const takenBy = taken ? activeProfiles.find((profile) => profile.id === taken.member_id)?.display_name : "";
+              return <option key={fixture.id} value={fixture.id} disabled={Boolean(taken)}>{fixture.home_team} v {fixture.away_team}{fixture.odds_fractional ? ` · ${fixture.odds_fractional}` : ""}{takenBy ? ` · TAKEN BY ${takenBy}` : ""}</option>;
+            })}
+          </optgroup>)}
+        </select>
+      </label>
+      <div className="adminSelectionActions">
+        <button className="primaryButton" disabled={busy || !memberId || !fixtureId} onClick={saveSelection}>{busy ? "Saving…" : existingPrediction ? "Replace selection" : "Add selection"}</button>
+        <button className="dangerButton" disabled={busy || !existingPrediction} onClick={removeSelection}>Remove selection</button>
+      </div>
+      <div className="adminAdjustmentBox">
+        <h3>Missed-selection / manual points</h3>
+        <div className="formGrid">
+          <label>Points<input type="number" step="1" value={adjustmentPoints} onChange={(event) => setAdjustmentPoints(event.target.value)} /></label>
+          <label>Reason<input value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} /></label>
+        </div>
+        <div className="adminSelectionActions">
+          <button className="save" disabled={busy || !memberId} onClick={saveAdjustment}>{existingAdjustment ? "Amend points" : "Add points adjustment"}</button>
+          <button disabled={busy || !existingAdjustment} onClick={removeAdjustment}>Remove adjustment</button>
+        </div>
+      </div>
+    </div>
+    <div className="adminPickList">
+      <h3>Gameweek {gameweek.number} selections</h3>
+      {activeProfiles.map((profile) => {
+        const prediction = currentPredictions.find((item) => item.member_id === profile.id);
+        const adjustment = currentAdjustments.find((item) => item.member_id === profile.id);
+        const fixture = (fixtures as Fixture[]).find((item) => item.id === prediction?.fixture_id);
+        return <button key={profile.id} className={`adminPickRow ${profile.id === memberId ? "active" : ""}`} onClick={() => setMemberId(profile.id)}>
+          <span>{profile.slot_number}</span>
+          <div><strong>{profile.display_name}</strong><small>{fixture ? `${fixture.home_team} v ${fixture.away_team}` : adjustment ? `${adjustment.reason} · ${adjustment.points > 0 ? "+" : ""}${adjustment.points}` : "No selection entered"}</small></div>
+          <b className={fixture ? "picked" : adjustment ? "missed" : "pending"}>{fixture ? "PICKED ✓" : adjustment ? `${adjustment.points > 0 ? "+" : ""}${adjustment.points} PTS` : "PENDING"}</b>
+        </button>;
+      })}
+    </div>
+  </div>;
 }
 
 function AdminFixtures({ gameweek, onChanged, notice }: any) {

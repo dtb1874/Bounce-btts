@@ -24,6 +24,7 @@ create table public.league_settings (
   established_year integer not null default 2024,
   entry_fee numeric(8,2) not null default 20.00,
   current_season_label text not null default '2026/27',
+  missed_pick_points integer not null default -1,
   updated_at timestamptz not null default now()
 );
 
@@ -110,6 +111,18 @@ create table public.predictions (
   unique (gameweek_id, fixture_id)
 );
 
+create table public.score_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  gameweek_id uuid not null references public.gameweeks(id) on delete cascade,
+  member_id uuid not null references public.profiles(id) on delete cascade,
+  points integer not null,
+  reason text not null default 'Missed selection',
+  source text not null default 'automatic' check (source in ('automatic', 'admin')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (gameweek_id, member_id)
+);
+
 create table public.audit_log (
   id bigint generated always as identity primary key,
   actor_id uuid references public.profiles(id),
@@ -135,16 +148,17 @@ set search_path = public, auth
 as $$ select exists(select 1 from public.profiles where id = auth.uid() and approved = true and active = true and role = 'admin'); $$;
 
 create or replace function public.validate_prediction()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public, auth as $$
 declare
   gw public.gameweeks;
   fx public.fixtures;
+  service_override boolean := coalesce(auth.role(), '') = 'service_role';
 begin
   select * into gw from public.gameweeks where id = new.gameweek_id;
   select * into fx from public.fixtures where id = new.fixture_id;
-  if gw.status <> 'open' or now() >= gw.locks_at then raise exception 'Predictions are locked'; end if;
+  if not service_override and (gw.status <> 'open' or now() >= gw.locks_at) then raise exception 'Predictions are locked'; end if;
   if fx.gameweek_id <> new.gameweek_id or fx.is_eligible is not true then raise exception 'Fixture is not eligible for this gameweek'; end if;
-  if fx.kickoff_at <= now() then raise exception 'Fixture has already started'; end if;
+  if not service_override and fx.kickoff_at <= now() then raise exception 'Fixture has already started'; end if;
   return new;
 end;
 $$;
@@ -152,6 +166,61 @@ $$;
 create trigger prediction_validation
 before insert or update on public.predictions
 for each row execute function public.validate_prediction();
+
+create or replace function public.apply_missed_pick_penalties(p_gameweek_id uuid default null)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  inserted_count integer := 0;
+  default_points integer := -1;
+begin
+  select coalesce(missed_pick_points, -1)
+    into default_points
+    from public.league_settings
+   where id = true;
+
+  insert into public.score_adjustments (gameweek_id, member_id, points, reason, source)
+  select gw.id, sm.profile_id, default_points, 'Missed selection', 'automatic'
+    from public.gameweeks gw
+    join public.season_memberships sm on sm.season_id = gw.season_id and sm.active = true
+    join public.profiles p on p.id = sm.profile_id and p.approved = true and p.active = true
+   where (p_gameweek_id is null or gw.id = p_gameweek_id)
+     and (gw.status in ('locked', 'complete') or gw.locks_at <= now())
+     and not exists (
+       select 1 from public.predictions pr
+        where pr.gameweek_id = gw.id and pr.member_id = sm.profile_id
+     )
+  on conflict (gameweek_id, member_id) do nothing;
+
+  get diagnostics inserted_count = row_count;
+  return inserted_count;
+end;
+$$;
+
+revoke all on function public.apply_missed_pick_penalties(uuid) from public;
+grant execute on function public.apply_missed_pick_penalties(uuid) to service_role;
+
+create or replace function public.clear_automatic_missed_pick_penalty()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.score_adjustments
+   where gameweek_id = new.gameweek_id
+     and member_id = new.member_id
+     and source = 'automatic';
+  return new;
+end;
+$$;
+
+create trigger clear_automatic_missed_pick_penalty
+after insert or update on public.predictions
+for each row execute function public.clear_automatic_missed_pick_penalty();
 
 alter table public.profiles enable row level security;
 alter table public.seasons enable row level security;
@@ -161,6 +230,7 @@ alter table public.league_settings enable row level security;
 alter table public.gameweeks enable row level security;
 alter table public.fixtures enable row level security;
 alter table public.predictions enable row level security;
+alter table public.score_adjustments enable row level security;
 alter table public.audit_log enable row level security;
 
 create policy profiles_read on public.profiles for select using (private.is_approved() or id = auth.uid());
@@ -180,6 +250,8 @@ create policy predictions_insert_own on public.predictions for insert with check
 create policy predictions_update_own on public.predictions for update using (private.is_approved() and member_id = auth.uid()) with check (private.is_approved() and member_id = auth.uid());
 create policy predictions_delete_own on public.predictions for delete using (private.is_approved() and member_id = auth.uid());
 create policy predictions_admin_all on public.predictions for all using (private.is_admin()) with check (private.is_admin());
+create policy adjustments_member_read on public.score_adjustments for select using (private.is_approved());
+create policy adjustments_admin_all on public.score_adjustments for all using (private.is_admin()) with check (private.is_admin());
 create policy audit_admin_all on public.audit_log for all using (private.is_admin()) with check (private.is_admin());
 
 -- No client policy is created for member_credentials. Only the service-role-backed
