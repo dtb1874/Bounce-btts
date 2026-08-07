@@ -30,6 +30,122 @@ function roundedRect(
   context.closePath();
 }
 
+function drawWindow(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.strokeRect(x, y, width, height);
+  context.beginPath();
+  context.moveTo(x + width / 2, y);
+  context.lineTo(x + width / 2, y + height);
+  context.moveTo(x, y + height / 2);
+  context.lineTo(x + width, y + height / 2);
+  context.stroke();
+}
+
+function drawTynecastleFacadeWatermark(
+  context: CanvasRenderingContext2D,
+  canvasWidth: number,
+  tableTop: number,
+  tableHeight: number,
+) {
+  const drawingWidth = 1000;
+  const drawingHeight = 360;
+  const scale = Math.min((canvasWidth * 0.82) / drawingWidth, (tableHeight * 0.88) / drawingHeight);
+  const x = (canvasWidth - drawingWidth * scale) / 2;
+  const y = tableTop + (tableHeight - drawingHeight * scale) / 2;
+
+  context.save();
+  context.translate(x, y);
+  context.scale(scale, scale);
+  context.globalAlpha = 0.064;
+  context.strokeStyle = "#dfcfbd";
+  context.fillStyle = "#dfcfbd";
+  context.lineWidth = 4;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  context.beginPath();
+  context.moveTo(25, 340);
+  context.lineTo(975, 340);
+  context.moveTo(55, 340);
+  context.lineTo(55, 160);
+  context.lineTo(115, 130);
+  context.lineTo(350, 130);
+  context.lineTo(350, 100);
+  context.lineTo(390, 100);
+  context.lineTo(425, 65);
+  context.lineTo(500, 28);
+  context.lineTo(575, 65);
+  context.lineTo(610, 100);
+  context.lineTo(650, 100);
+  context.lineTo(650, 130);
+  context.lineTo(885, 130);
+  context.lineTo(945, 160);
+  context.lineTo(945, 340);
+  context.stroke();
+
+  context.strokeRect(390, 145, 220, 46);
+  context.font = "700 18px Georgia, serif";
+  context.textAlign = "center";
+  context.fillText("TYNECASTLE PARK", 500, 175);
+
+  context.beginPath();
+  context.moveTo(350, 100);
+  context.lineTo(350, 340);
+  context.moveTo(650, 100);
+  context.lineTo(650, 340);
+  context.moveTo(425, 65);
+  context.lineTo(500, 28);
+  context.lineTo(575, 65);
+  context.moveTo(390, 210);
+  context.lineTo(610, 210);
+  context.moveTo(55, 205);
+  context.lineTo(350, 205);
+  context.moveTo(650, 205);
+  context.lineTo(945, 205);
+  context.moveTo(55, 275);
+  context.lineTo(350, 275);
+  context.moveTo(650, 275);
+  context.lineTo(945, 275);
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(438, 340);
+  context.lineTo(438, 245);
+  context.quadraticCurveTo(438, 225, 458, 225);
+  context.lineTo(542, 225);
+  context.quadraticCurveTo(562, 225, 562, 245);
+  context.lineTo(562, 340);
+  context.moveTo(500, 225);
+  context.lineTo(500, 340);
+  context.moveTo(438, 275);
+  context.lineTo(562, 275);
+  context.moveTo(438, 307);
+  context.lineTo(562, 307);
+  context.stroke();
+
+  [95, 170, 245, 680, 755, 830].forEach((windowX) => drawWindow(context, windowX, 220, 48, 58));
+  drawWindow(context, 370, 220, 42, 58);
+  drawWindow(context, 588, 220, 42, 58);
+
+  context.beginPath();
+  context.moveTo(70, 340);
+  context.lineTo(70, 85);
+  context.moveTo(930, 340);
+  context.lineTo(930, 85);
+  context.moveTo(58, 85);
+  context.lineTo(82, 85);
+  context.moveTo(918, 85);
+  context.lineTo(942, 85);
+  context.stroke();
+
+  context.restore();
+}
+
 async function createSnapshot(
   rows: PublicStandingRow[],
   seasonLabel: string,
@@ -41,7 +157,8 @@ async function createSnapshot(
   const rowHeight = 76;
   const headerHeight = 292;
   const footerHeight = 135;
-  const height = headerHeight + Math.max(rows.length, 1) * rowHeight + footerHeight;
+  const tableHeight = Math.max(rows.length, 1) * rowHeight;
+  const height = headerHeight + tableHeight + footerHeight;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -59,6 +176,9 @@ async function createSnapshot(
   context.beginPath();
   context.arc(1060, 120, 235, 0, Math.PI * 2);
   context.fill();
+
+  // The same subtle Tynecastle treatment used behind the live league tables.
+  drawTynecastleFacadeWatermark(context, width, headerHeight, tableHeight);
 
   context.fillStyle = "#e8dac7";
   context.font = "700 76px Georgia, serif";
@@ -120,7 +240,7 @@ async function createSnapshot(
     context.stroke();
   });
 
-  const footerY = headerHeight + Math.max(rows.length, 1) * rowHeight;
+  const footerY = headerHeight + tableHeight;
   context.fillStyle = "#8f8781";
   context.font = "500 17px Arial, sans-serif";
   context.fillText("Ties: fewest 0–0s, most BTTS wins, then alphabetical.", 72, footerY + 48);
