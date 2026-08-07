@@ -1,1 +1,1 @@
-Fixes the Vercel TypeScript build error in ShareTableButton.tsx by passing gameweekNumber to createSnapshot.
+Adds the missing app/PublicLeagueTable.tsx file required by app/page.tsx.
