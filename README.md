@@ -1,64 +1,21 @@
-# Bounce BTTS League — Production Build
+# Bounce BTTS consolidated update
 
-Private, mobile-friendly weekly BTTS prediction league for iPhone, Android and desktop.
+Upload everything inside this folder to the root of the existing GitHub repository and replace matching files.
 
-## Live features included
+This package includes the previously pending Friday-deadline and League History changes, plus:
 
-- Username/password login using reusable `user1`–`user12` slots
-- `user1` permanently assigned to DTB as an active administrator
-- Admin → Users shows the stored league usernames and passwords, with controls to change, generate and copy them
-- Dave S starts as the second administrator
-- Current roster: DTB, Dave S, Turnsy Fitchett, Ryan, Dave Pickup, Yacky, Ian and Kevin Pickup
-- One unique fixture per player per gameweek
-- UK Saturday 3pm fixtures only; Hearts and Hibs fixtures are rejected
-- Members can change only their own pick before the deadline
-- Admin fixture entry, fractional BTTS odds, results, scoring and gameweek controls
-- Scoring: BTTS +3, one-sided score +1, 0–0 −1
-- Tiebreaks: points, fewest 0–0s, most BTTS wins, alphabetical
-- Public read-only `/table` page for WhatsApp sharing
-- Weekly WhatsApp-ready pick sharing grouped by competition, with fractional and combined odds
-- One daily automation route for provider fixtures/results when `API_FOOTBALL_KEY` is configured
-- Manual operation remains fully available when no football-provider key is present
-- Edinburgh/Hearts concept styling, permanent desktop sidebar, left slide-out mobile menu, EST 2024 branding
+- Unauthenticated visitors now see only the live, read-only league table at the main website address.
+- A Member login button is displayed on the public table.
+- `/table` remains a permanent public-table address.
+- The dashboard mini league table layout is repaired so positions, names, wins, 0-0s and points remain in separate columns.
+- Gameweek status spacing and progress bar styling are repaired.
+- Public and member league-table pages include **Share table snapshot**.
+- On supported phones, Share table snapshot creates a branded JPEG and opens the system share sheet so it can be sent through WhatsApp with the live-table link.
+- On unsupported browsers, the JPEG downloads and WhatsApp opens with the live link ready.
+- League History includes 2024/25, 2025/26 and the current 2026/27 season.
+- New gameweeks default to Friday at 5pm UK time.
+- Hearts and Hibs fixtures remain excluded.
 
-## Existing infrastructure
+Suggested commit message:
 
-The production Supabase project and its schema have already been prepared. Do not put secret keys in GitHub.
-
-## Vercel environment variables
-
-Required:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `CRON_SECRET`
-
-Optional for automated fixture/result checks:
-
-- `API_FOOTBALL_KEY`
-
-Without `API_FOOTBALL_KEY`, admins can still add fixtures, odds and results manually from the app.
-
-## First launch
-
-1. Deploy the repository to Vercel.
-2. Open the live site. With no users yet, it redirects to `/setup`.
-3. Choose the simple password for `user1` / DTB.
-4. Press **Create league accounts**.
-5. Save or copy the generated usernames and passwords.
-6. Continue to login and sign in as `user1`.
-
-After setup, passwords remain available to administrators under **Admin → Users**. They are encrypted in the database and are never exposed to ordinary members or public visitors.
-
-## Daily operation
-
-- Admin → Fixtures: add a fixture and fractional BTTS odds.
-- Admin → Gameweek: set the lock deadline, lock/complete a week or create the next gameweek.
-- Admin → Results: enter full-time scores; points update automatically.
-- Share weekly picks from the dashboard or fixtures page.
-- Share `/table` with non-members for read-only standings.
-
-## Deployment
-
-Upload the contents of this project to the top level of the `dtb1874/Bounce-btts` GitHub repository. Vercel is connected to the repository and should deploy the new commit automatically.
+`Add public table, WhatsApp snapshot and repair dashboard table`

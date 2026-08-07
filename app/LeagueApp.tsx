@@ -3,8 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { combinedFractional } from "@/lib/fractional";
+import ShareTableButton from "./ShareTableButton";
 
-type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "players" | "admin";
+type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "admin";
 type AdminView = "users" | "fixtures" | "results" | "gameweek";
 
 type Profile = {
@@ -53,12 +54,29 @@ type Prediction = {
 
 type UserAdminRow = Profile & { approved: boolean; password: string };
 
+type SeasonHistory = {
+  id: string;
+  label: string;
+  isCurrent: boolean;
+  gameweeks: number;
+  completedPicks: number;
+  standings: Array<{
+    id: string;
+    name: string;
+    played: number;
+    wins: number;
+    zeroZeroCount: number;
+    points: number;
+  }>;
+};
+
 const navItems: { id: View; label: string; icon: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   { id: "pick", label: "My Pick", icon: "⚑" },
   { id: "fixtures", label: "Fixtures", icon: "▦" },
   { id: "table", label: "League Table", icon: "☷" },
   { id: "results", label: "Results", icon: "✦" },
+  { id: "history", label: "League History", icon: "◷" },
   { id: "players", label: "Players", icon: "◉" },
   { id: "admin", label: "Admin", icon: "⚙" },
 ];
@@ -88,6 +106,29 @@ function inputDateTime(value: string) {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
+function nextFridayAtFiveInput() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(get("weekday"));
+  const currentHour = Number(get("hour"));
+  const currentMinute = Number(get("minute"));
+  let days = (5 - weekdayIndex + 7) % 7;
+  if (days === 0 && (currentHour > 17 || (currentHour === 17 && currentMinute >= 0))) days = 7;
+  const date = new Date(Date.UTC(Number(get("year")), Number(get("month")) - 1, Number(get("day")), 12));
+  date.setUTCDate(date.getUTCDate() + days);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T17:00`;
+}
+
 async function token() {
   const { data } = await createClient().auth.getSession();
   return data.session?.access_token ?? "";
@@ -101,6 +142,7 @@ export default function LeagueApp({
   initialPredictions,
   seasonLabel,
   entryFee,
+  seasonHistory,
 }: {
   initialProfile: Profile;
   initialProfiles: Profile[];
@@ -109,6 +151,7 @@ export default function LeagueApp({
   initialPredictions: Prediction[];
   seasonLabel: string;
   entryFee: number;
+  seasonHistory: SeasonHistory[];
 }) {
   const [view, setView] = useState<View>("dashboard");
   const [adminView, setAdminView] = useState<AdminView>("users");
@@ -235,10 +278,11 @@ export default function LeagueApp({
           <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{gameweek ? `GW ${gameweek.number}` : "NO GW"}</strong></div><small>{gameweek ? `${gameweek.status.toUpperCase()} · Locks ${formatKickoff(gameweek.locks_at)}` : "Create a gameweek"}</small></div>
         </header>
 
-        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} setView={setView} selectFixture={selectFixture} sharePicks={sharePicks} isOpen={isOpen} />}
+        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} selectFixture={selectFixture} sharePicks={sharePicks} isOpen={isOpen} />}
         {(view === "pick" || view === "fixtures") && <FixturesPage fixtures={fixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} />}
-        {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} />}
+        {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} entryFee={entryFee} />}
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
+        {view === "history" && <LeagueHistory seasons={seasonHistory} />}
         {view === "players" && <Players profiles={profiles} predictions={predictions} fixtures={fixtures} gameweek={gameweek} />}
         {view === "admin" && initialProfile.role === "admin" && <AdminPanel active={adminView} setActive={setAdminView} gameweek={gameweek} fixtures={fixtures} onChanged={() => window.location.reload()} notice={notice} />}
 
@@ -249,7 +293,7 @@ export default function LeagueApp({
   );
 }
 
-function Dashboard({ gameweek, currentFixture, fixtures, profiles, predictions, standings, submitted, entryFee, setView, selectFixture, sharePicks, isOpen }: any) {
+function Dashboard({ gameweek, currentFixture, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, selectFixture, sharePicks, isOpen }: any) {
   const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
   return <div className="dashboardGrid">
     <section className="contentColumn">
@@ -258,7 +302,7 @@ function Dashboard({ gameweek, currentFixture, fixtures, profiles, predictions, 
     </section>
     <aside className="rightColumn">
       <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.length * entryFee).toFixed(0)}</small></article>
-      <article className="panel tablePanel brandedPanel"><div className="panelTitle">LEAGUE TABLE</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button></article>
+      <article className="panel tablePanel brandedPanel"><div className="panelTitle">LEAGUE TABLE</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} prizePot={profiles.length * entryFee} /></div></article>
       <article className="panel resultsPanel brandedPanel"><div className="panelTitle">LATEST RESULTS</div>{recent.slice(0,5).map((fixture: Fixture)=><div className="resultRow" key={fixture.id}><span>GW{gameweek?.number}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"yes":"no"}>{(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"✓":"–"}</i></div>)}{!recent.length&&<div className="emptyState compact">No completed results yet.</div>}</article>
       <button className="shareCard" onClick={sharePicks}><span>↗</span><div><strong>Share weekly picks</strong><small>League-sorted · fractional odds · WhatsApp ready</small></div></button>
     </aside>
@@ -269,8 +313,28 @@ function FixturesPage({ fixtures, predictions, profiles, gameweek, myId, isOpen,
   return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Eligible Fixtures</h2><p>UK Saturday 3pm fixtures only. Hearts and Hibs matches are excluded.</p></div><button onClick={sharePicks}>Share picks</button></div>{competitions.map((competition:string)=><div className="competitionSection" key={competition}><h3>{competition}</h3>{fixtures.filter((f:Fixture)=>f.competition===competition).map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>15:00</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div>)}{!fixtures.length&&<div className="emptyState">No fixtures have been added yet.</div>}</section>;
 }
 
-function LeagueTable({ standings, seasonLabel }: any) {
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>SEASON {seasonLabel} · EST 2024</span><h2>League Table</h2><p>Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div><a href="/table" target="_blank">Public table ↗</a></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{standings.map((row:any,index:number)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></section>;
+function LeagueTable({ standings, seasonLabel, entryFee }: any) {
+  const prizePot = standings.length * entryFee;
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>SEASON {seasonLabel} · EST 2024</span><h2>League Table</h2><p>Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div><div className="pageHeadingActions"><ShareTableButton rows={standings} seasonLabel={seasonLabel} prizePot={prizePot} /><a href="/table" target="_blank" rel="noreferrer">Public table ↗</a></div></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{standings.map((row:any,index:number)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></section>;
+}
+
+function LeagueHistory({ seasons }: { seasons: SeasonHistory[] }) {
+  const [selectedId, setSelectedId] = useState(seasons.find((season) => !season.isCurrent)?.id ?? seasons[0]?.id ?? "");
+  const selected = seasons.find((season) => season.id === selectedId) ?? seasons[0];
+  return <section className="pagePanel panel brandedPanel historyPanel">
+    <div className="pageHeading"><div><span>EST 2024 · SEASON ARCHIVE</span><h2>League History</h2><p>View previous seasons, final tables and winners as each archive is completed.</p></div></div>
+    <div className="seasonCards">
+      {seasons.map((season) => <button key={season.id} className={selected?.id === season.id ? "active" : ""} onClick={() => setSelectedId(season.id)}>
+        <span>{season.isCurrent ? "CURRENT SEASON" : "ARCHIVE"}</span>
+        <strong>{season.label}</strong>
+        <small>{season.gameweeks} gameweek{season.gameweeks === 1 ? "" : "s"} · {season.completedPicks} scored pick{season.completedPicks === 1 ? "" : "s"}</small>
+      </button>)}
+    </div>
+    {selected && selected.standings.length > 0 ? <>
+      <div className="historyWinner"><span>{selected.isCurrent ? "CURRENT LEADER" : "SEASON WINNER"}</span><strong>{selected.standings[0].name}</strong><b>{selected.standings[0].points} pts</b></div>
+      <div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((row,index)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div>
+    </> : <div className="emptyState historyEmpty"><strong>{selected?.label}</strong><span>No archived gameweek results have been imported for this season yet.</span></div>}
+  </section>;
 }
 
 function Results({ fixtures, predictions, profiles }: any) {
@@ -311,9 +375,10 @@ function AdminResults({ fixtures, onChanged, notice }: any) {
 
 function AdminGameweek({ gameweek, onChanged, notice }: any) {
   const [status,setStatus]=useState(gameweek?.status??"open");
-  const [locksAt,setLocksAt]=useState(gameweek?inputDateTime(gameweek.locks_at):"");
+  const [locksAt,setLocksAt]=useState(gameweek?inputDateTime(gameweek.locks_at):nextFridayAtFiveInput());
+  const [nextLocksAt,setNextLocksAt]=useState(nextFridayAtFiveInput());
   const [busy,setBusy]=useState(false);
   async function save(){if(!gameweek||!locksAt)return;setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:gameweek.id,status,locksAt:new Date(locksAt).toISOString()})});const payload=await response.json();notice(response.ok?"Gameweek updated":payload.error);setBusy(false);if(response.ok)onChanged();}
-  async function createNext(){if(!locksAt)return notice("Choose the next deadline first.");setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({locksAt:new Date(locksAt).toISOString()})});const payload=await response.json();notice(response.ok?`Gameweek ${payload.gameweek.number} created`:payload.error);setBusy(false);if(response.ok)onChanged();}
-  return <div className="adminForm"><div className="adminNote">Update the current gameweek, or create the next one using the deadline below.</div><div className="formGrid"><label>Status<select value={status} onChange={e=>setStatus(e.target.value)} disabled={!gameweek}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label>Pick deadline<input type="datetime-local" value={locksAt} onChange={e=>setLocksAt(e.target.value)}/></label></div><div className="userActions"><button className="save" disabled={busy||!gameweek} onClick={save}>{busy?"Saving…":"Save current gameweek"}</button><button disabled={busy||!locksAt} onClick={createNext}>Create next gameweek</button></div></div>;
+  async function createNext(){if(!nextLocksAt)return notice("Choose the next deadline first.");setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({locksAt:new Date(nextLocksAt).toISOString()})});const payload=await response.json();notice(response.ok?`Gameweek ${payload.gameweek.number} created`:payload.error);setBusy(false);if(response.ok)onChanged();}
+  return <div className="adminForm"><div className="adminNote">The standard deadline is Friday at 5:00pm UK time. Admins can still change it or lock the gameweek manually.</div><div className="formGrid"><label>Status<select value={status} onChange={e=>setStatus(e.target.value)} disabled={!gameweek}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label>Current pick deadline<input type="datetime-local" value={locksAt} onChange={e=>setLocksAt(e.target.value)}/></label><label>Next gameweek deadline<input type="datetime-local" value={nextLocksAt} onChange={e=>setNextLocksAt(e.target.value)}/><small>Defaults to Friday at 17:00 UK time.</small></label></div><div className="userActions"><button className="save" disabled={busy||!gameweek} onClick={save}>{busy?"Saving…":"Save current gameweek"}</button><button disabled={busy||!nextLocksAt} onClick={createNext}>Create next gameweek</button></div></div>;
 }

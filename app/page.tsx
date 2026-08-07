@@ -2,8 +2,30 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeagueApp from "./LeagueApp";
+import PublicLeagueTable from "./PublicLeagueTable";
+import { loadPublicTableData } from "@/lib/public-table";
 
 export const dynamic = "force-dynamic";
+
+type ProfileRow = {
+  id: string;
+  username: string;
+  display_name: string;
+  role: "admin" | "member";
+  approved?: boolean;
+  active: boolean;
+  slot_number: number | null;
+};
+
+type PredictionRow = {
+  id: string;
+  gameweek_id: string;
+  member_id: string;
+  fixture_id: string;
+  points_awarded: number | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export default async function HomePage() {
   const admin = createAdminClient();
@@ -12,7 +34,10 @@ export default async function HomePage() {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    const publicTable = await loadPublicTableData();
+    return <PublicLeagueTable {...publicTable} />;
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -22,15 +47,22 @@ export default async function HomePage() {
   if (!profile?.approved) redirect("/login");
 
   const { data: settings } = await supabase.from("league_settings").select("*").eq("id", true).maybeSingle();
-  const { data: currentSeason } = await supabase.from("seasons").select("id,label").eq("is_current", true).maybeSingle();
+  const { data: seasons } = await supabase
+    .from("seasons")
+    .select("id,label,is_current,starts_at,ends_at")
+    .order("starts_at", { ascending: false });
 
-  const { data: seasonGameweeks } = currentSeason?.id
-    ? await supabase.from("gameweeks").select("id,number,status,opens_at,locks_at,season_id").eq("season_id", currentSeason.id).order("number", { ascending: true })
-    : { data: [] };
+  const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
 
-  const gameweeks = seasonGameweeks ?? [];
-  const gameweek = gameweeks.length ? gameweeks[gameweeks.length - 1] : null;
-  const gameweekIds = gameweeks.map((item) => item.id);
+  const { data: allGameweeks } = await supabase
+    .from("gameweeks")
+    .select("id,number,status,opens_at,locks_at,season_id")
+    .order("number", { ascending: true });
+
+  const seasonGameweeks = (allGameweeks ?? []).filter((gameweek) => gameweek.season_id === currentSeason?.id);
+  const gameweek = seasonGameweeks.length ? seasonGameweeks[seasonGameweeks.length - 1] : null;
+  const currentGameweekIds = seasonGameweeks.map((item) => item.id);
+  const allGameweekIds = (allGameweeks ?? []).map((item) => item.id);
 
   const { data: profiles } = await supabase
     .from("profiles")
@@ -45,28 +77,70 @@ export default async function HomePage() {
       .select("*")
       .eq("gameweek_id", gameweek.id)
       .eq("is_eligible", true)
-      .order("kickoff_at");
+      .order("competition")
+      .order("home_team");
     fixtures = response.data ?? [];
   }
 
-  let predictions: any[] = [];
-  if (gameweekIds.length) {
+  let allPredictions: PredictionRow[] = [];
+  if (allGameweekIds.length) {
     const response = await supabase
       .from("predictions")
       .select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at")
-      .in("gameweek_id", gameweekIds);
-    predictions = response.data ?? [];
+      .in("gameweek_id", allGameweekIds);
+    allPredictions = (response.data ?? []) as PredictionRow[];
   }
+
+  const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
+  const profileRows = (profiles ?? []) as ProfileRow[];
+
+  const seasonHistory = (seasons ?? []).map((season) => {
+    const gameweeks = (allGameweeks ?? []).filter((item) => item.season_id === season.id);
+    const gameweekIds = new Set(gameweeks.map((item) => item.id));
+    const scored = allPredictions.filter((prediction) =>
+      gameweekIds.has(prediction.gameweek_id) && prediction.points_awarded !== null
+    );
+    const participantIds = new Set(scored.map((prediction) => prediction.member_id));
+    const standings = profileRows
+      .filter((member) => participantIds.has(member.id))
+      .map((member) => {
+        const memberPredictions = scored.filter((prediction) => prediction.member_id === member.id);
+        return {
+          id: member.id,
+          name: member.display_name,
+          played: memberPredictions.length,
+          wins: memberPredictions.filter((prediction) => prediction.points_awarded === 3).length,
+          zeroZeroCount: memberPredictions.filter((prediction) => prediction.points_awarded === -1).length,
+          points: memberPredictions.reduce((sum, prediction) => sum + Number(prediction.points_awarded ?? 0), 0),
+        };
+      })
+      .sort((a, b) =>
+        b.points - a.points ||
+        a.zeroZeroCount - b.zeroZeroCount ||
+        b.wins - a.wins ||
+        a.name.localeCompare(b.name)
+      );
+
+    return {
+      id: season.id,
+      label: season.label,
+      isCurrent: season.is_current,
+      gameweeks: gameweeks.length,
+      completedPicks: scored.length,
+      standings,
+    };
+  });
 
   return (
     <LeagueApp
       initialProfile={profile}
-      initialProfiles={profiles ?? []}
+      initialProfiles={profileRows}
       initialGameweek={gameweek ?? null}
       initialFixtures={fixtures}
       initialPredictions={predictions}
       seasonLabel={currentSeason?.label ?? settings?.current_season_label ?? "2026/27"}
       entryFee={Number(settings?.entry_fee ?? 20)}
+      seasonHistory={seasonHistory}
     />
   );
 }

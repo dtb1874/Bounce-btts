@@ -85,14 +85,16 @@ create table public.fixtures (
   odds_checked_at timestamptz,
   created_at timestamptz not null default now(),
   constraint fixtures_no_excluded_home check (
-    lower(home_team) not like '%heart of midlothian%'
-    and lower(home_team) not like '%hibernian%'
-    and lower(home_team) !~ '(^|[^a-z])(hearts|hibs)([^a-z]|$)'
+    lower(trim(home_team)) not in (
+      'heart of midlothian', 'heart of midlothian fc', 'hearts', 'hearts fc',
+      'hibernian', 'hibernian fc', 'hibs', 'hibs fc'
+    )
   ),
   constraint fixtures_no_excluded_away check (
-    lower(away_team) not like '%heart of midlothian%'
-    and lower(away_team) not like '%hibernian%'
-    and lower(away_team) !~ '(^|[^a-z])(hearts|hibs)([^a-z]|$)'
+    lower(trim(away_team)) not in (
+      'heart of midlothian', 'heart of midlothian fc', 'hearts', 'hearts fc',
+      'hibernian', 'hibernian fc', 'hibs', 'hibs fc'
+    )
   )
 );
 

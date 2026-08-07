@@ -915,3 +915,241 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .publicHero h1 { font-size: 3rem; }
   .publicTableCard { padding: 12px; }
 }
+
+/* League history */
+.historyPanel { min-height: 640px; }
+.seasonCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+.seasonCards button {
+  display: grid;
+  gap: 7px;
+  min-height: 116px;
+  padding: 17px;
+  text-align: left;
+  border: 1px solid #45313a;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #18151b, #111015);
+  color: #efe7de;
+  cursor: pointer;
+}
+.seasonCards button:hover,
+.seasonCards button.active {
+  border-color: #8b4052;
+  background: linear-gradient(145deg, #4f1926, #21131a);
+  box-shadow: inset 0 0 0 1px rgba(177, 78, 100, .14);
+}
+.seasonCards span {
+  color: #b99e85;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.seasonCards strong { font: 700 1.65rem/1 Georgia, serif; }
+.seasonCards small { color: #9f9690; line-height: 1.4; }
+.historyWinner {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 0 24px 20px;
+  padding: 17px 19px;
+  border: 1px solid #67303e;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(91, 29, 43, .68), rgba(28, 19, 24, .82));
+}
+.historyWinner span { color: #cbb096; font-size: .67rem; font-weight: 800; letter-spacing: .14em; }
+.historyWinner strong { flex: 1; font: 700 1.35rem Georgia, serif; }
+.historyWinner b { color: #f0d2b2; font-size: 1.15rem; }
+.historyEmpty {
+  display: grid;
+  gap: 8px;
+  margin: 0 24px 24px;
+  border: 1px dashed #4b343d;
+  border-radius: 10px;
+}
+.historyEmpty strong { color: #ead9c8; font: 700 1.3rem Georgia, serif; }
+.historyEmpty span { color: #9f9792; }
+.adminForm label small { display: block; margin-top: 6px; color: #8f8782; line-height: 1.35; }
+
+@media (max-width: 900px) {
+  .seasonCards { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .seasonCards { padding-left: 14px; padding-right: 14px; }
+  .historyWinner { margin-left: 14px; margin-right: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .historyWinner strong { flex-basis: 100%; }
+  .historyEmpty { margin-left: 14px; margin-right: 14px; }
+}
+
+/* Public-first league table, dashboard table repair and JPEG sharing */
+.statusPanel { padding-bottom: 14px; }
+.statusNumbers {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 18px 8px;
+}
+.statusNumbers strong {
+  color: var(--cream);
+  font: 700 2.1rem/1 Georgia, "Times New Roman", serif;
+}
+.statusNumbers span { color: #bbb3ad; font-size: .86rem; }
+.progressTrack {
+  height: 8px;
+  margin: 3px 18px 11px;
+  overflow: hidden;
+  border: 1px solid #39353a;
+  border-radius: 999px;
+  background: #0c0e12;
+}
+.progressTrack i {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #76273a, #b15a6d);
+  transition: width .25s ease;
+}
+.statusPanel > small { display: block; padding: 0 18px; color: #aaa19b; }
+
+.miniTable { padding: 5px 14px 0; }
+.miniTableRow {
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 40px 44px 48px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #292b31;
+  font-size: .82rem;
+}
+.miniTableRow > * { min-width: 0; }
+.miniTableRow strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.miniTableRow span:not(:nth-child(2)),
+.miniTableRow b { text-align: center; }
+.miniTableRow.header {
+  min-height: 34px;
+  color: #a49d97;
+  font-size: .64rem;
+  letter-spacing: .06em;
+}
+.miniTableRow.leader {
+  margin: 0 -7px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(99,29,45,.92), rgba(68,23,34,.48));
+}
+.miniTableRow b { color: #efd2b3; }
+.tablePanelActions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 12px 14px 14px;
+}
+.tablePanelActions .panelFooterButton {
+  width: 100%;
+  height: 40px;
+  margin: 0;
+}
+
+.pageHeadingActions,
+.publicTableActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pageHeadingActions > a,
+.publicLoginButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  border: 1px solid #6d3442;
+  border-radius: 7px;
+  background: #18151a;
+  color: #f0dfcf;
+  text-decoration: none;
+  font-weight: 700;
+}
+.tableShareControl {
+  display: inline-grid;
+  justify-items: end;
+  gap: 4px;
+}
+.tableShareControl button {
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid #773347;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #6b2133, #42141f);
+  color: #fff;
+  font: 700 .82rem/1 Arial, sans-serif;
+  cursor: pointer;
+}
+.tableShareControl button:disabled { opacity: .65; cursor: wait; }
+.tableShareControl small {
+  max-width: 230px;
+  color: #aaa19c;
+  font-size: .65rem;
+  text-align: right;
+}
+.tableShareControl.compact button {
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: .73rem;
+}
+.tableShareControl.compact small { display: none; }
+
+.publicTablePage { min-height: 100vh; }
+.publicHero { position: relative; padding-right: 190px; }
+.publicLoginButton {
+  position: absolute;
+  right: 34px;
+  top: 34px;
+  border-color: #9a5365;
+  background: rgba(13,12,16,.78);
+  backdrop-filter: blur(8px);
+}
+.publicTableActions { flex-direction: column; align-items: flex-end; }
+.publicTableActions > strong { color: #e9cfb3; }
+.publicLargeTable { overflow: hidden; border: 1px solid #302d32; border-radius: 8px; }
+.publicReadOnlyNote {
+  margin: 13px 0 0;
+  color: #918983;
+  font-size: .76rem;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .statusNumbers { padding-top: 10px; }
+  .miniTable { padding-left: 9px; padding-right: 9px; }
+  .miniTableRow {
+    grid-template-columns: 34px minmax(0, 1fr) 32px 36px 38px;
+    gap: 4px;
+    font-size: .74rem;
+  }
+  .tablePanelActions { grid-template-columns: 1fr; }
+  .tableShareControl,
+  .tableShareControl button { width: 100%; }
+  .pageHeadingActions { width: 100%; justify-content: flex-start; }
+  .pageHeadingActions .tableShareControl { width: auto; }
+  .pageHeadingActions .tableShareControl button { width: auto; }
+  .publicHero { padding: 76px 18px 34px; }
+  .publicLoginButton { right: 14px; top: 14px; min-height: 38px; padding: 0 12px; }
+  .publicTableHeading { align-items: flex-start; gap: 16px; }
+  .publicTableActions { align-items: stretch; width: 100%; }
+  .publicTableActions .tableShareControl,
+  .publicTableActions .tableShareControl button { width: 100%; }
+  .publicTableActions .tableShareControl small { max-width: none; text-align: center; }
+}
