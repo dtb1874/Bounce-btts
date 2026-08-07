@@ -124,8 +124,12 @@ export default function Home() {
       <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
         <button className="closeMenu" onClick={() => setMobileMenu(false)}>×</button>
         <div className="sideBrand">
-          <div className="crest">B</div>
-          <div><strong>BOUNCE</strong><span>BTTS LEAGUE</span></div>
+          <img className="brandCrest" src="/assets/hearts-crest.png" alt="Heart of Midlothian crest" />
+          <div>
+            <strong>BOUNCE</strong>
+            <span>BTTS LEAGUE</span>
+            <small>EST 2024</small>
+          </div>
         </div>
         <nav>
           {navItems.map(item => (
@@ -134,7 +138,9 @@ export default function Home() {
             </button>
           ))}
         </nav>
-        <div className="sidebarWatermark">B</div>
+        <div className="sidebarWatermark" aria-hidden="true">
+          <img src="/assets/st-giles-round.jpg" alt="" />
+        </div>
         <div className="profileCard">
           <span>{me.initials}</span>
           <div><strong>{me.name}</strong><small>{me.role}</small></div>
@@ -145,12 +151,16 @@ export default function Home() {
 
       <section className="mainArea">
         <header className="heroHeader">
+          <div className="heroBackdrop" aria-hidden="true">
+            <div className="skylineLayer" />
+            <div className="mosaicLayer" />
+          </div>
           <div className="heroText">
             <h1>BOUNCE</h1>
             <h2>— BTTS LEAGUE —</h2>
-            <p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2025</p>
+            <div className="heroRule"><span>♥</span></div>
+            <p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p>
           </div>
-          <div className="heroHeart">♡</div>
           <div className="gameweekCard">
             <span>Gameweek</span>
             <div><strong>GW 4</strong><button>‹</button><button>›</button></div>
@@ -161,10 +171,11 @@ export default function Home() {
         {view === "dashboard" && (
           <div className="dashboardGrid">
             <section className="contentColumn">
-              <article className="panel currentPickPanel">
+              <article className="panel currentPickPanel brandedPanel">
                 <div className="panelTitle">YOUR PICK — GAMEWEEK 4</div>
                 {myFixture ? (
                   <div className="pickDisplay">
+                    <img className="pickBrandCrest" src="/assets/hearts-crest.png" alt="" aria-hidden="true" />
                     <div className="teamBadge">{initialsFor(myFixture.home)}</div>
                     <strong>{myFixture.home}</strong>
                     <span className="versus">V</span>
@@ -179,7 +190,7 @@ export default function Home() {
                 <div className="pickNotice">ⓘ &nbsp; You can only make one pick per gameweek. Picks can be changed until the weekly deadline.</div>
               </article>
 
-              <article className="panel fixturesPanel">
+              <article className="panel fixturesPanel brandedPanel mosaicPanel">
                 <div className="panelTitle rowTitle"><span>UPCOMING FIXTURES — GAMEWEEK 4</span><button onClick={() => setView("fixtures")}>View all →</button></div>
                 <div className="fixtureRows">
                   {fixtures.slice(0, 5).map(f => (
@@ -196,7 +207,7 @@ export default function Home() {
             </section>
 
             <aside className="rightColumn">
-              <article className="panel tablePanel">
+              <article className="panel tablePanel brandedPanel">
                 <div className="panelTitle">LEAGUE TABLE</div>
                 <div className="compactTable header"><span>POS</span><span>PLAYER</span><span>PTS</span><span>P</span><span>W</span></div>
                 {standings.map((row, index) => (
@@ -205,7 +216,7 @@ export default function Home() {
                 <button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button>
               </article>
 
-              <article className="panel resultsPanel">
+              <article className="panel resultsPanel brandedPanel">
                 <div className="panelTitle">LATEST RESULTS</div>
                 {recentResults.map(result => (
                   <div className="resultRow" key={`${result.home}-${result.away}`}><span>{result.gw}</span><strong>{result.home}</strong><b>{result.score}</b><strong>{result.away}</strong><i className={result.btts ? "yes" : "no"}>{result.btts ? "✓" : "–"}</i></div>
@@ -219,7 +230,7 @@ export default function Home() {
         )}
 
         {(view === "pick" || view === "fixtures") && (
-          <section className="pagePanel panel">
+          <section className="pagePanel panel brandedPanel">
             <div className="pageHeading"><div><span>GAMEWEEK 4</span><h2>{view === "pick" ? "My Pick" : "Eligible Fixtures"}</h2><p>Any UK-based Saturday 3pm fixture with a BTTS market. Hearts matches are excluded.</p></div><button onClick={sharePicks}>Share picks</button></div>
             {competitions.map(comp => (
               <div className="competitionSection" key={comp}>
@@ -238,25 +249,28 @@ export default function Home() {
         )}
 
         {view === "table" && (
-          <section className="pagePanel panel">
-            <div className="pageHeading"><div><span>SEASON 2026/27</span><h2>League Table</h2><p>Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div></div>
+          <section className="pagePanel panel brandedPanel">
+            <div className="pageHeading"><div><span>SEASON 2026/27 · EST 2024</span><h2>League Table</h2><p>Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div></div>
             <div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{standings.map((row, i)=><div className={`largeTableRow ${i===0?"leader":""}`} key={row.name}><span>{i+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeros}</span><b>{row.points}</b></div>)}</div>
           </section>
         )}
 
         {view === "results" && (
-          <section className="pagePanel panel"><div className="pageHeading"><div><span>RECENT GAMEWEEKS</span><h2>Results</h2></div></div>{recentResults.map(r=><div className="largeResult" key={`${r.home}-${r.away}`}><span>{r.gw}</span><strong>{r.home}</strong><b>{r.score}</b><strong>{r.away}</strong><i className={r.btts?"yes":"no"}>{r.btts?"BTTS ✓":"NO"}</i></div>)}</section>
+          <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>RECENT GAMEWEEKS</span><h2>Results</h2></div></div>{recentResults.map(r=><div className="largeResult" key={`${r.home}-${r.away}`}><span>{r.gw}</span><strong>{r.home}</strong><b>{r.score}</b><strong>{r.away}</strong><i className={r.btts?"yes":"no"}>{r.btts?"BTTS ✓":"NO"}</i></div>)}</section>
         )}
 
         {view === "players" && (
-          <section className="pagePanel panel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{submitted} of {members.length} have submitted a pick.</p></div></div><div className="playerGrid">{members.map(m=>{const pick=fixtures.find(f=>f.selectedBy===m.name);return <article key={m.id}><span>{m.initials}</span><div><strong>{m.name}</strong><small>{pick?`${pick.home} v ${pick.away} · ${pick.odds}`:"Awaiting selection"}</small></div><b className={pick?"picked":"pending"}>{pick?"PICKED ✓":"PENDING"}</b></article>})}</div></section>
+          <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{submitted} of {members.length} have submitted a pick.</p></div></div><div className="playerGrid">{members.map(m=>{const pick=fixtures.find(f=>f.selectedBy===m.name);return <article key={m.id}><span>{m.initials}</span><div><strong>{m.name}</strong><small>{pick?`${pick.home} v ${pick.away} · ${pick.odds}`:"Awaiting selection"}</small></div><b className={pick?"picked":"pending"}>{pick?"PICKED ✓":"PENDING"}</b></article>})}</div></section>
         )}
 
         {view === "admin" && (
-          <section className="pagePanel panel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>Users, fixtures, results, daily sync and public sharing.</p></div></div><div className="adminCards"><button><span>👥</span><strong>Manage users</strong><small>Create members and temporary passwords</small></button><button><span>⚽</span><strong>Fixtures</strong><small>Review imported UK 3pm matches</small></button><button><span>✓</span><strong>Results</strong><small>Correct scores and scoring</small></button><button><span>↗</span><strong>Share centre</strong><small>Public table and weekly picks</small></button></div></section>
+          <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>Users, fixtures, results, daily sync and public sharing.</p></div></div><div className="adminCards"><button><span>👥</span><strong>Manage users</strong><small>Create members and temporary passwords</small></button><button><span>⚽</span><strong>Fixtures</strong><small>Review imported UK 3pm matches</small></button><button><span>✓</span><strong>Results</strong><small>Correct scores and scoring</small></button><button><span>↗</span><strong>Share centre</strong><small>Public table and weekly picks</small></button></div></section>
         )}
 
-        <footer className="siteFooter"><span>♡</span><div><strong>MADE IN EDINBURGH</strong><small>FOR THE FANS, BY THE FANS</small></div></footer>
+        <footer className="siteFooter">
+          <span>♡</span>
+          <strong>MADE BY THE ARTIST, FOR THE BOUNCE</strong>
+        </footer>
       </section>
       {toast && <div className="toast">{toast}</div>}
     </main>
