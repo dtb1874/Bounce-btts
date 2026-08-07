@@ -439,60 +439,107 @@ function AdminUsers({ notice }: { notice: (message:string)=>void }) {
 }
 
 function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustments, onChanged, notice }: any) {
-  const activeProfiles = (profiles as Profile[]).filter((profile) => profile.active).sort((a, b) => (a.slot_number ?? 99) - (b.slot_number ?? 99));
-  const currentPredictions = (predictions as Prediction[]).filter((prediction) => prediction.gameweek_id === gameweek?.id);
-  const currentAdjustments = (adjustments as ScoreAdjustment[]).filter((adjustment) => adjustment.gameweek_id === gameweek?.id);
-  const [memberId, setMemberId] = useState(activeProfiles[0]?.id ?? "");
-  const existingPrediction = currentPredictions.find((prediction) => prediction.member_id === memberId);
-  const existingAdjustment = currentAdjustments.find((adjustment) => adjustment.member_id === memberId);
-  const [fixtureId, setFixtureId] = useState(existingPrediction?.fixture_id ?? "");
+  const activeProfiles = useMemo(() => (profiles as Profile[]).filter((profile) => profile.active).sort((a, b) => (a.slot_number ?? 99) - (b.slot_number ?? 99)), [profiles]);
+  const currentPredictions = useMemo(() => (predictions as Prediction[]).filter((prediction) => prediction.gameweek_id === gameweek?.id), [predictions, gameweek?.id]);
+  const currentAdjustments = useMemo(() => (adjustments as ScoreAdjustment[]).filter((adjustment) => adjustment.gameweek_id === gameweek?.id), [adjustments, gameweek?.id]);
+  const [draftSelections, setDraftSelections] = useState<Record<string, string>>({});
   const [fixtureSearch, setFixtureSearch] = useState("");
-  const [adjustmentPoints, setAdjustmentPoints] = useState(String(existingAdjustment?.points ?? -1));
-  const [adjustmentReason, setAdjustmentReason] = useState(existingAdjustment?.reason ?? "Missed selection");
+  const [memberId, setMemberId] = useState("");
+  const [adjustmentPoints, setAdjustmentPoints] = useState("-1");
+  const [adjustmentReason, setAdjustmentReason] = useState("Missed selection");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
 
   useEffect(() => {
-    const existing = currentPredictions.find((prediction) => prediction.member_id === memberId);
+    const nextDrafts = Object.fromEntries(activeProfiles.map((profile) => [profile.id, currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""]));
+    setDraftSelections(nextDrafts);
+    setMemberId((current) => current && activeProfiles.some((profile) => profile.id === current) ? current : activeProfiles[0]?.id ?? "");
+  }, [activeProfiles, currentPredictions]);
+
+  useEffect(() => {
     const adjustment = currentAdjustments.find((item) => item.member_id === memberId);
-    setFixtureId(existing?.fixture_id ?? "");
     setAdjustmentPoints(String(adjustment?.points ?? -1));
     setAdjustmentReason(adjustment?.reason ?? "Missed selection");
-  }, [memberId]);
+  }, [memberId, currentAdjustments]);
 
-  const adminFilteredFixtures = useMemo(() => {
+  const filteredFixtures = useMemo(() => {
     const query = fixtureSearch.trim().toLowerCase();
-    return (fixtures as Fixture[]).filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition}`.toLowerCase().includes(query)).sort(sortFixturesForBookmaker);
+    return (fixtures as Fixture[])
+      .filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition}`.toLowerCase().includes(query))
+      .sort(sortFixturesForBookmaker);
   }, [fixtures, fixtureSearch]);
-  const sortedCompetitions = useMemo(() => Array.from(new Set(adminFilteredFixtures.map((fixture) => fixture.competition))), [adminFilteredFixtures]);
-  const selectedMember = activeProfiles.find((profile) => profile.id === memberId);
 
-  async function saveSelection() {
-    if (!gameweek || !memberId || !fixtureId) return notice("Choose a player and fixture.");
-    setBusy(true);
-    const response = await fetch("/api/admin/predictions", {
-      method: "PUT",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ gameweekId: gameweek.id, memberId, fixtureId }),
-    });
-    const payload = await response.json();
-    notice(response.ok ? `${selectedMember?.display_name ?? "Player"} selection saved` : payload.error);
-    setBusy(false);
-    if (response.ok) onChanged();
+  const sortedCompetitions = useMemo(() => Array.from(new Set(filteredFixtures.map((fixture) => fixture.competition))), [filteredFixtures]);
+  const selectedMember = activeProfiles.find((profile) => profile.id === memberId);
+  const existingAdjustment = currentAdjustments.find((adjustment) => adjustment.member_id === memberId);
+  const changedMemberIds = activeProfiles
+    .filter((profile) => (draftSelections[profile.id] ?? "") !== (currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""))
+    .map((profile) => profile.id);
+
+  function updateDraft(member: string, fixture: string) {
+    setDraftSelections((current) => ({ ...current, [member]: fixture }));
   }
 
-  async function removeSelection() {
-    if (!gameweek || !memberId || !existingPrediction) return notice("This player has no selection to remove.");
-    if (!window.confirm(`Remove ${selectedMember?.display_name ?? "this player's"} current selection?`)) return;
+  function resetDrafts() {
+    setDraftSelections(Object.fromEntries(activeProfiles.map((profile) => [profile.id, currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""])));
+  }
+
+  async function saveAllSelections() {
+    if (!gameweek) return;
+    if (!changedMemberIds.length) return notice("There are no selection changes to save.");
+
+    const chosen = Object.entries(draftSelections).filter(([, fixtureId]) => fixtureId);
+    const seenFixtures = new Set<string>();
+    const duplicate = chosen.find(([, fixtureId]) => seenFixtures.has(fixtureId) || !seenFixtures.add(fixtureId));
+    if (duplicate) {
+      const fixture = (fixtures as Fixture[]).find((item) => item.id === duplicate[1]);
+      return notice(`${fixture ? `${fixture.home_team} v ${fixture.away_team}` : "A fixture"} has been selected for more than one player.`);
+    }
+
     setBusy(true);
-    const response = await fetch("/api/admin/predictions", {
-      method: "DELETE",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ gameweekId: gameweek.id, memberId }),
-    });
-    const payload = await response.json();
-    notice(response.ok ? "Selection removed" : payload.error);
-    setBusy(false);
-    if (response.ok) onChanged();
+    let completed = 0;
+    try {
+      // Remove changed existing selections first so fixtures can be reassigned safely in the same batch.
+      for (const changedMemberId of changedMemberIds) {
+        const existing = currentPredictions.find((prediction) => prediction.member_id === changedMemberId);
+        if (!existing) continue;
+        setProgress(`Preparing changes ${++completed}/${changedMemberIds.length}`);
+        const response = await fetch("/api/admin/predictions", {
+          method: "DELETE",
+          headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+          body: JSON.stringify({ gameweekId: gameweek.id, memberId: changedMemberId }),
+        });
+        if (!response.ok) {
+          const payload = await response.json();
+          throw new Error(payload.error ?? "A selection could not be removed.");
+        }
+      }
+
+      completed = 0;
+      for (const changedMemberId of changedMemberIds) {
+        const fixtureId = draftSelections[changedMemberId] ?? "";
+        setProgress(`Saving selections ${++completed}/${changedMemberIds.length}`);
+        if (!fixtureId) continue;
+        const response = await fetch("/api/admin/predictions", {
+          method: "PUT",
+          headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
+          body: JSON.stringify({ gameweekId: gameweek.id, memberId: changedMemberId, fixtureId }),
+        });
+        if (!response.ok) {
+          const payload = await response.json();
+          throw new Error(payload.error ?? "A selection could not be saved.");
+        }
+      }
+
+      notice(`${changedMemberIds.length} selection change${changedMemberIds.length === 1 ? "" : "s"} saved`);
+      await onChanged();
+    } catch (error) {
+      notice(error instanceof Error ? error.message : "The selections could not all be saved.");
+      await onChanged();
+    } finally {
+      setBusy(false);
+      setProgress("");
+    }
   }
 
   async function saveAdjustment() {
@@ -525,61 +572,60 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
 
   if (!gameweek) return <div className="emptyState">Create a gameweek before entering selections.</div>;
 
-  return <div className="adminSelectionLayout">
-    <div className="adminSelectionForm">
-      <div className="adminNote">A player who misses the deadline automatically receives −1. Admins can change that value, remove it, or enter a late selection on the player&apos;s behalf. A valid selection removes the automatic missed-pick penalty.</div>
-      <label>Player
-        <select value={memberId} onChange={(event) => setMemberId(event.target.value)}>
-          {activeProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.slot_number}. {profile.display_name}</option>)}
-        </select>
-      </label>
-      <label>Search fixtures
-        <input type="search" value={fixtureSearch} onChange={(event) => setFixtureSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" />
-      </label>
-      <label>Fixture
-        <select value={fixtureId} onChange={(event) => setFixtureId(event.target.value)}>
-          <option value="">Choose an available fixture</option>
-          {sortedCompetitions.map((competition) => <optgroup key={competition} label={competition}>
-            {adminFilteredFixtures.filter((fixture) => fixture.competition === competition).map((fixture) => {
-              const taken = currentPredictions.find((prediction) => prediction.fixture_id === fixture.id && prediction.member_id !== memberId);
-              const takenBy = taken ? activeProfiles.find((profile) => profile.id === taken.member_id)?.display_name : "";
-              return <option key={fixture.id} value={fixture.id} disabled={Boolean(taken)}>{fixture.home_team} v {fixture.away_team}{fixture.odds_fractional ? ` · ${fixture.odds_fractional}` : ""}{takenBy ? ` · TAKEN BY ${takenBy}` : ""}</option>;
-            })}
-          </optgroup>)}
-        </select>
-      </label>
-      <div className="adminSelectionActions">
-        <button className="primaryButton" disabled={busy || !memberId || !fixtureId} onClick={saveSelection}>{busy ? "Saving…" : existingPrediction ? "Replace selection" : "Add selection"}</button>
-        <button className="dangerButton" disabled={busy || !existingPrediction} onClick={removeSelection}>Remove selection</button>
-      </div>
-      <div className="adminAdjustmentBox">
-        <h3>Missed-selection / manual points</h3>
-        <div className="formGrid">
-          <label>Points<input type="number" step="1" value={adjustmentPoints} onChange={(event) => setAdjustmentPoints(event.target.value)} /></label>
-          <label>Reason<input value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} /></label>
-        </div>
-        <div className="adminSelectionActions">
-          <button className="save" disabled={busy || !memberId} onClick={saveAdjustment}>{existingAdjustment ? "Amend points" : "Add points adjustment"}</button>
-          <button disabled={busy || !existingAdjustment} onClick={removeAdjustment}>Remove adjustment</button>
-        </div>
-      </div>
-    </div>
-    <div className="adminPickList">
-      <h3>Gameweek {gameweek.number} selections</h3>
+  return <div className="adminBulkSelections">
+    <div className="adminNote">Enter or amend every player&apos;s fixture below, then press <strong>Save all selections</strong> once. Leaving a player blank removes their current selection. A player who misses the deadline automatically receives −1.</div>
+    <label className="bulkFixtureSearch">Search fixtures
+      <input type="search" value={fixtureSearch} onChange={(event) => setFixtureSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" />
+    </label>
+    <div className="adminBulkSelectionList">
       {activeProfiles.map((profile) => {
-        const prediction = currentPredictions.find((item) => item.member_id === profile.id);
-        const adjustment = currentAdjustments.find((item) => item.member_id === profile.id);
-        const fixture = (fixtures as Fixture[]).find((item) => item.id === prediction?.fixture_id);
-        return <button key={profile.id} className={`adminPickRow ${profile.id === memberId ? "active" : ""}`} onClick={() => setMemberId(profile.id)}>
-          <span>{profile.slot_number}</span>
-          <div><strong>{profile.display_name}</strong><small>{fixture ? `${fixture.home_team} v ${fixture.away_team}` : adjustment ? `${adjustment.reason} · ${adjustment.points > 0 ? "+" : ""}${adjustment.points}` : "No selection entered"}</small></div>
-          <b className={fixture ? "picked" : adjustment ? "missed" : "pending"}>{fixture ? "PICKED ✓" : adjustment ? `${adjustment.points > 0 ? "+" : ""}${adjustment.points} PTS` : "PENDING"}</b>
-        </button>;
+        const selectedFixtureId = draftSelections[profile.id] ?? "";
+        const currentFixtureId = currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? "";
+        const changed = selectedFixtureId !== currentFixtureId;
+        const selectedFixture = (fixtures as Fixture[]).find((fixture) => fixture.id === selectedFixtureId);
+        const competitions = selectedFixture && !filteredFixtures.some((fixture) => fixture.id === selectedFixture.id)
+          ? [selectedFixture.competition, ...sortedCompetitions.filter((competition) => competition !== selectedFixture.competition)]
+          : sortedCompetitions;
+        return <article className={`adminBulkSelectionRow ${changed ? "changed" : ""}`} key={profile.id}>
+          <div className="bulkPlayerName"><span>{profile.slot_number}</span><strong>{profile.display_name}</strong><small>{changed ? "Unsaved change" : selectedFixtureId ? "Selection saved" : "No selection"}</small></div>
+          <select value={selectedFixtureId} disabled={busy} onChange={(event) => updateDraft(profile.id, event.target.value)}>
+            <option value="">No selection</option>
+            {competitions.map((competition) => {
+              const competitionFixtures = (fixtures as Fixture[])
+                .filter((fixture) => fixture.competition === competition)
+                .filter((fixture) => fixture.id === selectedFixtureId || filteredFixtures.some((filtered) => filtered.id === fixture.id))
+                .sort(sortFixturesForBookmaker);
+              if (!competitionFixtures.length) return null;
+              return <optgroup key={competition} label={competition}>
+                {competitionFixtures.map((fixture) => {
+                  const draftedFor = activeProfiles.find((otherProfile) => otherProfile.id !== profile.id && draftSelections[otherProfile.id] === fixture.id);
+                  return <option key={fixture.id} value={fixture.id} disabled={Boolean(draftedFor)}>{fixture.home_team} v {fixture.away_team}{fixture.odds_fractional ? ` · ${fixture.odds_fractional}` : ""}{draftedFor ? ` · TAKEN BY ${draftedFor.display_name}` : ""}</option>;
+                })}
+              </optgroup>;
+            })}
+          </select>
+        </article>;
       })}
+    </div>
+    <div className="adminBulkSaveBar">
+      <span>{changedMemberIds.length ? `${changedMemberIds.length} unsaved change${changedMemberIds.length === 1 ? "" : "s"}` : "All selections are saved"}</span>
+      <button disabled={busy || !changedMemberIds.length} onClick={resetDrafts}>Discard changes</button>
+      <button className="primaryButton" disabled={busy || !changedMemberIds.length} onClick={saveAllSelections}>{busy ? progress || "Saving…" : "Save all selections"}</button>
+    </div>
+    <div className="adminAdjustmentBox adminBulkAdjustmentBox">
+      <h3>Missed-selection / manual points</h3>
+      <div className="formGrid">
+        <label>Player<select value={memberId} onChange={(event) => setMemberId(event.target.value)}>{activeProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.slot_number}. {profile.display_name}</option>)}</select></label>
+        <label>Points<input type="number" step="1" value={adjustmentPoints} onChange={(event) => setAdjustmentPoints(event.target.value)} /></label>
+        <label>Reason<input value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} /></label>
+      </div>
+      <div className="adminSelectionActions">
+        <button className="save" disabled={busy || !memberId} onClick={saveAdjustment}>{existingAdjustment ? "Amend points" : "Add points adjustment"}</button>
+        <button disabled={busy || !existingAdjustment} onClick={removeAdjustment}>Remove adjustment</button>
+      </div>
     </div>
   </div>;
 }
-
 function AdminFixtures({ gameweek, onChanged, notice }: any) {
   const [form,setForm]=useState({competition:"Scottish Premiership",country:"Scotland",homeTeam:"",awayTeam:"",kickoffLocal:"",oddsFractional:""});const [busy,setBusy]=useState(false);
   async function submit(event:FormEvent){event.preventDefault();if(!gameweek)return;setBusy(true);const kickoffAt=new Date(form.kickoffLocal).toISOString();const response=await fetch("/api/admin/fixtures",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({...form,kickoffAt,gameweekId:gameweek.id})});const payload=await response.json();notice(response.ok?"Fixture added":payload.error);setBusy(false);if(response.ok)onChanged();}

@@ -1434,3 +1434,31 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .competitionDisclosure > summary span { font-size: .9rem; }
   .competitionDisclosure > summary small { font-size: .68rem; }
 }
+
+/* Admin bulk selection entry */
+.adminBulkSelections { display: grid; gap: 18px; padding: 0 24px 28px; }
+.bulkFixtureSearch { display: grid; gap: 7px; max-width: 720px; color: #c5bbb5; font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.bulkFixtureSearch input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid #4b3940; border-radius: 7px; background: #111217; color: #f0e7df; font-size: 16px; }
+.adminBulkSelectionList { overflow: hidden; border: 1px solid #3b3034; border-radius: 10px; background: rgba(12, 12, 15, .72); }
+.adminBulkSelectionRow { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(300px, 1.7fr); gap: 18px; align-items: center; padding: 13px 15px; border-bottom: 1px solid #30282b; }
+.adminBulkSelectionRow:last-child { border-bottom: 0; }
+.adminBulkSelectionRow.changed { background: rgba(126, 36, 57, .18); box-shadow: inset 3px 0 0 #b88b53; }
+.bulkPlayerName { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 2px 10px; min-width: 0; }
+.bulkPlayerName > span { grid-row: 1 / span 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #5b1729; color: #fff; font-size: .76rem; font-weight: 900; }
+.bulkPlayerName strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulkPlayerName small { color: #9f9691; font-size: .72rem; }
+.adminBulkSelectionRow.changed .bulkPlayerName small { color: #d7ae72; }
+.adminBulkSelectionRow select { width: 100%; min-width: 0; min-height: 44px; padding: 0 38px 0 12px; border: 1px solid #4b3940; border-radius: 7px; background: #111217; color: #f0e7df; font-size: 16px; }
+.adminBulkSaveBar { position: sticky; bottom: 10px; z-index: 8; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px; border: 1px solid #553541; border-radius: 10px; background: rgba(18, 14, 17, .96); box-shadow: 0 10px 30px rgba(0,0,0,.35); backdrop-filter: blur(8px); }
+.adminBulkSaveBar span { margin-right: auto; color: #c9bdb6; font-size: .8rem; font-weight: 800; }
+.adminBulkSaveBar button { min-height: 42px; }
+.adminBulkSaveBar .primaryButton { width: auto; min-width: 180px; }
+.adminBulkAdjustmentBox { margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .adminBulkSelections { padding: 0 12px 22px; gap: 14px; }
+  .adminBulkSelectionRow { grid-template-columns: 1fr; gap: 9px; padding: 12px; }
+  .adminBulkSaveBar { bottom: 6px; display: grid; grid-template-columns: 1fr 1fr; }
+  .adminBulkSaveBar span { grid-column: 1 / -1; margin: 0; text-align: center; }
+  .adminBulkSaveBar .primaryButton { width: 100%; min-width: 0; }
+}
