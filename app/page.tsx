@@ -69,6 +69,10 @@ export default async function HomePage() {
 
   const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
 
+  const { data: seasonMemberships } = await supabase
+    .from("season_memberships")
+    .select("season_id,profile_id,active,display_name_snapshot");
+
   const { data: allGameweeks } = await supabase
     .from("gameweeks")
     .select("id,number,status,opens_at,locks_at,season_id")
@@ -161,7 +165,7 @@ export default async function HomePage() {
         const memberAdjustments = seasonAdjustments.filter((adjustment) => adjustment.member_id === member.id);
         return {
           id: member.id,
-          name: member.display_name,
+          name: (seasonMemberships ?? []).find((membership) => membership.season_id === season.id && membership.profile_id === member.id)?.display_name_snapshot ?? member.display_name,
           played: new Set([
             ...memberPredictions.map((prediction) => prediction.gameweek_id),
             ...memberAdjustments.map((adjustment) => adjustment.gameweek_id),

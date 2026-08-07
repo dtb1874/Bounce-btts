@@ -1618,3 +1618,169 @@ a,
     height: 34px !important;
   }
 }
+
+
+/* Historical gameweek view, countdown banner, form table, stronger share action */
+.futureGameweekBanner {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border-top: 1px solid #8d6d37;
+  border-bottom: 1px solid #8d6d37;
+  background: linear-gradient(90deg, #24140f, #3a2512 50%, #24140f);
+  color: #f0d291;
+  font-size: .82rem;
+  letter-spacing: .035em;
+}
+.futureGameweekBanner strong {
+  color: #fff0c3;
+  letter-spacing: .1em;
+}
+.futureGameweekBanner b {
+  min-width: 94px;
+  color: #fff8e7;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.formPanel {
+  overflow: hidden;
+}
+.formPanel .rowTitle small {
+  color: #b9a88b;
+}
+.formTable {
+  overflow-x: auto;
+}
+.formTableRow {
+  min-width: 510px;
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) repeat(5, 56px);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(207, 178, 112, .12);
+}
+.formTableRow.header {
+  color: #cdb276;
+  font-size: .69rem;
+  letter-spacing: .08em;
+}
+.formTableRow.header b {
+  text-align: center;
+}
+.formTableRow > strong {
+  color: #eee5d6;
+}
+.formBadge {
+  min-width: 38px;
+  min-height: 25px;
+  padding: 4px 6px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: #17151a;
+  color: #d7d0c6;
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+.formBadge.win {
+  border-color: #977b42;
+  background: #3a2c13;
+  color: #f5d98f;
+}
+.formBadge.scoreNil {
+  border-color: #755f8f;
+  background: #2b2038;
+  color: #dfc8ff;
+}
+.formBadge.zeroZero,
+.formBadge.missed {
+  border-color: #824452;
+  background: #321920;
+  color: #f2b9c4;
+}
+.formBadge.empty {
+  opacity: .45;
+}
+.formLegend {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #a99d8c;
+  font-size: .72rem;
+}
+.formLegend .formBadge {
+  margin-left: 7px;
+}
+.prominentShareButton {
+  min-height: 44px;
+  padding: 0 18px !important;
+  border: 1px solid #b28a45 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #5c421a, #2c2012) !important;
+  color: #fff0bd !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.08);
+  font-weight: 900 !important;
+  letter-spacing: .035em;
+}
+.prominentShareButton:hover {
+  border-color: #e0bd71 !important;
+  color: #fff8df !important;
+}
+
+@media (max-width: 760px) {
+  .futureGameweekBanner {
+    padding: 7px 10px;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: .68rem;
+  }
+  .futureGameweekBanner span {
+    display: none;
+  }
+  .futureGameweekBanner b {
+    min-width: 78px;
+  }
+  .pageHeading .prominentShareButton {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+/* Provider update and admin alerts */
+.providerStatusCard { display:flex; justify-content:space-between; gap:18px; align-items:center; padding:18px; margin-bottom:16px; border:1px solid #80653a; border-radius:10px; background:linear-gradient(135deg,#1e1713,#111116); }
+.providerStatusCard > div { display:grid; gap:5px; }
+.providerStatusCard span { color:#c8a86b; font-size:.7rem; letter-spacing:.12em; font-weight:900; }
+.providerStatusCard strong { color:#f2dfb2; }
+.providerStatusCard small { color:#a99d8c; }
+.alertsSummary { display:flex; align-items:baseline; gap:9px; padding:10px 2px 14px; color:#c8a86b; }
+.alertsSummary strong { font-size:1.65rem; color:#f0cc7c; }
+.adminAlertList { display:grid; gap:10px; }
+.adminAlertRow { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:15px; border:1px solid #61404a; border-left:4px solid #b27345; border-radius:8px; background:#181419; }
+.adminAlertRow.critical { border-left-color:#d05563; }
+.adminAlertRow.info { border-left-color:#6f88a9; }
+.adminAlertRow.resolved { opacity:.55; }
+.adminAlertRow > div { display:grid; gap:4px; }
+.adminAlertRow span { color:#c8a86b; font-size:.65rem; letter-spacing:.08em; }
+.adminAlertRow strong { color:#f0e2cf; }
+.adminAlertRow p { margin:0; color:#c8bbaa; }
+.adminAlertRow small { color:#b89a6a; }
+@media(max-width:760px){ .providerStatusCard,.adminAlertRow{align-items:stretch;flex-direction:column}.providerStatusCard button,.adminAlertRow button{width:100%} }
+
+/* Consolidated management update */
+.sidebar nav button { position: relative; }
+.navBadge { margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; background:#d62f45; color:#fff; font-size:.68rem; line-height:1; box-shadow:0 0 0 2px #171014; }
+.userAdminHeader { display:flex; gap:14px; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.userAdminHeader .adminNote { flex:1; margin:0; }
+.dangerButton { border-color:#8b3948 !important; color:#f3cbd2 !important; }
+.dangerButton:hover { background:#5b1f2b !important; }
+@media(max-width:760px){ .userAdminHeader{align-items:stretch;flex-direction:column}.userAdminHeader .primaryButton{width:100%}.navBadge{margin-left:auto} }

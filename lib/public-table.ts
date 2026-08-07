@@ -108,9 +108,11 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
         a.name.localeCompare(b.name),
     );
 
+  const namedProfiles = (profiles ?? []).filter((profile) => !/^user\d+$/i.test(profile.display_name.trim()));
+
   return {
     seasonLabel: currentSeason?.label ?? settings?.current_season_label ?? "2026/27",
-    prizePot: (profiles?.length ?? 0) * Number(settings?.entry_fee ?? 20),
+    prizePot: namedProfiles.length * Number(settings?.entry_fee ?? 20),
     gameweekNumber: currentGameweek?.number ?? null,
     rows,
   };

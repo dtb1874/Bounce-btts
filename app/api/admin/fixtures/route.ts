@@ -21,9 +21,7 @@ export async function POST(request: Request) {
   const gameweekId = String(body.gameweekId ?? "");
   const lower = `${home} ${away}`.toLowerCase();
   if (!home || !away || !gameweekId || !kickoffAt) return NextResponse.json({ error: "Complete all fixture fields." }, { status: 400 });
-  if (lower.includes("heart of midlothian") || lower.includes("hibernian") || /(^|\s)(hearts|hibs)($|\s)/.test(lower)) {
-    return NextResponse.json({ error: "Hearts and Hibs fixtures are not eligible." }, { status: 400 });
-  }
+  if (lower.includes("heart of midlothian") || lower.includes("hearts")) return NextResponse.json({ error: "Hearts fixtures are not eligible." }, { status: 400 });
   if (!isThreePmUK(kickoffAt)) return NextResponse.json({ error: "The fixture must kick off at exactly 3:00pm UK time." }, { status: 400 });
 
   const { data, error } = await admin.from("fixtures").insert({

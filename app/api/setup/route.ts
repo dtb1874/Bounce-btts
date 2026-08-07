@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { usernameToEmail } from "@/lib/auth";
 import { encryptPassword } from "@/lib/password-vault";
-import { nextFridayAtFiveIso } from "@/lib/deadline";
 
 export const runtime = "nodejs";
 
 const roster = [
-  { slot: 1, username: "user1", displayName: "DTB", role: "ultimate_admin", active: true },
+  { slot: 1, username: "user1", displayName: "DTB", role: "admin", active: true },
   { slot: 2, username: "user2", displayName: "Dave S", role: "admin", active: true },
   { slot: 3, username: "user3", displayName: "Turnsy Fitchett", role: "member", active: true },
   { slot: 4, username: "user4", displayName: "Ryan", role: "member", active: true },
@@ -24,6 +23,15 @@ const roster = [
 function simplePassword(slot: number) {
   const suffix = Math.floor(10 + Math.random() * 90);
   return `bounce${slot}${suffix}`;
+}
+
+function nextSaturdayDeadline() {
+  const now = new Date();
+  const result = new Date(now);
+  const days = (6 - result.getUTCDay() + 7) % 7 || 7;
+  result.setUTCDate(result.getUTCDate() + days);
+  result.setUTCHours(13, 55, 0, 0); // 14:55 UK during summer; editable in Admin.
+  return result.toISOString();
 }
 
 export async function POST(request: Request) {
@@ -87,7 +95,7 @@ export async function POST(request: Request) {
         number: 1,
         status: "open",
         opens_at: new Date().toISOString(),
-        locks_at: nextFridayAtFiveIso(),
+        locks_at: nextSaturdayDeadline(),
         season_id: season?.id ?? null,
       });
     }
