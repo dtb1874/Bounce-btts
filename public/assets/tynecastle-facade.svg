@@ -1,51 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
-  <title id="title">Tynecastle Park facade line-art watermark</title>
-  <desc id="desc">An original, simplified architectural line drawing inspired by the main frontage of Tynecastle Park.</desc>
-  <g fill="none" stroke="#d8c8b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M45 438H1155"/>
-    <path d="M82 438V224L150 190H388V155H430L470 112H730L770 155H812V190H1050L1118 224V438"/>
-    <path d="M116 222V438M1084 222V438"/>
-    <path d="M430 155V438M770 155V438"/>
-    <path d="M470 112L600 58L730 112"/>
-    <path d="M510 112V86M690 112V86"/>
-    <path d="M492 165H708"/>
-    <path d="M477 184H723"/>
-    <path d="M505 207H695"/>
-    <rect x="492" y="222" width="216" height="54" rx="3"/>
-    <path d="M525 438V318Q525 292 551 292H649Q675 292 675 318V438"/>
-    <path d="M548 438V327H652V438"/>
-    <path d="M600 327V438"/>
-    <path d="M548 357H652M548 390H652"/>
-    <rect x="456" y="302" width="46" height="68" rx="2"/>
-    <path d="M479 302V370M456 336H502"/>
-    <rect x="698" y="302" width="46" height="68" rx="2"/>
-    <path d="M721 302V370M698 336H744"/>
-    <path d="M150 190H430M770 190H1050"/>
-    <path d="M126 245H430M770 245H1074"/>
-    <path d="M116 294H430M770 294H1084"/>
-    <path d="M116 380H430M770 380H1084"/>
-    <g>
-      <rect x="155" y="263" width="54" height="75" rx="2"/><path d="M182 263V338M155 300H209"/>
-      <rect x="236" y="263" width="54" height="75" rx="2"/><path d="M263 263V338M236 300H290"/>
-      <rect x="317" y="263" width="54" height="75" rx="2"/><path d="M344 263V338M317 300H371"/>
-      <rect x="155" y="393" width="54" height="45" rx="2"/><path d="M182 393V438"/>
-      <rect x="236" y="393" width="54" height="45" rx="2"/><path d="M263 393V438"/>
-      <rect x="317" y="393" width="54" height="45" rx="2"/><path d="M344 393V438"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 520" role="img" aria-labelledby="title desc">
+  <title id="title">Tynecastle Park gold outline watermark</title>
+  <desc id="desc">A simplified line-art outline based on the supplied Tynecastle Park frontage image, including the facade, crest position, and forecourt motif.</desc>
+
+  <g fill="none" stroke="#d8bf84" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- roof strip -->
+    <rect x="55" y="38" width="970" height="28"/>
+    <g opacity="0.95">
+      <path d="M99 38V66"/><path d="M143 38V66"/><path d="M187 38V66"/><path d="M231 38V66"/>
+      <path d="M275 38V66"/><path d="M319 38V66"/><path d="M363 38V66"/><path d="M407 38V66"/>
+      <path d="M451 38V66"/><path d="M495 38V66"/><path d="M539 38V66"/><path d="M583 38V66"/>
+      <path d="M627 38V66"/><path d="M671 38V66"/><path d="M715 38V66"/><path d="M759 38V66"/>
+      <path d="M803 38V66"/><path d="M847 38V66"/><path d="M891 38V66"/><path d="M935 38V66"/>
+      <path d="M979 38V66"/>
     </g>
-    <g>
-      <rect x="829" y="263" width="54" height="75" rx="2"/><path d="M856 263V338M829 300H883"/>
-      <rect x="910" y="263" width="54" height="75" rx="2"/><path d="M937 263V338M910 300H964"/>
-      <rect x="991" y="263" width="54" height="75" rx="2"/><path d="M1018 263V338M991 300H1045"/>
-      <rect x="829" y="393" width="54" height="45" rx="2"/><path d="M856 393V438"/>
-      <rect x="910" y="393" width="54" height="45" rx="2"/><path d="M937 393V438"/>
-      <rect x="991" y="393" width="54" height="45" rx="2"/><path d="M1018 393V438"/>
+
+    <!-- main facade -->
+    <rect x="72" y="66" width="936" height="278"/>
+    <g opacity="0.95">
+      <path d="M127 66V344"/><path d="M182 66V344"/><path d="M237 66V344"/><path d="M292 66V344"/>
+      <path d="M347 66V344"/><path d="M402 66V344"/><path d="M457 66V344"/><path d="M512 66V344"/>
+      <path d="M567 66V344"/><path d="M622 66V344"/><path d="M677 66V344"/><path d="M732 66V344"/>
+      <path d="M787 66V344"/><path d="M842 66V344"/><path d="M897 66V344"/><path d="M952 66V344"/>
     </g>
-    <path d="M116 352H430M770 352H1084" opacity=".65"/>
-    <path d="M130 438V397H145V438M1055 438V397H1070V438"/>
-    <path d="M92 235L150 206M1108 235L1050 206"/>
-    <path d="M70 438V145M1130 438V145" opacity=".55"/>
-    <path d="M70 145L116 184M1130 145L1084 184" opacity=".55"/>
-    <path d="M58 145H82M1118 145H1142" opacity=".55"/>
+    <path d="M72 118H1008"/>
+    <path d="M72 176H1008"/>
+    <path d="M72 234H1008"/>
+    <path d="M72 292H1008"/>
+
+    <!-- sign -->
+    <text x="540" y="104" fill="#d8bf84" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="20" font-weight="700" letter-spacing="2">TYNECASTLE PARK</text>
+
+    <!-- crest -->
+    <path d="M540 125L582 150L566 205L540 228L514 205L498 150Z"/>
+    <circle cx="540" cy="174" r="30"/>
+
+    <!-- side glazing emphasis -->
+    <g opacity="0.82">
+      <rect x="92" y="124" width="388" height="94"/>
+      <path d="M156.7 124V218"/><path d="M221.3 124V218"/><path d="M286 124V218"/><path d="M350.7 124V218"/><path d="M415.3 124V218"/>
+      <path d="M92 171H480"/>
+
+      <rect x="600" y="124" width="388" height="94"/>
+      <path d="M664.7 124V218"/><path d="M729.3 124V218"/><path d="M794 124V218"/><path d="M858.7 124V218"/><path d="M923.3 124V218"/>
+      <path d="M600 171H988"/>
+
+      <rect x="92" y="236" width="388" height="72"/>
+      <path d="M156.7 236V308"/><path d="M221.3 236V308"/><path d="M286 236V308"/><path d="M350.7 236V308"/><path d="M415.3 236V308"/>
+
+      <rect x="600" y="236" width="388" height="72"/>
+      <path d="M664.7 236V308"/><path d="M729.3 236V308"/><path d="M794 236V308"/><path d="M858.7 236V308"/><path d="M923.3 236V308"/>
+    </g>
+
+    <!-- lower frontage -->
+    <rect x="72" y="344" width="936" height="78"/>
+    <rect x="150" y="350" width="48" height="62"/>
+    <rect x="264" y="350" width="48" height="62"/>
+    <rect x="380" y="350" width="48" height="62"/>
+    <rect x="448" y="350" width="184" height="62"/>
+    <rect x="702" y="350" width="48" height="62"/>
+    <rect x="816" y="350" width="48" height="62"/>
+    <rect x="932" y="350" width="48" height="62"/>
+    <path d="M418 338H662"/>
+
+    <!-- forecourt motif -->
+    <path d="M540 498L782 430L540 360L298 430Z"/>
+    <path d="M540 474L728 430L540 385L352 430Z"/>
+    <path d="M540 455C575 430 590 400 540 382C490 400 505 430 540 455Z"/>
+    <circle cx="540" cy="420" r="26"/>
   </g>
-  <text x="600" y="257" text-anchor="middle" fill="#d8c8b7" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="700" letter-spacing="5">TYNECASTLE PARK</text>
 </svg>

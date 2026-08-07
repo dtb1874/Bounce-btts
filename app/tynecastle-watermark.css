@@ -1,13 +1,8 @@
 /*
- * Bounce BTTS — Tynecastle league-table watermark
+ * Bounce BTTS — Tynecastle photo-based watermark
  *
- * Applied automatically to:
- * - Dashboard mini league table
- * - Full League Table page
- * - League History tables
- * - Public/read-only league table
- *
- * The exported JPEG uses the same 12% opacity in ShareTableButton.tsx.
+ * Uses a simplified gold line-art outline based on the Tynecastle frontage image
+ * supplied by the league owner. Applied anywhere a league table appears.
  */
 
 .tablePanel .miniTable,
@@ -26,18 +21,18 @@
   background-image: url("/assets/tynecastle-facade.svg");
   background-repeat: no-repeat;
   background-position: center 58%;
-  filter: grayscale(1) blur(0.25px);
+  background-size: contain;
   opacity: 0.12;
 }
 
 .tablePanel .miniTable::before {
-  inset: 18px -42px 4px;
+  inset: 18px -40px 4px;
   background-size: 112% auto;
 }
 
 .largeTable::before {
-  inset: 16px 2.5% 8px;
-  background-size: min(920px, 88%) auto;
+  inset: 14px 2.5% 6px;
+  background-size: min(960px, 90%) auto;
 }
 
 .tablePanel .miniTable > *,
@@ -46,10 +41,6 @@
   z-index: 1;
 }
 
-/*
- * Soft edge shading keeps the line art embedded in the table rather than
- * appearing pasted over the rows.
- */
 .tablePanel .miniTable::after,
 .largeTable::after {
   content: "";
@@ -59,22 +50,22 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(16, 18, 23, 0.18) 0%,
-    rgba(16, 18, 23, 0.01) 34%,
-    rgba(16, 18, 23, 0.03) 70%,
-    rgba(16, 18, 23, 0.22) 100%
+    rgba(16, 18, 23, 0.12) 0%,
+    rgba(16, 18, 23, 0.00) 35%,
+    rgba(16, 18, 23, 0.02) 70%,
+    rgba(16, 18, 23, 0.16) 100%
   );
 }
 
 @media (max-width: 720px) {
   .tablePanel .miniTable::before {
-    inset: 22px -70px 0;
+    inset: 22px -72px 0;
     background-size: 145% auto;
   }
 
   .largeTable::before {
-    inset: 28px -95px 4px;
-    background-size: 150% auto;
+    inset: 28px -96px 4px;
+    background-size: 152% auto;
   }
 }
 
@@ -82,6 +73,5 @@
   .tablePanel .miniTable::before,
   .largeTable::before {
     opacity: 0.06;
-    filter: grayscale(1);
   }
 }
