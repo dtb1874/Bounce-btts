@@ -10,7 +10,7 @@ Private, mobile-friendly weekly BTTS prediction league for iPhone, Android and d
 - Dave S starts as the second administrator
 - Current roster: DTB, Dave S, Turnsy Fitchett, Ryan, Dave Pickup, Yacky, Ian and Kevin Pickup
 - One unique fixture per player per gameweek
-- UK Saturday 3pm fixtures only; Heart of Midlothian fixtures are rejected
+- UK Saturday 3pm fixtures only; Hearts and Hibs fixtures are rejected
 - Members can change only their own pick before the deadline
 - Admin fixture entry, fractional BTTS odds, results, scoring and gameweek controls
 - Scoring: BTTS +3, one-sided score +1, 0–0 −1

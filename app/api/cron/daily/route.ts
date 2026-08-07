@@ -28,9 +28,11 @@ function nextSaturdayDate() {
   return base.toISOString().slice(0, 10);
 }
 
-function isHeartsFixture(home: string, away: string) {
+function isExcludedEdinburghFixture(home: string, away: string) {
   const teams = `${home} ${away}`.toLowerCase();
-  return teams.includes("heart of midlothian") || /(^|\s)hearts($|\s)/.test(teams);
+  return teams.includes("heart of midlothian")
+    || teams.includes("hibernian")
+    || /(^|\s)(hearts|hibs)($|\s)/.test(teams);
 }
 
 async function providerFixtures(date: string) {
@@ -116,7 +118,7 @@ export async function GET(request: NextRequest) {
         const status = String(item.fixture?.status?.short ?? "");
         return UK_COUNTRIES.has(country)
           && kickoff.slice(11, 16) === "15:00"
-          && !isHeartsFixture(home, away)
+          && !isExcludedEdinburghFixture(home, away)
           && ["NS", "TBD"].includes(status);
       }).map((item: any) => ({
         gameweek_id: gameweek.id,
