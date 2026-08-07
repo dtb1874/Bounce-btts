@@ -1462,3 +1462,30 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .adminBulkSaveBar span { grid-column: 1 / -1; margin: 0; text-align: center; }
   .adminBulkSaveBar .primaryButton { width: 100%; min-width: 0; }
 }
+
+/* Dashboard: all current gameweek selections */
+.dashboardPicks{display:grid;gap:8px;padding:12px}
+.dashboardPickRow{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(220px,1.6fr) 72px 92px;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.08);background:rgba(10,8,9,.78)}
+.dashboardPickRow.pending{opacity:.72}
+.dashboardPickPlayer{display:flex;align-items:center;gap:10px;min-width:0}
+.dashboardPickPlayer>span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#76152c;color:#f7e7c8;font-weight:800;flex:0 0 auto}
+.dashboardPickPlayer strong,.dashboardPickFixture strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboardPickFixture{display:flex;flex-direction:column;min-width:0;gap:3px}
+.dashboardPickFixture small{color:#9f9698;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboardPickOdds{display:flex;flex-direction:column;text-align:center;font-size:.72rem;color:#aaa}
+.dashboardPickOdds strong{color:#f7e7c8;font-size:1rem}
+.pickStatus{font-size:.72rem;color:#63d391;text-align:right;white-space:nowrap}
+.pickStatus.pending{color:#c9a86a}
+.ineligibleFixture{display:block;color:#c9a86a;margin-top:4px;font-size:.72rem}
+.fixtureStatus{display:inline-flex;justify-content:center;align-items:center;min-width:84px;padding:8px;border-radius:4px;font-size:.75rem;font-weight:800;text-transform:uppercase}
+.fixtureStatus.eligible{color:#63d391;background:rgba(44,132,82,.16)}
+.fixtureStatus.ineligible{color:#c9a86a;background:rgba(201,168,106,.12)}
+
+@media(max-width:760px){
+  .dashboardPickRow{grid-template-columns:minmax(110px,.9fr) minmax(0,1.5fr) 48px;gap:8px;padding:10px}
+  .dashboardPickOdds{display:none}
+  .pickStatus{font-size:.62rem}
+  .dashboardPickPlayer>span{width:28px;height:28px;font-size:.72rem}
+  .dashboardPickPlayer strong,.dashboardPickFixture strong{font-size:.78rem}
+  .dashboardPickFixture small{font-size:.66rem}
+}

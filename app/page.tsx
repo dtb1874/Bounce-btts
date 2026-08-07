@@ -91,7 +91,7 @@ export default async function HomePage() {
       .from("fixtures")
       .select("*")
       .eq("gameweek_id", gameweek.id)
-      .eq("is_eligible", true)
+      .order("kickoff_at")
       .order("competition")
       .order("home_team");
     fixtures = response.data ?? [];

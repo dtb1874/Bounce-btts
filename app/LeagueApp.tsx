@@ -40,6 +40,7 @@ type Fixture = {
   odds_fractional: string | null;
   odds_checked_at: string | null;
   source: string;
+  is_eligible: boolean;
 };
 
 type Prediction = {
@@ -83,7 +84,7 @@ type SeasonHistory = {
 
 const navItems: { id: View; label: string; icon: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "pick", label: "My Pick", icon: "⚑" },
+  { id: "pick", label: "Make My Pick", icon: "⚑" },
   { id: "fixtures", label: "Fixtures", icon: "▦" },
   { id: "table", label: "League Table", icon: "☷" },
   { id: "results", label: "Results", icon: "✦" },
@@ -226,7 +227,9 @@ export default function LeagueApp({
   const currentAdjustment = gameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === gameweek.id && adjustment.member_id === initialProfile.id) : undefined;
   const submitted = gameweek ? predictions.filter((prediction) => prediction.gameweek_id === gameweek.id).length : 0;
   const isOpen = Boolean(gameweek && gameweek.status === "open" && new Date(gameweek.locks_at) > new Date());
-  const competitions = useMemo(() => Array.from(new Set(fixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [fixtures]);
+  const eligibleFixtures = useMemo(() => fixtures.filter((fixture) => fixture.is_eligible), [fixtures]);
+  const competitions = useMemo(() => Array.from(new Set(eligibleFixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [eligibleFixtures]);
+  const allCompetitions = useMemo(() => Array.from(new Set(fixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [fixtures]);
 
   const standings = useMemo(() => {
     const map = new Map(profiles.map((profile) => [profile.id, {
@@ -350,8 +353,9 @@ export default function LeagueApp({
           <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{gameweek ? `GW ${gameweek.number}` : "NO GW"}</strong></div><small>{gameweek ? `${gameweek.status.toUpperCase()} · Locks ${formatKickoff(gameweek.locks_at)}` : "Create a gameweek"}</small></div>
         </header>
 
-        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} currentAdjustment={currentAdjustment} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} selectFixture={selectFixture} sharePicks={sharePicks} isOpen={isOpen} />}
-        {(view === "pick" || view === "fixtures") && <FixturesPage fixtures={fixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} />}
+        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} currentAdjustment={currentAdjustment} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={sharePicks} isOpen={isOpen} />}
+        {view === "pick" && <FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} />}
+        {view === "fixtures" && <FixturesPage mode="all" fixtures={fixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={allCompetitions} sharePicks={sharePicks} />}
         {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} entryFee={entryFee} />}
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
         {view === "history" && <LeagueHistory seasons={seasonHistory} />}
@@ -365,12 +369,17 @@ export default function LeagueApp({
   );
 }
 
-function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, selectFixture, sharePicks, isOpen }: any) {
+function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, sharePicks, isOpen }: any) {
   const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
+  const gameweekPicks = profiles.map((profile: Profile) => {
+    const prediction = predictions.find((item: Prediction) => item.gameweek_id === gameweek?.id && item.member_id === profile.id);
+    const fixture = fixtures.find((item: Fixture) => item.id === prediction?.fixture_id);
+    return { profile, fixture };
+  });
   return <div className="dashboardGrid">
     <section className="contentColumn">
-      <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("fixtures")}>{isOpen ? "Choose your Saturday 3pm BTTS fixture" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>UPCOMING FIXTURES</span><button onClick={() => setView("fixtures")}>View all →</button></div><div className="fixtureRows">{fixtures.slice(0,5).map((fixture: Fixture) => { const prediction = predictions.find((p: Prediction) => p.fixture_id === fixture.id && p.gameweek_id === gameweek?.id); const player = profiles.find((p: Profile) => p.id === prediction?.member_id); return <div className="dashboardFixture" key={fixture.id}><div className="fixtureDate"><strong>{formatKickoff(fixture.kickoff_at).split(",")[0]}</strong><span>15:00</span></div><div className="fixtureTeams"><strong>{fixture.home_team}</strong><span className="miniBadge">{initials(fixture.home_team)}</span><b>v</b><span className="miniBadge">{initials(fixture.away_team)}</span><strong>{fixture.away_team}</strong></div><div className="fixtureOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><button disabled={Boolean(player)} onClick={() => selectFixture(fixture.id)}>{player ? `Taken · ${player.display_name}` : "Select"}</button></div>})}{!fixtures.length && <div className="emptyState">No fixtures yet. An admin can add them under Admin → Fixtures.</div>}</div></article>
+      <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
+      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div></article>
     </section>
     <aside className="rightColumn">
       <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.length * entryFee).toFixed(0)}</small></article>
@@ -381,12 +390,13 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
   </div>;
 }
 
-function FixturesPage({ fixtures, predictions, profiles, gameweek, myId, isOpen, selectFixture, competitions, sharePicks }: any) {
+function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, isOpen, selectFixture, competitions, sharePicks }: any) {
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
+  const isPicker = mode === "pick";
   const filtered = (fixtures as Fixture[]).filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition}`.toLowerCase().includes(query));
   const visibleCompetitions = (competitions as string[]).filter((competition) => filtered.some((fixture) => fixture.competition === competition));
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Eligible Fixtures</h2><p>UK Saturday 3pm fixtures only. Hearts and Hibs matches are excluded.</p></div><button onClick={sharePicks}>Share picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search">Search fixtures</label><input id="fixture-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((competition:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>f.competition===competition).sort(sortFixturesForBookmaker);return <details className="competitionSection competitionDisclosure" key={`${competition}-${query}`} open={Boolean(query)}><summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>15:00</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>{isPicker ? "Make My Pick" : "Weekend Fixtures"}</h2><p>{isPicker ? "Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded." : "All fixtures loaded for this gameweek weekend, including fixtures that are not eligible for selection."}</p></div>{isPicker && <button onClick={sharePicks}>Share picks</button>}</div><div className="fixtureSearch"><label htmlFor={`fixture-search-${mode}`}>Search fixtures</label><input id={`fixture-search-${mode}`} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((competition:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>f.competition===competition).sort(sortFixturesForBookmaker);return <details className="competitionSection competitionDisclosure" key={`${mode}-${competition}-${query}`} open={Boolean(query)}><summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong>{!fixture.is_eligible && <small className="ineligibleFixture">Not eligible for selection</small>}</div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div>{isPicker ? <button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button> : <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible" : "Listed") : fixture.status}</span>}</div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
 }
 
 function LeagueTable({ standings, seasonLabel, entryFee }: any) {
@@ -489,8 +499,7 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
     if (!changedMemberIds.length) return notice("There are no selection changes to save.");
 
     const chosen = Object.entries(draftSelections).filter(([, fixtureId]) => fixtureId);
-    const seenFixtures = new Set<string>();
-    const duplicate = chosen.find(([, fixtureId]) => seenFixtures.has(fixtureId) || !seenFixtures.add(fixtureId));
+    const duplicate = chosen.find(([member, fixtureId], index) => chosen.findIndex(([otherMember, otherFixture]) => otherFixture === fixtureId && otherMember !== member) !== index);
     if (duplicate) {
       const fixture = (fixtures as Fixture[]).find((item) => item.id === duplicate[1]);
       return notice(`${fixture ? `${fixture.home_team} v ${fixture.away_team}` : "A fixture"} has been selected for more than one player.`);
