@@ -75,7 +75,12 @@ export default async function HomePage() {
     .order("number", { ascending: true });
 
   const seasonGameweeks = (allGameweeks ?? []).filter((gameweek) => gameweek.season_id === currentSeason?.id);
-  const gameweek = seasonGameweeks.length ? seasonGameweeks[seasonGameweeks.length - 1] : null;
+  const nowIso = new Date().toISOString();
+  const gameweek =
+    seasonGameweeks.find((item) => item.status === "open" && (!item.opens_at || item.opens_at <= nowIso) && item.locks_at > nowIso) ??
+    seasonGameweeks.find((item) => item.locks_at > nowIso) ??
+    seasonGameweeks[seasonGameweeks.length - 1] ??
+    null;
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
   const allGameweekIds = (allGameweeks ?? []).map((item) => item.id);
 
@@ -86,11 +91,11 @@ export default async function HomePage() {
     .order("slot_number");
 
   let fixtures: any[] = [];
-  if (gameweek) {
+  if (currentGameweekIds.length) {
     const response = await supabase
       .from("fixtures")
       .select("*")
-      .eq("gameweek_id", gameweek.id)
+      .in("gameweek_id", currentGameweekIds)
       .order("kickoff_at")
       .order("competition")
       .order("home_team");
@@ -193,6 +198,7 @@ export default async function HomePage() {
       initialProfile={profile}
       initialProfiles={profileRows}
       initialGameweek={gameweek ?? null}
+      initialGameweeks={seasonGameweeks}
       initialFixtures={fixtures}
       initialAllFixtures={allFixtures}
       initialPredictions={predictions}

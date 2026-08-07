@@ -589,7 +589,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
 .largeTableRow {
   min-height: 58px;
   display: grid;
-  grid-template-columns: 70px 1fr 80px 80px 80px 90px;
+  grid-template-columns: 70px 1fr 70px 70px 70px 70px 90px;
   align-items: center;
   padding: 0 24px;
   border-bottom: 1px solid #292b31;
@@ -1020,7 +1020,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
 .miniTableRow {
   min-height: 40px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 40px 44px 48px;
+  grid-template-columns: 38px minmax(0, 1fr) 34px 38px 38px 44px;
   gap: 8px;
   align-items: center;
   border-bottom: 1px solid #292b31;
@@ -1135,7 +1135,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .statusNumbers { padding-top: 10px; }
   .miniTable { padding-left: 9px; padding-right: 9px; }
   .miniTableRow {
-    grid-template-columns: 34px minmax(0, 1fr) 32px 36px 38px;
+    grid-template-columns: 30px minmax(0, 1fr) 28px 31px 31px 34px;
     gap: 4px;
     font-size: .74rem;
   }
