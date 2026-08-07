@@ -1775,3 +1775,12 @@ a,
 .adminAlertRow p { margin:0; color:#c8bbaa; }
 .adminAlertRow small { color:#b89a6a; }
 @media(max-width:760px){ .providerStatusCard,.adminAlertRow{align-items:stretch;flex-direction:column}.providerStatusCard button,.adminAlertRow button{width:100%} }
+
+/* Consolidated management update */
+.sidebar nav button { position: relative; }
+.navBadge { margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; background:#d62f45; color:#fff; font-size:.68rem; line-height:1; box-shadow:0 0 0 2px #171014; }
+.userAdminHeader { display:flex; gap:14px; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.userAdminHeader .adminNote { flex:1; margin:0; }
+.dangerButton { border-color:#8b3948 !important; color:#f3cbd2 !important; }
+.dangerButton:hover { background:#5b1f2b !important; }
+@media(max-width:760px){ .userAdminHeader{align-items:stretch;flex-direction:column}.userAdminHeader .primaryButton{width:100%}.navBadge{margin-left:auto} }

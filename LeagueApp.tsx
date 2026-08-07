@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { combinedFractional } from "@/lib/fractional";
 import ShareTableButton from "./ShareTableButton";
 
-type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "admin";
-type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "alerts";
+type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "alerts" | "admin";
+type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "seasons";
 
 type Profile = {
   id: string;
@@ -90,6 +90,7 @@ const navItems: { id: View; label: string; icon: string }[] = [
   { id: "results", label: "Results", icon: "✦" },
   { id: "history", label: "League History", icon: "◷" },
   { id: "players", label: "Players", icon: "◉" },
+  { id: "alerts", label: "Alerts", icon: "!" },
   { id: "admin", label: "Admin", icon: "⚙" },
 ];
 
@@ -184,6 +185,16 @@ function nextFridayAtFiveInput() {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T17:00`;
 }
 
+function gameweekStatusText(gameweek: Gameweek | null | undefined, now: number) {
+  if (!gameweek) return "NO GAMEWEEK";
+  const opens = gameweek.opens_at ? new Date(gameweek.opens_at).getTime() : null;
+  const locks = new Date(gameweek.locks_at).getTime();
+  if (gameweek.status === "complete") return "COMPLETED";
+  if (gameweek.status === "locked" || now >= locks) return `CLOSED · Locked ${formatKickoff(gameweek.locks_at)}`;
+  if (opens && now < opens) return `OPENS ${formatKickoff(gameweek.opens_at as string)}`;
+  return `OPEN · Locks ${formatKickoff(gameweek.locks_at)}`;
+}
+
 async function token() {
   const { data } = await createClient().auth.getSession();
   return data.session?.access_token ?? "";
@@ -227,6 +238,7 @@ export default function LeagueApp({
   const [selectedGameweekId, setSelectedGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
   const [dashboardGameweekId, setDashboardGameweekId] = useState("");
   const [clockNow, setClockNow] = useState(() => Date.now());
+  const [unresolvedAlerts, setUnresolvedAlerts] = useState(0);
 
   useEffect(() => {
     const savedView = window.sessionStorage.getItem("bounce:view") as View | null;
@@ -244,6 +256,13 @@ export default function LeagueApp({
     const timer = window.setInterval(() => setClockNow(Date.now()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (!isAdmin) return;
+    void (async () => {
+      const response = await fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${await token()}` } });
+      if (response.ok) { const payload = await response.json(); setUnresolvedAlerts((payload.alerts ?? []).filter((item: any) => !item.resolved).length); }
+    })();
+  }, [view]);
 
   const gameweek = initialGameweeks.find((item) => item.id === selectedGameweekId) ?? initialGameweek;
   const currentDashboardGameweek = useMemo(() => {
@@ -472,8 +491,8 @@ export default function LeagueApp({
           <div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div>
         </div>
         <nav>
-          {navItems.filter((item) => item.id !== "admin" || initialProfile.role === "admin" || initialProfile.role === "ultimate_admin").map((item) => (
-            <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => { setView(item.id); setMobileMenu(false); }}><span>{item.icon}</span>{item.label}</button>
+          {navItems.filter((item) => !["admin","alerts"].includes(item.id) || isAdmin).map((item) => (
+            <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => { setView(item.id); setMobileMenu(false); }}><span>{item.icon}</span>{item.label}{item.id === "alerts" && unresolvedAlerts > 0 && <b className="navBadge">{unresolvedAlerts > 9 ? "9+" : unresolvedAlerts}</b>}</button>
           ))}
         </nav>
         <div className="sidebarWatermark" aria-hidden="true"><img src="/assets/st-giles-round.jpg" alt="" /></div>
@@ -490,45 +509,12 @@ export default function LeagueApp({
           <div className="heroText"><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><div className="heroRule"><span>♥</span></div><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div>
           <div className="gameweekCard">
             <span>Season {seasonLabel}</span>
-            {view === "dashboard" ? (
-              <>
-                <div className="dashboardGameweekControl">
-                  <button
-                    type="button"
-                    aria-label="Previous gameweek"
-                    disabled={dashboardGameweekIndex <= 0}
-                    onClick={() => moveDashboardGameweek(-1)}
-                  >‹</button>
-                  <label>
-                    <span>Gameweek</span>
-                    <select
-                      value={dashboardGameweek?.id ?? ""}
-                      onChange={(event) => selectDashboardGameweek(event.target.value)}
-                    >
-                      {initialGameweeks.map((item) => (
-                        <option key={item.id} value={item.id}>GW {item.number}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    aria-label="Next gameweek"
-                    disabled={dashboardGameweekIndex < 0 || dashboardGameweekIndex >= initialGameweeks.length - 1}
-                    onClick={() => moveDashboardGameweek(1)}
-                  >›</button>
-                </div>
-                <small>
-                  {dashboardGameweek
-                    ? `${dashboardGameweek.status.toUpperCase()} · Locks ${formatKickoff(dashboardGameweek.locks_at)}`
-                    : "Create a gameweek"}
-                </small>
-              </>
-            ) : (
-              <>
-                <div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div>
-                <small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small>
-              </>
-            )}
+            <div className="dashboardGameweekControl">
+              <button type="button" aria-label="Previous gameweek" disabled={initialGameweeks.findIndex((item) => item.id === selectedGameweekId) <= 0} onClick={() => { const i=initialGameweeks.findIndex((item)=>item.id===selectedGameweekId); if(i>0)setSelectedGameweekId(initialGameweeks[i-1].id); }}>‹</button>
+              <label><span>Gameweek</span><select value={gameweek?.id ?? ""} onChange={(event) => setSelectedGameweekId(event.target.value)}>{initialGameweeks.map((item) => <option key={item.id} value={item.id}>GW {item.number}</option>)}</select></label>
+              <button type="button" aria-label="Next gameweek" disabled={initialGameweeks.findIndex((item) => item.id === selectedGameweekId) < 0 || initialGameweeks.findIndex((item) => item.id === selectedGameweekId) >= initialGameweeks.length - 1} onClick={() => { const i=initialGameweeks.findIndex((item)=>item.id===selectedGameweekId); if(i>=0&&i<initialGameweeks.length-1)setSelectedGameweekId(initialGameweeks[i+1].id); }}>›</button>
+            </div>
+            <small>{gameweekStatusText(gameweek, clockNow)}</small>
           </div>
         </header>
 
@@ -537,12 +523,13 @@ export default function LeagueApp({
         )}
 
         {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={dashboardStandings} tableThroughNumber={dashboardTableThroughNumber} isFuture={dashboardIsFuture} form={dashboardForm} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={() => sharePicksFor(dashboardGameweek, dashboardFixtures)} isOpen={dashboardIsOpen} />}
-        {view === "pick" && <><GameweekSelector gameweeks={initialGameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={isAdmin}/><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={() => sharePicksFor(gameweek, fixtures)} /></>}
+        {view === "pick" && <><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={() => sharePicksFor(gameweek, fixtures)} /></>}
         {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={() => sharePicksFor(gameweek, fixtures)} />}
         {view === "table" && <LeagueTable standings={selectedStandings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} tableThroughNumber={selectedTableThroughNumber} isFuture={selectedIsFuture} entryFee={entryFee} />}
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
         {view === "history" && <LeagueHistory seasons={seasonHistory} />}
         {view === "players" && <Players profiles={profiles} predictions={predictions} adjustments={adjustments} fixtures={fixtures} gameweek={gameweek} />}
+        {view === "alerts" && isAdmin && <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>ADMIN NOTIFICATIONS</span><h2>Alerts</h2><p>Fixture changes and provider update status.</p></div></div><AdminAlerts notice={notice} /></section>}
         {view === "admin" && (initialProfile.role === "admin" || initialProfile.role === "ultimate_admin") && <AdminPanel isUltimateAdmin={initialProfile.role === "ultimate_admin"} active={adminView} setActive={setAdminView} gameweek={gameweek} gameweeks={initialGameweeks} selectedGameweekId={selectedGameweekId} setSelectedGameweekId={setSelectedGameweekId} fixtures={fixtures} profiles={profiles} predictions={predictions} adjustments={adjustments} onChanged={() => window.location.reload()} notice={notice} />}
 
         <footer className="siteFooter"><span>♡</span><strong>MADE BY THE ARTIST, FOR THE BOUNCE</strong></footer>
@@ -609,8 +596,8 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
       </article>
     </section>
     <aside className="rightColumn">
-      <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.length * entryFee).toFixed(0)}</small></article>
-      <article className="panel tablePanel brandedPanel"><div className="panelTitle">{isFuture ? `STANDINGS BEFORE GW ${gameweek?.number}` : `LEAGUE TABLE AFTER GW ${tableThroughNumber ?? gameweek?.number ?? "—"}`}</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.length * entryFee} /></div></article>
+      <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee).toFixed(0)}</small></article>
+      <article className="panel tablePanel brandedPanel"><div className="panelTitle">{isFuture ? `STANDINGS BEFORE GW ${gameweek?.number}` : `LEAGUE TABLE AFTER GW ${tableThroughNumber ?? gameweek?.number ?? "—"}`}</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee} /></div></article>
       <article className="panel resultsPanel brandedPanel"><div className="panelTitle">LATEST RESULTS</div>{recent.slice(0,5).map((fixture: Fixture)=><div className="resultRow" key={fixture.id}><span>GW{gameweek?.number}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"yes":"no"}>{(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"✓":"–"}</i></div>)}{!recent.length&&<div className="emptyState compact">No completed results yet.</div>}</article>
       <button className="shareCard" onClick={sharePicks}><span>↗</span><div><strong>Share weekly picks</strong><small>League-sorted · fractional odds · WhatsApp ready</small></div></button>
     </aside>
@@ -713,19 +700,21 @@ function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any
 }
 
 function AdminPanel({ active, setActive, gameweek, gameweeks, selectedGameweekId, setSelectedGameweekId, fixtures, profiles, predictions, adjustments, onChanged, notice, isUltimateAdmin }: any) {
-  const safeActive = !isUltimateAdmin && active === "users" ? "selections" : active;
-  return <section className="pagePanel panel brandedPanel adminPanel"><GameweekSelector gameweeks={gameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={true}/><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs">{isUltimateAdmin&&<button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button>}<button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="alerts"?"active":""} onClick={()=>setActive("alerts")}>Alerts</button></div>{isUltimateAdmin&&safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="alerts"&&<AdminAlerts notice={notice}/>}</section>;
+  const safeActive = active;
+  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs"><button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="seasons"?"active":""} onClick={()=>setActive("seasons")}>Seasons</button></div>{safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="seasons"&&<AdminSeasons notice={notice} onChanged={onChanged}/>}</section>;
 }
 
 function AdminUsers({ notice }: { notice: (message:string)=>void }) {
   const [users,setUsers]=useState<UserAdminRow[]>([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState("");
+  async function addUser(){const displayName=window.prompt("New player name");if(!displayName?.trim())return;setSaving("new");const response=await fetch("/api/admin/users",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({displayName:displayName.trim()})});const payload=await response.json();notice(response.ok?`${payload.user.display_name} created`:payload.error);setSaving("");if(response.ok)window.location.reload();}
+  async function resetPlaceholder(user:UserAdminRow){if(!window.confirm(`Remove ${user.display_name} access and return this login to a placeholder? Historical records will remain unchanged.`))return;setSaving(user.id);const response=await fetch("/api/admin/users",{method:"DELETE",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:user.id})});const payload=await response.json();notice(response.ok?`Account reset to ${payload.username}`:payload.error);setSaving("");if(response.ok)window.location.reload();}
   useEffect(()=>{void (async()=>{const response=await fetch("/api/admin/users",{headers:{authorization:`Bearer ${await token()}`}});const payload=await response.json();if(response.ok)setUsers(payload.users);else notice(payload.error);setLoading(false);})();},[]);
   function update(id:string,patch:Partial<UserAdminRow>){setUsers(current=>current.map(user=>user.id===id?{...user,...patch}:user));}
   function generate(user:UserAdminRow){update(user.id,{password:`bounce${user.slot_number}${Math.floor(10+Math.random()*90)}`});}
   async function save(user:UserAdminRow){setSaving(user.id);const response=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:user.id,username:user.username,displayName:user.display_name,role:user.role,active:user.active,password:user.password})});const payload=await response.json();notice(response.ok?`${user.username} saved`:payload.error);setSaving("");}
   async function copy(user:UserAdminRow){await navigator.clipboard.writeText(`${user.display_name}\nUsername: ${user.username}\nPassword: ${user.password}`);notice("Login details copied");}
   if(loading)return <div className="emptyState">Loading users…</div>;
-  return <div className="userAdminList"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "ultimate_admin"|"admin"|"member"})}><option value="member">Member</option><option value="admin">League Admin</option>{user.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button></div></article>)}</div>;
+  return <div className="userAdminList"><div className="userAdminHeader"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div><button className="primaryButton" disabled={saving==="new"} onClick={addUser}>{saving==="new"?"Creating…":"+ Add New User"}</button></div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "ultimate_admin"|"admin"|"member"})}><option value="member">Member</option><option value="admin">League Admin</option>{user.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button>{user.slot_number!==1&&<button className="dangerButton" disabled={saving===user.id} onClick={()=>resetPlaceholder(user)}>Return to placeholder</button>}</div></article>)}</div>;
 }
 
 function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustments, onChanged, notice }: any) {
@@ -938,6 +927,12 @@ function AdminGameweek({ gameweek, onChanged, notice }: any) {
 }
 
 
+function AdminSeasons({ notice, onChanged }: { notice:(message:string)=>void; onChanged:()=>void }) {
+  const [label,setLabel]=useState(""); const [gameweeks,setGameweeks]=useState("38"); const [busy,setBusy]=useState(false);
+  async function createSeason(){if(!label.trim())return notice("Enter a season name.");setBusy(true);const response=await fetch("/api/admin/seasons",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({label:label.trim(),gameweeks:Number(gameweeks)})});const payload=await response.json();notice(response.ok?`Season ${label} created with current users included`:payload.error);setBusy(false);if(response.ok)onChanged();}
+  return <div className="adminForm"><div className="adminNote">All active named users receive access automatically. Placeholder accounts are excluded. Access can then be removed or restored per season without changing historical records.</div><div className="formGrid"><label>Season name<input value={label} onChange={e=>setLabel(e.target.value)} placeholder="2027/28"/></label><label>Planned gameweeks<input type="number" min="1" max="60" value={gameweeks} onChange={e=>setGameweeks(e.target.value)}/></label></div><button className="primaryButton" disabled={busy} onClick={createSeason}>{busy?"Creating…":"Create New Season"}</button></div>;
+}
+
 function AdminAlerts({ notice }: { notice: (message: string) => void }) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [runs, setRuns] = useState<any[]>([]);
@@ -946,10 +941,10 @@ function AdminAlerts({ notice }: { notice: (message: string) => void }) {
 
   async function load() {
     setLoading(true);
-    const accessToken = await token();
+    const token = await token();
     const [alertResponse, runResponse] = await Promise.all([
-      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${accessToken}` } }),
-      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${accessToken}` } }),
+      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${token}` } }),
+      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${token}` } }),
     ]);
     const alertPayload = await alertResponse.json();
     const runPayload = await runResponse.json();

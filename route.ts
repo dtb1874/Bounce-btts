@@ -1,96 +1,76 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
+import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
-export const runtime = "nodejs";
-
-export async function PUT(request: Request) {
-  const context = await requireAdmin(request);
-  if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-
-  const { admin, user: actor } = context;
-  const body = await request.json();
-  const gameweekId = String(body.gameweekId ?? "");
-  const memberId = String(body.memberId ?? "");
-  const points = Number(body.points);
-  const reason = String(body.reason ?? "Missed selection").trim() || "Missed selection";
-
-  if (!gameweekId || !memberId || !Number.isInteger(points)) {
-    return NextResponse.json({ error: "Player, gameweek and a whole-number points value are required." }, { status: 400 });
-  }
-
-  const [{ data: gameweek }, { data: member }] = await Promise.all([
-    admin.from("gameweeks").select("id,number").eq("id", gameweekId).maybeSingle(),
-    admin.from("profiles").select("id,display_name").eq("id", memberId).maybeSingle(),
-  ]);
-
-  if (!gameweek?.id || !member?.id) {
-    return NextResponse.json({ error: "Gameweek or player not found." }, { status: 404 });
-  }
-
-  const { data: adjustment, error } = await admin
-    .from("score_adjustments")
-    .upsert({
-      gameweek_id: gameweekId,
-      member_id: memberId,
-      points,
-      reason,
-      source: "admin",
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "gameweek_id,member_id" })
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
-  await admin.from("audit_log").insert({
-    actor_id: actor.id,
-    action: "score_adjustment_saved",
-    entity_type: "score_adjustment",
-    entity_id: adjustment.id,
-    details: {
-      gameweekId,
-      gameweekNumber: gameweek.number,
-      memberId,
-      memberName: member.display_name,
-      points,
-      reason,
-    },
-  });
-
-  return NextResponse.json({ adjustment });
+function validStatus(value: unknown) {
+  return ["open", "locked", "complete"].includes(String(value)) ? String(value) : "open";
 }
 
-export async function DELETE(request: Request) {
+export async function POST(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-
-  const { admin, user: actor } = context;
+  const { admin, user } = context;
   const body = await request.json();
-  const gameweekId = String(body.gameweekId ?? "");
-  const memberId = String(body.memberId ?? "");
-  if (!gameweekId || !memberId) {
-    return NextResponse.json({ error: "Player and gameweek are required." }, { status: 400 });
+  const locksAt = String(body.locksAt ?? "");
+  if (!locksAt || Number.isNaN(new Date(locksAt).getTime())) {
+    return NextResponse.json({ error: "Choose a valid gameweek deadline." }, { status: 400 });
   }
 
-  const { data: existing } = await admin
-    .from("score_adjustments")
-    .select("id,points,reason,source")
-    .eq("gameweek_id", gameweekId)
-    .eq("member_id", memberId)
+  const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).single();
+  if (!season?.id) return NextResponse.json({ error: "No current season is configured." }, { status: 400 });
+
+  const { data: latest } = await admin
+    .from("gameweeks")
+    .select("number")
+    .eq("season_id", season.id)
+    .order("number", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (!existing?.id) return NextResponse.json({ error: "This player has no points adjustment." }, { status: 404 });
+  const { data: gameweek, error } = await admin.from("gameweeks").insert({
+    season_id: season.id,
+    number: Number(latest?.number ?? 0) + 1,
+    status: "open",
+    opens_at: new Date().toISOString(),
+    locks_at: new Date(locksAt).toISOString(),
+  }).select().single();
 
-  const { error } = await admin.from("score_adjustments").delete().eq("id", existing.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
   await admin.from("audit_log").insert({
-    actor_id: actor.id,
-    action: "score_adjustment_removed",
-    entity_type: "score_adjustment",
-    entity_id: existing.id,
-    details: { gameweekId, memberId, previous: existing },
+    actor_id: user.id,
+    action: "gameweek_created",
+    entity_type: "gameweek",
+    entity_id: gameweek.id,
+    details: gameweek,
   });
+  return NextResponse.json({ gameweek });
+}
 
+export async function PATCH(request: Request) {
+  const context = await requireAdmin(request);
+  if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const { admin, user } = context;
+  const body = await request.json();
+  const id = String(body.id ?? "");
+  const status = validStatus(body.status);
+  const locksAt = String(body.locksAt ?? "");
+  if (!id || !locksAt || Number.isNaN(new Date(locksAt).getTime())) {
+    return NextResponse.json({ error: "Gameweek and deadline are required." }, { status: 400 });
+  }
+  const normalisedDeadline = new Date(locksAt).toISOString();
+  const { error } = await admin.from("gameweeks").update({ status, locks_at: normalisedDeadline }).eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (status !== "open" || new Date(normalisedDeadline) <= new Date()) {
+    await applyMissedPickPenalties(admin, id);
+  } else {
+    // Extending/reopening the deadline removes only automatic penalties.
+    // Explicit admin adjustments remain untouched.
+    await admin
+      .from("score_adjustments")
+      .delete()
+      .eq("gameweek_id", id)
+      .eq("source", "automatic");
+  }
+  await admin.from("audit_log").insert({ actor_id: user.id, action: "gameweek_updated", entity_type: "gameweek", entity_id: id, details: { status, locksAt } });
   return NextResponse.json({ ok: true });
 }
