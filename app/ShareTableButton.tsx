@@ -160,8 +160,8 @@ export default function ShareTableButton({
     setMessage("");
     try {
       const liveUrl = `${window.location.origin}/table`;
-      const file = await createSnapshot(rows, seasonLabel, prizePot, liveUrl);
-      const text = `Bounce BTTS League table — Season ${seasonLabel}\nSee the live table: ${liveUrl}`;
+      const file = await createSnapshot(rows, seasonLabel, prizePot, gameweekNumber, liveUrl);
+      const text = `Bounce BTTS League table — Season ${seasonLabel}${gameweekNumber ? ` — Gameweek ${gameweekNumber}` : ""}\nSee the live table: ${liveUrl}`;
       const shareData: ShareData = { title: "Bounce BTTS League Table", text, url: liveUrl, files: [file] };
       const browser = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
 
