@@ -116,7 +116,7 @@ async function createAffectedAlerts(admin: ReturnType<typeof createAdminClient>,
   return alerts.length;
 }
 
-export async function runFootballImport(triggerSource: "cron" | "admin") {
+export async function runFootballImport(triggerSource: "cron" | "admin", requestedGameweekIds?: string[]) {
   const admin = createAdminClient();
   const tracker: Tracker = { used: 0, limit: null, remaining: null };
   const { data: run, error: runError } = await admin.from("fixture_import_runs").insert({ trigger_source: triggerSource, status: "running" }).select().single();
@@ -129,10 +129,14 @@ export async function runFootballImport(triggerSource: "cron" | "admin") {
       : { data: [] as any[] };
     const now = Date.now();
     const upper = now + 15 * 86400000;
-    const targetWeeks = (gameweeks ?? []).filter((gw: any) => {
-      const sat = new Date(new Date(gw.locks_at).getTime() + 24 * 3600000);
-      return sat.getTime() >= now - 2 * 86400000 && sat.getTime() <= upper;
-    });
+    const requestedIds = new Set((requestedGameweekIds ?? []).filter(Boolean));
+    const targetWeeks = requestedIds.size
+      ? (gameweeks ?? []).filter((gw: any) => requestedIds.has(String(gw.id)))
+      : (gameweeks ?? []).filter((gw: any) => {
+          const sat = new Date(new Date(gw.locks_at).getTime() + 24 * 3600000);
+          return sat.getTime() >= now - 2 * 86400000 && sat.getTime() <= upper;
+        });
+    if (requestedIds.size && !targetWeeks.length) throw new Error("The selected gameweek could not be found in the current season.");
     const dateToGameweek = new Map<string, any>();
     for (const gw of targetWeeks) dateToGameweek.set(londonDate(new Date(new Date(gw.locks_at).getTime() + 24 * 3600000)), gw);
     const dates = [...dateToGameweek.keys()].sort().slice(0, 3);
@@ -181,9 +185,12 @@ export async function runFootballImport(triggerSource: "cron" | "admin") {
 
     const betId = await bttsBetId(tracker);
     if (betId) {
-      const { data: candidates } = await admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
-        .not("provider_fixture_id", "is", null).eq("is_eligible", true).in("status", ["NS", "TBD"])
-        .gte("kickoff_at", new Date(now).toISOString()).lte("kickoff_at", new Date(upper).toISOString()).order("kickoff_at").limit(60);
+      let candidatesQuery = admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
+        .not("provider_fixture_id", "is", null).eq("is_eligible", true).in("status", ["NS", "TBD"]);
+      candidatesQuery = requestedIds.size
+        ? candidatesQuery.in("gameweek_id", targetWeeks.map((week: any) => week.id))
+        : candidatesQuery.gte("kickoff_at", new Date(now).toISOString()).lte("kickoff_at", new Date(upper).toISOString());
+      const { data: candidates } = await candidatesQuery.order("kickoff_at").limit(60);
       for (const fixture of candidates ?? []) {
         if (tracker.remaining !== null && tracker.remaining <= 8) break;
         if (tracker.used >= 75) break;
