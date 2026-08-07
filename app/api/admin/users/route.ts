@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/server-auth";
+import { requireUltimateAdmin } from "@/lib/server-auth";
 import { decryptPassword, encryptPassword } from "@/lib/password-vault";
 import { normaliseUsername, usernameToEmail } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const context = await requireAdmin(request);
+  const context = await requireUltimateAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { admin } = context;
   const { data: profiles, error } = await admin
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const context = await requireAdmin(request);
+  const context = await requireUltimateAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { admin, user: actor } = context;
   const body = await request.json();
@@ -37,8 +37,9 @@ export async function PATCH(request: Request) {
   const { data: existing } = await admin.from("profiles").select("slot_number,username").eq("id", id).single();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (!username || !displayName) return NextResponse.json({ error: "Username and player name are required." }, { status: 400 });
-  if (existing.slot_number === 1 && (username !== "user1" || displayName !== "DTB" || role !== "admin" || !active)) {
-    return NextResponse.json({ error: "user1 is permanently reserved for DTB as an active administrator." }, { status: 400 });
+  const savedRole = existing.slot_number === 1 ? "ultimate_admin" : role;
+  if (existing.slot_number === 1 && (username !== "user1" || displayName !== "DTB" || !active)) {
+    return NextResponse.json({ error: "user1 is permanently reserved for DTB as the active Ultimate Admin." }, { status: 400 });
   }
   if (password && password.length < 6) return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
 
@@ -54,7 +55,7 @@ export async function PATCH(request: Request) {
   const { error: profileError } = await admin.from("profiles").update({
     username,
     display_name: displayName,
-    role,
+    role: savedRole,
     active,
     approved: true,
   }).eq("id", id);
@@ -81,7 +82,7 @@ export async function PATCH(request: Request) {
     action: "user_updated",
     entity_type: "profile",
     entity_id: id,
-    details: { username, displayName, role, active, passwordReset: Boolean(password) },
+    details: { username, displayName, role: savedRole, active, passwordReset: Boolean(password) },
   });
 
   return NextResponse.json({ ok: true });

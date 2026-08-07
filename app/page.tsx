@@ -12,7 +12,7 @@ type ProfileRow = {
   id: string;
   username: string;
   display_name: string;
-  role: "admin" | "member";
+  role: "ultimate_admin" | "admin" | "member";
   approved?: boolean;
   active: boolean;
   slot_number: number | null;

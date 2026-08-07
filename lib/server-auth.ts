@@ -15,6 +15,13 @@ export async function requireAdmin(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || profile.role !== "admin" || !profile.approved || !profile.active) return null;
+  if (!profile || !["ultimate_admin", "admin"].includes(profile.role) || !profile.approved || !profile.active) return null;
   return { admin, user, profile };
+}
+
+
+export async function requireUltimateAdmin(request: Request) {
+  const context = await requireAdmin(request);
+  if (!context || context.profile.role !== "ultimate_admin") return null;
+  return context;
 }

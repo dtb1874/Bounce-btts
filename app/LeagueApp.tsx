@@ -12,7 +12,7 @@ type Profile = {
   id: string;
   username: string;
   display_name: string;
-  role: "admin" | "member";
+  role: "ultimate_admin" | "admin" | "member";
   active: boolean;
   slot_number: number | null;
 };
@@ -92,17 +92,40 @@ const navItems: { id: View; label: string; icon: string }[] = [
   { id: "admin", label: "Admin", icon: "⚙" },
 ];
 
-const competitionPriority = [
-  "Premier League", "Championship", "League One", "League Two",
-  "Scottish Premiership", "Scottish Championship", "Scottish League One", "Scottish League Two",
-  "National League", "National League North", "National League South",
-  "Carabao Cup", "FA Cup", "Scottish Cup"
+const competitionPriority: Array<{ rank: number; names: string[] }> = [
+  // These competitions move above the current list automatically when fixtures exist.
+  { rank: 0, names: ["England Premier League", "Premier League"] },
+  { rank: 1, names: ["England Championship", "EFL Championship"] },
+  { rank: 2, names: ["England League One", "EFL League One"] },
+  { rank: 3, names: ["England League Two", "EFL League Two"] },
+
+  // Current Bet365 UK order supplied by the league administrator.
+  { rank: 10, names: ["England EFL Cup", "EFL Cup", "Carabao Cup"] },
+  { rank: 11, names: ["Scotland Premiership", "Scottish Premiership"] },
+  { rank: 12, names: ["England National League", "National League"] },
+  { rank: 13, names: ["England National League North", "National League North"] },
+  { rank: 14, names: ["England National League South", "National League South"] },
+  { rank: 15, names: ["Northern Ireland Premier", "Northern Ireland Premiership", "NIFL Premiership"] },
+  { rank: 16, names: ["Northern Ireland Championship", "NIFL Championship"] },
+  { rank: 17, names: ["Scotland Championship", "Scottish Championship"] },
+  { rank: 18, names: ["Scotland League One", "Scottish League One"] },
+  { rank: 19, names: ["Scotland League Two", "Scottish League Two"] },
+  { rank: 20, names: ["Wales Premier League", "Cymru Premier"] },
+
+  { rank: 30, names: ["FA Cup"] },
+  { rank: 31, names: ["Scottish Cup", "Scotland Scottish Cup"] },
 ];
 
+function normaliseCompetition(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 function competitionRank(name: string) {
-  const lowered = name.toLowerCase();
-  const exact = competitionPriority.findIndex((item) => lowered.includes(item.toLowerCase()));
-  return exact === -1 ? 999 : exact;
+  const normalised = normaliseCompetition(name);
+  for (const group of competitionPriority) {
+    if (group.names.some((alias) => normalised === normaliseCompetition(alias))) return group.rank;
+  }
+  return 999;
 }
 
 function sortFixturesForBookmaker(a: Fixture, b: Fixture) {
@@ -187,7 +210,7 @@ export default function LeagueApp({
   seasonHistory: SeasonHistory[];
 }) {
   const [view, setView] = useState<View>("dashboard");
-  const [adminView, setAdminView] = useState<AdminView>("users");
+  const [adminView, setAdminView] = useState<AdminView>(initialProfile.role === "ultimate_admin" ? "users" : "selections");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [predictions, setPredictions] = useState(initialPredictions);
@@ -203,7 +226,7 @@ export default function LeagueApp({
   const currentAdjustment = gameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === gameweek.id && adjustment.member_id === initialProfile.id) : undefined;
   const submitted = gameweek ? predictions.filter((prediction) => prediction.gameweek_id === gameweek.id).length : 0;
   const isOpen = Boolean(gameweek && gameweek.status === "open" && new Date(gameweek.locks_at) > new Date());
-  const competitions = useMemo(() => Array.from(new Set(fixtures.map((fixture) => fixture.competition))), [fixtures]);
+  const competitions = useMemo(() => Array.from(new Set(fixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [fixtures]);
 
   const standings = useMemo(() => {
     const map = new Map(profiles.map((profile) => [profile.id, {
@@ -308,14 +331,14 @@ export default function LeagueApp({
           <div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div>
         </div>
         <nav>
-          {navItems.filter((item) => item.id !== "admin" || initialProfile.role === "admin").map((item) => (
+          {navItems.filter((item) => item.id !== "admin" || initialProfile.role === "admin" || initialProfile.role === "ultimate_admin").map((item) => (
             <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => { setView(item.id); setMobileMenu(false); }}><span>{item.icon}</span>{item.label}</button>
           ))}
         </nav>
         <div className="sidebarWatermark" aria-hidden="true"><img src="/assets/st-giles-round.jpg" alt="" /></div>
         <button className="profileCard" onClick={signOut} title="Sign out">
           <span>{initials(initialProfile.display_name)}</span>
-          <div><strong>{initialProfile.display_name}</strong><small>{initialProfile.role === "admin" ? "Administrator" : initialProfile.username}</small></div><b>↪</b>
+          <div><strong>{initialProfile.display_name}</strong><small>{initialProfile.role === "ultimate_admin" ? "Ultimate Admin" : initialProfile.role === "admin" ? "League Admin" : initialProfile.username}</small></div><b>↪</b>
         </button>
       </aside>
       {mobileMenu && <button className="menuScrim" onClick={() => setMobileMenu(false)} aria-label="Close menu" />}
@@ -333,7 +356,7 @@ export default function LeagueApp({
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
         {view === "history" && <LeagueHistory seasons={seasonHistory} />}
         {view === "players" && <Players profiles={profiles} predictions={predictions} adjustments={adjustments} fixtures={fixtures} gameweek={gameweek} />}
-        {view === "admin" && initialProfile.role === "admin" && <AdminPanel active={adminView} setActive={setAdminView} gameweek={gameweek} fixtures={fixtures} profiles={profiles} predictions={predictions} adjustments={adjustments} onChanged={() => window.location.reload()} notice={notice} />}
+        {view === "admin" && (initialProfile.role === "admin" || initialProfile.role === "ultimate_admin") && <AdminPanel isUltimateAdmin={initialProfile.role === "ultimate_admin"} active={adminView} setActive={setAdminView} gameweek={gameweek} fixtures={fixtures} profiles={profiles} predictions={predictions} adjustments={adjustments} onChanged={() => window.location.reload()} notice={notice} />}
 
         <footer className="siteFooter"><span>♡</span><strong>MADE BY THE ARTIST, FOR THE BOUNCE</strong></footer>
       </section>
@@ -399,8 +422,9 @@ function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any
   return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{predictions.filter((p:Prediction)=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted a pick.</p></div></div><div className="playerGrid">{profiles.map((profile:Profile)=>{const prediction=predictions.find((p:Prediction)=>p.member_id===profile.id&&p.gameweek_id===gameweek?.id);const adjustment=(adjustments as ScoreAdjustment[]).find((item)=>item.member_id===profile.id&&item.gameweek_id===gameweek?.id);const fixture=fixtures.find((f:Fixture)=>f.id===prediction?.fixture_id);return <article key={profile.id}><span>{initials(profile.display_name)}</span><div><strong>{profile.display_name}</strong><small>{fixture?`${fixture.home_team} v ${fixture.away_team} · ${fixture.odds_fractional??"Odds unavailable"}`:adjustment?`${adjustment.reason}: ${adjustment.points>0?"+":""}${adjustment.points} point${Math.abs(adjustment.points)===1?"":"s"}`:"Awaiting selection"}</small></div><b className={fixture?"picked":adjustment?"missed":"pending"}>{fixture?"PICKED ✓":adjustment?`MISSED ${adjustment.points>0?"+":""}${adjustment.points}`:"PENDING"}</b></article>})}</div></section>;
 }
 
-function AdminPanel({ active, setActive, gameweek, fixtures, profiles, predictions, adjustments, onChanged, notice }: any) {
-  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>Manage users, selections, fixtures, results and gameweek settings.</p></div></div><div className="adminTabs"><button className={active==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={active==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={active==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={active==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={active==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button></div>{active==="users"&&<AdminUsers notice={notice}/>} {active==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {active==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {active==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {active==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>}</section>;
+function AdminPanel({ active, setActive, gameweek, fixtures, profiles, predictions, adjustments, onChanged, notice, isUltimateAdmin }: any) {
+  const safeActive = !isUltimateAdmin && active === "users" ? "selections" : active;
+  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs">{isUltimateAdmin&&<button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button>}<button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button></div>{isUltimateAdmin&&safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>}</section>;
 }
 
 function AdminUsers({ notice }: { notice: (message:string)=>void }) {
@@ -411,7 +435,7 @@ function AdminUsers({ notice }: { notice: (message:string)=>void }) {
   async function save(user:UserAdminRow){setSaving(user.id);const response=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:user.id,username:user.username,displayName:user.display_name,role:user.role,active:user.active,password:user.password})});const payload=await response.json();notice(response.ok?`${user.username} saved`:payload.error);setSaving("");}
   async function copy(user:UserAdminRow){await navigator.clipboard.writeText(`${user.display_name}\nUsername: ${user.username}\nPassword: ${user.password}`);notice("Login details copied");}
   if(loading)return <div className="emptyState">Loading users…</div>;
-  return <div className="userAdminList"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "admin"|"member"})}><option value="member">Member</option><option value="admin">Admin</option></select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button></div></article>)}</div>;
+  return <div className="userAdminList"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "ultimate_admin"|"admin"|"member"})}><option value="member">Member</option><option value="admin">League Admin</option>{user.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button></div></article>)}</div>;
 }
 
 function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustments, onChanged, notice }: any) {

@@ -7,7 +7,7 @@ import { nextFridayAtFiveIso } from "@/lib/deadline";
 export const runtime = "nodejs";
 
 const roster = [
-  { slot: 1, username: "user1", displayName: "DTB", role: "admin", active: true },
+  { slot: 1, username: "user1", displayName: "DTB", role: "ultimate_admin", active: true },
   { slot: 2, username: "user2", displayName: "Dave S", role: "admin", active: true },
   { slot: 3, username: "user3", displayName: "Turnsy Fitchett", role: "member", active: true },
   { slot: 4, username: "user4", displayName: "Ryan", role: "member", active: true },

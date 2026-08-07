@@ -4,7 +4,7 @@
 create extension if not exists "pgcrypto";
 create schema if not exists private;
 
-create type public.member_role as enum ('member', 'admin');
+create type public.member_role as enum ('member', 'ultimate_admin', 'admin');
 create type public.gameweek_status as enum ('open', 'locked', 'complete');
 
 create table public.seasons (
@@ -145,7 +145,7 @@ as $$ select exists(select 1 from public.profiles where id = auth.uid() and appr
 create or replace function private.is_admin()
 returns boolean language sql stable security definer
 set search_path = public, auth
-as $$ select exists(select 1 from public.profiles where id = auth.uid() and approved = true and active = true and role = 'admin'); $$;
+as $$ select exists(select 1 from public.profiles where id = auth.uid() and approved = true and active = true and role in ('ultimate_admin','admin')); $$;
 
 create or replace function public.validate_prediction()
 returns trigger language plpgsql security definer set search_path = public, auth as $$
@@ -256,3 +256,8 @@ create policy audit_admin_all on public.audit_log for all using (private.is_admi
 
 -- No client policy is created for member_credentials. Only the service-role-backed
 -- admin API can read or write encrypted passwords.
+
+
+create or replace function private.is_ultimate_admin()
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists(select 1 from public.profiles where id = auth.uid() and approved = true and active = true and role = 'ultimate_admin'); $$;
