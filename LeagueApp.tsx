@@ -946,10 +946,10 @@ function AdminAlerts({ notice }: { notice: (message: string) => void }) {
 
   async function load() {
     setLoading(true);
-    const token = await token();
+    const accessToken = await token();
     const [alertResponse, runResponse] = await Promise.all([
-      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${token}` } }),
-      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${token}` } }),
+      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${accessToken}` } }),
+      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${accessToken}` } }),
     ]);
     const alertPayload = await alertResponse.json();
     const runPayload = await runResponse.json();
