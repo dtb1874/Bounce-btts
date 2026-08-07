@@ -225,6 +225,8 @@ export default function LeagueApp({
   const [busy, setBusy] = useState(false);
   const profiles = initialProfiles.filter((profile) => profile.active);
   const [selectedGameweekId, setSelectedGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
+  const [dashboardGameweekId, setDashboardGameweekId] = useState("");
+  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     const savedView = window.sessionStorage.getItem("bounce:view") as View | null;
@@ -238,15 +240,27 @@ export default function LeagueApp({
   useEffect(() => { window.sessionStorage.setItem("bounce:view", view); }, [view]);
   useEffect(() => { window.sessionStorage.setItem("bounce:adminView", adminView); }, [adminView]);
   useEffect(() => { if (selectedGameweekId) window.sessionStorage.setItem("bounce:gameweek", selectedGameweekId); }, [selectedGameweekId]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const gameweek = initialGameweeks.find((item) => item.id === selectedGameweekId) ?? initialGameweek;
-  const dashboardGameweek = useMemo(() => {
+  const currentDashboardGameweek = useMemo(() => {
     const now = Date.now();
     const opened = initialGameweeks
       .filter((item) => !item.opens_at || new Date(item.opens_at).getTime() <= now)
       .sort((a, b) => b.number - a.number);
     return opened[0] ?? initialGameweek ?? initialGameweeks[0] ?? null;
   }, [initialGameweeks, initialGameweek]);
+
+  useEffect(() => {
+    if (currentDashboardGameweek?.id) setDashboardGameweekId(currentDashboardGameweek.id);
+  }, [currentDashboardGameweek?.id]);
+
+  const dashboardGameweek =
+    initialGameweeks.find((item) => item.id === dashboardGameweekId) ??
+    currentDashboardGameweek;
   const displayedGameweek = view === "dashboard" ? dashboardGameweek : gameweek;
   const fixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === gameweek?.id), [allSeasonFixtures, gameweek?.id]);
   const dashboardFixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === dashboardGameweek?.id), [allSeasonFixtures, dashboardGameweek?.id]);
@@ -266,12 +280,19 @@ export default function LeagueApp({
   const eligibleFixtures = useMemo(() => fixtures.filter((fixture) => fixture.is_eligible), [fixtures]);
   const competitions = useMemo(() => Array.from(new Set(eligibleFixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [eligibleFixtures]);
 
-  const standings = useMemo(() => {
+  const gameweekNumberById = useMemo(
+    () => new Map(initialGameweeks.map((item) => [item.id, item.number])),
+    [initialGameweeks]
+  );
+
+  function calculateStandingsThrough(cutoffGameweek: number | null) {
     const map = new Map(profiles.map((profile) => [profile.id, {
       id: profile.id, name: profile.display_name, played: 0, wins: 0, zeroZeroCount: 0, oneSided: 0, points: 0,
     }]));
+
     for (const prediction of predictions) {
-      if (prediction.points_awarded === null) continue;
+      const predictionWeek = gameweekNumberById.get(prediction.gameweek_id);
+      if (prediction.points_awarded === null || predictionWeek === undefined || (cutoffGameweek !== null && predictionWeek > cutoffGameweek)) continue;
       const row = map.get(prediction.member_id);
       if (!row) continue;
       row.played += 1;
@@ -280,7 +301,10 @@ export default function LeagueApp({
       if (prediction.points_awarded === 1) row.oneSided += 1;
       if (prediction.points_awarded === -1) row.zeroZeroCount += 1;
     }
+
     for (const adjustment of adjustments) {
+      const adjustmentWeek = gameweekNumberById.get(adjustment.gameweek_id);
+      if (adjustmentWeek === undefined || (cutoffGameweek !== null && adjustmentWeek > cutoffGameweek)) continue;
       const row = map.get(adjustment.member_id);
       if (!row) continue;
       const hasScoredPick = predictions.some((prediction) =>
@@ -291,10 +315,79 @@ export default function LeagueApp({
       if (!hasScoredPick) row.played += 1;
       row.points += adjustment.points;
     }
+
     return Array.from(map.values()).sort((a, b) =>
       b.points - a.points || a.zeroZeroCount - b.zeroZeroCount || b.wins - a.wins || a.name.localeCompare(b.name)
     );
-  }, [profiles, predictions, adjustments]);
+  }
+
+  const standings = useMemo(
+    () => calculateStandingsThrough(null),
+    [profiles, predictions, adjustments, gameweekNumberById]
+  );
+
+  const dashboardIsFuture = Boolean(
+    dashboardGameweek?.opens_at && new Date(dashboardGameweek.opens_at).getTime() > clockNow
+  );
+  const selectedIsFuture = Boolean(
+    gameweek?.opens_at && new Date(gameweek.opens_at).getTime() > clockNow
+  );
+
+  const latestOpenedBeforeDashboard = initialGameweeks
+    .filter((item) => item.number < (dashboardGameweek?.number ?? 0) && (!item.opens_at || new Date(item.opens_at).getTime() <= clockNow))
+    .sort((a, b) => b.number - a.number)[0];
+
+  const latestOpenedBeforeSelected = initialGameweeks
+    .filter((item) => item.number < (gameweek?.number ?? 0) && (!item.opens_at || new Date(item.opens_at).getTime() <= clockNow))
+    .sort((a, b) => b.number - a.number)[0];
+
+  const dashboardTableThroughNumber = dashboardIsFuture
+    ? latestOpenedBeforeDashboard?.number ?? 0
+    : dashboardGameweek?.number ?? null;
+  const selectedTableThroughNumber = selectedIsFuture
+    ? latestOpenedBeforeSelected?.number ?? 0
+    : gameweek?.number ?? null;
+
+  const dashboardStandings = useMemo(
+    () => calculateStandingsThrough(dashboardTableThroughNumber),
+    [profiles, predictions, adjustments, gameweekNumberById, dashboardTableThroughNumber]
+  );
+  const selectedStandings = useMemo(
+    () => calculateStandingsThrough(selectedTableThroughNumber),
+    [profiles, predictions, adjustments, gameweekNumberById, selectedTableThroughNumber]
+  );
+
+  const dashboardForm = useMemo(() => {
+    const formWeeks = initialGameweeks
+      .filter((item) => item.number <= (dashboardTableThroughNumber ?? 0))
+      .sort((a, b) => b.number - a.number)
+      .slice(0, 5)
+      .reverse();
+
+    return {
+      weeks: formWeeks,
+      rows: profiles.map((profile) => ({
+        id: profile.id,
+        name: profile.display_name,
+        results: formWeeks.map((week) => {
+          const prediction = predictions.find((item) =>
+            item.member_id === profile.id &&
+            item.gameweek_id === week.id &&
+            item.points_awarded !== null
+          );
+          if (prediction) {
+            if (prediction.points_awarded === 3) return { code: "W", className: "win", title: "BTTS win (+3)" };
+            if (prediction.points_awarded === 1) return { code: "S-N", className: "scoreNil", title: "Score–nil (+1)" };
+            if (prediction.points_awarded === -1) return { code: "0-0", className: "zeroZero", title: "0–0 (−1)" };
+            return { code: String(prediction.points_awarded), className: "other", title: `${prediction.points_awarded} points` };
+          }
+          const adjustment = adjustments.find((item) => item.member_id === profile.id && item.gameweek_id === week.id);
+          if (adjustment) return { code: "M", className: "missed", title: `${adjustment.reason} (${adjustment.points})` };
+          return { code: "—", className: "empty", title: "No scored result" };
+        }),
+      })),
+    };
+  }, [initialGameweeks, profiles, predictions, adjustments, dashboardTableThroughNumber]);
 
   function notice(message: string) {
     setToast(message);
@@ -324,30 +417,45 @@ export default function LeagueApp({
     setBusy(false);
   }
 
-  async function sharePicks() {
-    if (!gameweek) return;
-    const selected = predictions.filter((prediction) => prediction.gameweek_id === gameweek.id);
+  async function sharePicksFor(targetGameweek: Gameweek | null | undefined, targetFixtures: Fixture[]) {
+    if (!targetGameweek) return;
+    const selected = predictions.filter((prediction) => prediction.gameweek_id === targetGameweek.id);
     const orderedPicks = selected.map((prediction) => ({
       prediction,
-      fixture: fixtures.find((item) => item.id === prediction.fixture_id),
+      fixture: targetFixtures.find((item) => item.id === prediction.fixture_id),
       player: profiles.find((item) => item.id === prediction.member_id)?.display_name,
     })).filter((item): item is { prediction: Prediction; fixture: Fixture; player: string } => Boolean(item.fixture && item.player))
       .sort((a, b) => sortFixturesForBookmaker(a.fixture, b.fixture));
-    const lines = [`BOUNCE BTTS LEAGUE — GW${gameweek.number}`, `Season ${seasonLabel}`, ""];
+    const lines = [`BOUNCE BTTS LEAGUE — GW${targetGameweek.number}`, `Season ${seasonLabel}`, ""];
     for (const pick of orderedPicks) {
       lines.push(`${pick.player} — ${pick.fixture.home_team} v ${pick.fixture.away_team} — ${pick.fixture.odds_fractional ?? "Odds unavailable"}`);
     }
     lines.push("");
-    lines.push(`Combined odds: ${combinedFractional(selected.map((prediction) => fixtures.find((fixture) => fixture.id === prediction.fixture_id)?.odds_fractional))}`);
+    lines.push(`Combined odds: ${combinedFractional(selected.map((prediction) => targetFixtures.find((fixture) => fixture.id === prediction.fixture_id)?.odds_fractional))}`);
     lines.push("Odds may change after the daily check.");
     const text = lines.join("\n");
-    if (navigator.share) await navigator.share({ title: `Bounce BTTS GW${gameweek.number}`, text, url: `${window.location.origin}/table` });
+    if (navigator.share) await navigator.share({ title: `Bounce BTTS GW${targetGameweek.number}`, text, url: `${window.location.origin}/table` });
     else { await navigator.clipboard.writeText(text); notice("Picks copied for WhatsApp"); }
   }
 
   async function signOut() {
     await createClient().auth.signOut();
     window.location.href = "/login";
+  }
+
+  const dashboardGameweekIndex = dashboardGameweek
+    ? initialGameweeks.findIndex((item) => item.id === dashboardGameweek.id)
+    : -1;
+
+  function selectDashboardGameweek(gameweekId: string) {
+    setDashboardGameweekId(gameweekId);
+    setSelectedGameweekId(gameweekId);
+  }
+
+  function moveDashboardGameweek(direction: -1 | 1) {
+    if (dashboardGameweekIndex < 0) return;
+    const next = initialGameweeks[dashboardGameweekIndex + direction];
+    if (next) selectDashboardGameweek(next.id);
   }
 
   if (!initialProfile.active) {
@@ -380,13 +488,58 @@ export default function LeagueApp({
         <header className="heroHeader">
           <div className="heroBackdrop" aria-hidden="true"><div className="skylineLayer"/><div className="mosaicLayer"/></div>
           <div className="heroText"><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><div className="heroRule"><span>♥</span></div><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div>
-          <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div><small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small></div>
+          <div className="gameweekCard">
+            <span>Season {seasonLabel}</span>
+            {view === "dashboard" ? (
+              <>
+                <div className="dashboardGameweekControl">
+                  <button
+                    type="button"
+                    aria-label="Previous gameweek"
+                    disabled={dashboardGameweekIndex <= 0}
+                    onClick={() => moveDashboardGameweek(-1)}
+                  >‹</button>
+                  <label>
+                    <span>Gameweek</span>
+                    <select
+                      value={dashboardGameweek?.id ?? ""}
+                      onChange={(event) => selectDashboardGameweek(event.target.value)}
+                    >
+                      {initialGameweeks.map((item) => (
+                        <option key={item.id} value={item.id}>GW {item.number}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label="Next gameweek"
+                    disabled={dashboardGameweekIndex < 0 || dashboardGameweekIndex >= initialGameweeks.length - 1}
+                    onClick={() => moveDashboardGameweek(1)}
+                  >›</button>
+                </div>
+                <small>
+                  {dashboardGameweek
+                    ? `${dashboardGameweek.status.toUpperCase()} · Locks ${formatKickoff(dashboardGameweek.locks_at)}`
+                    : "Create a gameweek"}
+                </small>
+              </>
+            ) : (
+              <>
+                <div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div>
+                <small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small>
+              </>
+            )}
+          </div>
         </header>
 
-        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={sharePicks} isOpen={dashboardIsOpen} />}
-        {view === "pick" && <><GameweekSelector gameweeks={initialGameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={isAdmin}/><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} /></>}
-        {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={sharePicks} />}
-        {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} entryFee={entryFee} />}
+        {view === "dashboard" && dashboardIsFuture && dashboardGameweek?.opens_at && (
+          <FutureGameweekBanner gameweek={dashboardGameweek} now={clockNow} />
+        )}
+
+        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={dashboardStandings} tableThroughNumber={dashboardTableThroughNumber} isFuture={dashboardIsFuture} form={dashboardForm} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={() => sharePicksFor(dashboardGameweek, dashboardFixtures)} isOpen={dashboardIsOpen} />}
+        {view === "pick" && <><GameweekSelector gameweeks={initialGameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={isAdmin}/><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={() => sharePicksFor(gameweek, fixtures)} /></>}
+        {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={() => sharePicksFor(gameweek, fixtures)} />}
+        {view === "table" && <LeagueTable standings={selectedStandings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} tableThroughNumber={selectedTableThroughNumber} isFuture={selectedIsFuture} entryFee={entryFee} />}
         {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
         {view === "history" && <LeagueHistory seasons={seasonHistory} />}
         {view === "players" && <Players profiles={profiles} predictions={predictions} adjustments={adjustments} fixtures={fixtures} gameweek={gameweek} />}
@@ -400,11 +553,29 @@ export default function LeagueApp({
 }
 
 
+function FutureGameweekBanner({ gameweek, now }: { gameweek: Gameweek; now: number }) {
+  const opensAt = gameweek.opens_at ? new Date(gameweek.opens_at).getTime() : now;
+  const remaining = Math.max(0, opensAt - now);
+  const totalMinutes = Math.floor(remaining / 60_000);
+  const days = Math.floor(totalMinutes / 1_440);
+  const hours = Math.floor((totalMinutes % 1_440) / 60);
+  const minutes = totalMinutes % 60;
+
+  return (
+    <div className="futureGameweekBanner" role="status">
+      <strong>GAMEWEEK {gameweek.number} NOT OPEN</strong>
+      <span>Opens {formatKickoff(gameweek.opens_at as string)}</span>
+      <b>{days}d {hours}h {minutes}m</b>
+    </div>
+  );
+}
+
+
 function GameweekSelector({ gameweeks, selectedId, onChange, admin }: any) {
   return <div className="gameweekSelector"><label htmlFor={admin ? "admin-gameweek-select" : "pick-gameweek-select"}>View gameweek</label><select id={admin ? "admin-gameweek-select" : "pick-gameweek-select"} value={selectedId} onChange={(event)=>onChange(event.target.value)}>{gameweeks.map((item:Gameweek)=><option key={item.id} value={item.id}>GW {item.number} · {item.opens_at ? `opens ${formatKickoff(item.opens_at)}` : "open date not set"} · deadline {formatKickoff(item.locks_at)}</option>)}</select>{!admin&&gameweeks.find((item:Gameweek)=>item.id===selectedId)?.opens_at&&new Date(gameweeks.find((item:Gameweek)=>item.id===selectedId).opens_at as string)>new Date()&&<small>Selections open Monday at 8:00am UK time. You can view this gameweek now, but cannot submit yet.</small>}</div>;
 }
 
-function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, submitted, entryFee, seasonLabel, setView, sharePicks, isOpen }: any) {
+function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, tableThroughNumber, isFuture, form, submitted, entryFee, seasonLabel, setView, sharePicks, isOpen }: any) {
   const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
   const gameweekPicks = profiles.map((profile: Profile) => {
     const prediction = predictions.find((item: Prediction) => item.gameweek_id === gameweek?.id && item.member_id === profile.id);
@@ -415,10 +586,31 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
     <section className="contentColumn">
       <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
       <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div></article>
+      <article className="panel formPanel brandedPanel">
+        <div className="panelTitle rowTitle">
+          <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
+          <small>Last five scored gameweeks</small>
+        </div>
+        <div className="formTable">
+          <div className="formTableRow header">
+            <span>PLAYER</span>
+            {form.weeks.map((week: Gameweek) => <b key={week.id}>GW{week.number}</b>)}
+          </div>
+          {form.rows.map((row: any) => (
+            <div className="formTableRow" key={row.id}>
+              <strong>{row.name}</strong>
+              {row.results.map((result: any, index: number) => (
+                <span key={`${row.id}-${index}`} className={`formBadge ${result.className}`} title={result.title}>{result.code}</span>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="formLegend"><span className="formBadge win">W</span> BTTS <span className="formBadge scoreNil">S-N</span> Score–nil <span className="formBadge zeroZero">0-0</span> 0–0 <span className="formBadge missed">M</span> Missed</div>
+      </article>
     </section>
     <aside className="rightColumn">
       <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.length * entryFee).toFixed(0)}</small></article>
-      <article className="panel tablePanel brandedPanel"><div className="panelTitle">LEAGUE TABLE</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.length * entryFee} /></div></article>
+      <article className="panel tablePanel brandedPanel"><div className="panelTitle">{isFuture ? `STANDINGS BEFORE GW ${gameweek?.number}` : `LEAGUE TABLE AFTER GW ${tableThroughNumber ?? gameweek?.number ?? "—"}`}</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.length * entryFee} /></div></article>
       <article className="panel resultsPanel brandedPanel"><div className="panelTitle">LATEST RESULTS</div>{recent.slice(0,5).map((fixture: Fixture)=><div className="resultRow" key={fixture.id}><span>GW{gameweek?.number}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"yes":"no"}>{(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"✓":"–"}</i></div>)}{!recent.length&&<div className="emptyState compact">No completed results yet.</div>}</article>
       <button className="shareCard" onClick={sharePicks}><span>↗</span><div><strong>Share weekly picks</strong><small>League-sorted · fractional odds · WhatsApp ready</small></div></button>
     </aside>
@@ -458,7 +650,7 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
     }
 
     return <section className="pagePanel panel brandedPanel">
-      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>All fixtures stored for the current week and following week. Matches are grouped by day, then by league.</p></div></div>
+      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>All fixtures stored for the current week and following week. Matches are grouped by day, then by league.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div>
       <div className="fixtureSearch"><label htmlFor="fixture-search-all">Search fixtures</label><input id="fixture-search-all" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>
       {Array.from(byDay.entries()).map(([dateKey, dayFixtures]) => {
         const dayDate = new Date(dayFixtures[0].kickoff_at);
@@ -484,12 +676,12 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
   }
 
   const visibleCompetitions = (competitions as string[]).filter((competition) => filtered.some((fixture) => fixture.competition === competition));
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Make My Pick</h2><p>Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded.</p></div><button onClick={sharePicks}>Share picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search-pick">Search fixtures</label><input id="fixture-search-pick" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((competition:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>f.competition===competition).sort(sortFixturesForBookmaker);return <details className="competitionSection competitionDisclosure" key={`${mode}-${competition}-${query}`} open={Boolean(query)}><summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Make My Pick</h2><p>Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search-pick">Search fixtures</label><input id="fixture-search-pick" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((competition:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>f.competition===competition).sort(sortFixturesForBookmaker);return <details className="competitionSection competitionDisclosure" key={`${mode}-${competition}-${query}`} open={Boolean(query)}><summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
 }
 
-function LeagueTable({ standings, seasonLabel, gameweekNumber, entryFee }: any) {
+function LeagueTable({ standings, seasonLabel, gameweekNumber, tableThroughNumber, isFuture, entryFee }: any) {
   const prizePot = standings.length * entryFee;
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>SEASON {seasonLabel} · {gameweekNumber ? `GAMEWEEK ${gameweekNumber} · ` : ""}EST 2024</span><h2>League Table</h2><p>S-N means a score–nil result worth +1. Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div><div className="pageHeadingActions"><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweekNumber} prizePot={prizePot} /><a href="/table" target="_blank" rel="noreferrer">Public table ↗</a></div></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((row:any,index:number)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></section>;
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>SEASON {seasonLabel} · {gameweekNumber ? `GAMEWEEK ${gameweekNumber} · ` : ""}EST 2024</span><h2>{isFuture ? `Standings before Gameweek ${gameweekNumber}` : `League Table after Gameweek ${tableThroughNumber ?? gameweekNumber}`}</h2><p>S-N means a score–nil result worth +1. Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div><div className="pageHeadingActions"><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweekNumber} prizePot={prizePot} /><a href="/table" target="_blank" rel="noreferrer">Public table ↗</a></div></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((row:any,index:number)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></section>;
 }
 
 function LeagueHistory({ seasons }: { seasons: SeasonHistory[] }) {

@@ -1518,3 +1518,240 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
 .fixtureDaySection .competitionSection {
   margin-top: 8px;
 }
+
+
+/* Dashboard gameweek navigation and unified gold-accent controls */
+.dashboardGameweekControl {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) 36px !important;
+  align-items: end;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
+}
+.dashboardGameweekControl label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboardGameweekControl label > span {
+  color: #c8a86b;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.dashboardGameweekControl select,
+.gameweekSelector select,
+.adminForm select,
+.userAdminRow select,
+.adminBulkSelectionRow select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #8e7042;
+  border-radius: 7px;
+  background-color: #151217;
+  color: #f3dfb2;
+  box-shadow: inset 0 0 0 1px rgba(206, 168, 96, .08);
+}
+.dashboardGameweekControl select {
+  padding: 0 30px 0 10px;
+  font: 700 1.05rem Georgia, "Times New Roman", serif;
+}
+.dashboardGameweekControl button {
+  width: 36px !important;
+  height: 36px !important;
+  border: 1px solid #80653a !important;
+  background: linear-gradient(180deg, #251f19, #151319) !important;
+  color: #e7c77f !important;
+}
+.dashboardGameweekControl button:hover:not(:disabled) {
+  border-color: #c8a86b !important;
+  color: #fff1cf !important;
+}
+.dashboardGameweekControl button:disabled {
+  opacity: .28;
+  cursor: default;
+}
+select option {
+  background: #17131a;
+  color: #f1ddb0;
+}
+.panelTitle,
+.pageHeading > div > span,
+.gameweekSelector label,
+.adminForm label,
+.bulkFixtureSearch,
+.publicTableHeading > div > span {
+  color: #c8a86b;
+}
+.pageHeading h2,
+.panel h3,
+.statusNumbers strong,
+.tablePanel b,
+.largeTableRow b,
+.miniTableRow b {
+  color: #e4c27a;
+}
+.heroText h2,
+.sideBrand span,
+.tieRule,
+.pickNotice,
+.adminNote strong {
+  color: #d2b071;
+}
+a,
+.panelFooterButton,
+.rowTitle button,
+.pageHeadingActions a {
+  color: #d8b875;
+}
+
+@media (max-width: 760px) {
+  .gameweekCard {
+    min-height: 148px;
+  }
+  .dashboardGameweekControl {
+    grid-template-columns: 34px minmax(0, 1fr) 34px !important;
+  }
+  .dashboardGameweekControl button {
+    width: 34px !important;
+    height: 34px !important;
+  }
+}
+
+
+/* Historical gameweek view, countdown banner, form table, stronger share action */
+.futureGameweekBanner {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border-top: 1px solid #8d6d37;
+  border-bottom: 1px solid #8d6d37;
+  background: linear-gradient(90deg, #24140f, #3a2512 50%, #24140f);
+  color: #f0d291;
+  font-size: .82rem;
+  letter-spacing: .035em;
+}
+.futureGameweekBanner strong {
+  color: #fff0c3;
+  letter-spacing: .1em;
+}
+.futureGameweekBanner b {
+  min-width: 94px;
+  color: #fff8e7;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.formPanel {
+  overflow: hidden;
+}
+.formPanel .rowTitle small {
+  color: #b9a88b;
+}
+.formTable {
+  overflow-x: auto;
+}
+.formTableRow {
+  min-width: 510px;
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) repeat(5, 56px);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(207, 178, 112, .12);
+}
+.formTableRow.header {
+  color: #cdb276;
+  font-size: .69rem;
+  letter-spacing: .08em;
+}
+.formTableRow.header b {
+  text-align: center;
+}
+.formTableRow > strong {
+  color: #eee5d6;
+}
+.formBadge {
+  min-width: 38px;
+  min-height: 25px;
+  padding: 4px 6px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: #17151a;
+  color: #d7d0c6;
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+.formBadge.win {
+  border-color: #977b42;
+  background: #3a2c13;
+  color: #f5d98f;
+}
+.formBadge.scoreNil {
+  border-color: #755f8f;
+  background: #2b2038;
+  color: #dfc8ff;
+}
+.formBadge.zeroZero,
+.formBadge.missed {
+  border-color: #824452;
+  background: #321920;
+  color: #f2b9c4;
+}
+.formBadge.empty {
+  opacity: .45;
+}
+.formLegend {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #a99d8c;
+  font-size: .72rem;
+}
+.formLegend .formBadge {
+  margin-left: 7px;
+}
+.prominentShareButton {
+  min-height: 44px;
+  padding: 0 18px !important;
+  border: 1px solid #b28a45 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #5c421a, #2c2012) !important;
+  color: #fff0bd !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.08);
+  font-weight: 900 !important;
+  letter-spacing: .035em;
+}
+.prominentShareButton:hover {
+  border-color: #e0bd71 !important;
+  color: #fff8df !important;
+}
+
+@media (max-width: 760px) {
+  .futureGameweekBanner {
+    padding: 7px 10px;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: .68rem;
+  }
+  .futureGameweekBanner span {
+    display: none;
+  }
+  .futureGameweekBanner b {
+    min-width: 78px;
+  }
+  .pageHeading .prominentShareButton {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
