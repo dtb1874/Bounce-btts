@@ -1,24 +1,23 @@
-BOUNCE BTTS — GAMEWEEK + LEAGUE TABLE UPDATE
+BOUNCE BTTS COMBINED APP UPDATE
 
-Upload the contents of this folder to the ROOT of the GitHub repository and replace matching files.
+This package combines:
+- collapsible fixture days;
+- collapsible leagues inside each day;
+- clearer API-Football future-date messages;
+- Dashboard Everyone's Picks So Far following the persistent gameweek selector;
+- Share Weekly Picks disabled until the viewed gameweek has opened.
 
-Included changes:
-- View any of 38 gameweeks in Make My Pick and Admin Selections.
-- Members can view future gameweeks but cannot select before Monday 08:00 UK time.
-- Admins can select at any time.
-- Admin can create additional gameweeks beyond 38.
-- Admin saves/reloads return to the same page, admin tab and selected gameweek.
-- League tables show score–nil (S-N) results worth +1.
-- Shared league-table image/text shows season and selected gameweek.
-- Fixtures page remains the broad two-week all-fixtures view.
-
-Database migrations for the 38 gameweeks, Monday opening enforcement and score-nil field have already been applied.
+UPLOAD
+1. Extract this ZIP.
+2. Open the main dtb1874/Bounce-btts repository page.
+3. Choose Add file > Upload files.
+4. Drag the extracted yellow app folder itself into GitHub.
+5. Confirm these paths appear:
+   app/LeagueApp.tsx
+   app/globals.css
+6. Commit directly to main.
 
 Suggested commit message:
-Add future gameweeks, opening rules and score-nil table
+Fix dashboard gameweek picks and collapsible fixtures
 
-ADDITIONAL SHARED PICKS FORMAT
-- Player name is shown first.
-- 'BTTS YES' has been removed.
-- Competition/league headings have been removed.
-- Picks remain ordered using the existing bookmaker competition order.
+No lib upload and no Supabase SQL are required.
