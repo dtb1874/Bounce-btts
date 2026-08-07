@@ -1519,14 +1519,102 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   margin-top: 8px;
 }
 
-/* Reviewed public table: seven columns including score-nil */
-@media (max-width: 700px) {
-  .publicLargeTable .largeTableRow {
-    grid-template-columns: 30px minmax(0, 1fr) 26px 26px 31px 31px 34px;
-  }
+
+/* Dashboard gameweek navigation and unified gold-accent controls */
+.dashboardGameweekControl {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) 36px !important;
+  align-items: end;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
 }
-@media (max-width: 390px) {
-  .publicLargeTable .largeTableRow {
-    grid-template-columns: 25px minmax(0, 1fr) 23px 23px 28px 28px 31px;
+.dashboardGameweekControl label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboardGameweekControl label > span {
+  color: #c8a86b;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.dashboardGameweekControl select,
+.gameweekSelector select,
+.adminForm select,
+.userAdminRow select,
+.adminBulkSelectionRow select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #8e7042;
+  border-radius: 7px;
+  background-color: #151217;
+  color: #f3dfb2;
+  box-shadow: inset 0 0 0 1px rgba(206, 168, 96, .08);
+}
+.dashboardGameweekControl select {
+  padding: 0 30px 0 10px;
+  font: 700 1.05rem Georgia, "Times New Roman", serif;
+}
+.dashboardGameweekControl button {
+  width: 36px !important;
+  height: 36px !important;
+  border: 1px solid #80653a !important;
+  background: linear-gradient(180deg, #251f19, #151319) !important;
+  color: #e7c77f !important;
+}
+.dashboardGameweekControl button:hover:not(:disabled) {
+  border-color: #c8a86b !important;
+  color: #fff1cf !important;
+}
+.dashboardGameweekControl button:disabled {
+  opacity: .28;
+  cursor: default;
+}
+select option {
+  background: #17131a;
+  color: #f1ddb0;
+}
+.panelTitle,
+.pageHeading > div > span,
+.gameweekSelector label,
+.adminForm label,
+.bulkFixtureSearch,
+.publicTableHeading > div > span {
+  color: #c8a86b;
+}
+.pageHeading h2,
+.panel h3,
+.statusNumbers strong,
+.tablePanel b,
+.largeTableRow b,
+.miniTableRow b {
+  color: #e4c27a;
+}
+.heroText h2,
+.sideBrand span,
+.tieRule,
+.pickNotice,
+.adminNote strong {
+  color: #d2b071;
+}
+a,
+.panelFooterButton,
+.rowTitle button,
+.pageHeadingActions a {
+  color: #d8b875;
+}
+
+@media (max-width: 760px) {
+  .gameweekCard {
+    min-height: 148px;
+  }
+  .dashboardGameweekControl {
+    grid-template-columns: 34px minmax(0, 1fr) 34px !important;
+  }
+  .dashboardGameweekControl button {
+    width: 34px !important;
+    height: 34px !important;
   }
 }

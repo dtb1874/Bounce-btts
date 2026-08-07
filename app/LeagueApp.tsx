@@ -225,6 +225,7 @@ export default function LeagueApp({
   const [busy, setBusy] = useState(false);
   const profiles = initialProfiles.filter((profile) => profile.active);
   const [selectedGameweekId, setSelectedGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
+  const [dashboardGameweekId, setDashboardGameweekId] = useState("");
 
   useEffect(() => {
     const savedView = window.sessionStorage.getItem("bounce:view") as View | null;
@@ -240,13 +241,21 @@ export default function LeagueApp({
   useEffect(() => { if (selectedGameweekId) window.sessionStorage.setItem("bounce:gameweek", selectedGameweekId); }, [selectedGameweekId]);
 
   const gameweek = initialGameweeks.find((item) => item.id === selectedGameweekId) ?? initialGameweek;
-  const dashboardGameweek = useMemo(() => {
+  const currentDashboardGameweek = useMemo(() => {
     const now = Date.now();
     const opened = initialGameweeks
       .filter((item) => !item.opens_at || new Date(item.opens_at).getTime() <= now)
       .sort((a, b) => b.number - a.number);
     return opened[0] ?? initialGameweek ?? initialGameweeks[0] ?? null;
   }, [initialGameweeks, initialGameweek]);
+
+  useEffect(() => {
+    if (currentDashboardGameweek?.id) setDashboardGameweekId(currentDashboardGameweek.id);
+  }, [currentDashboardGameweek?.id]);
+
+  const dashboardGameweek =
+    initialGameweeks.find((item) => item.id === dashboardGameweekId) ??
+    currentDashboardGameweek;
   const displayedGameweek = view === "dashboard" ? dashboardGameweek : gameweek;
   const fixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === gameweek?.id), [allSeasonFixtures, gameweek?.id]);
   const dashboardFixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === dashboardGameweek?.id), [allSeasonFixtures, dashboardGameweek?.id]);
@@ -350,6 +359,16 @@ export default function LeagueApp({
     window.location.href = "/login";
   }
 
+  const dashboardGameweekIndex = dashboardGameweek
+    ? initialGameweeks.findIndex((item) => item.id === dashboardGameweek.id)
+    : -1;
+
+  function moveDashboardGameweek(direction: -1 | 1) {
+    if (dashboardGameweekIndex < 0) return;
+    const next = initialGameweeks[dashboardGameweekIndex + direction];
+    if (next) setDashboardGameweekId(next.id);
+  }
+
   if (!initialProfile.active) {
     return <main className="authPage"><section className="authCard"><h1>Account inactive</h1><p className="authIntro">Ask an admin to activate this user slot for the current season.</p><button className="primaryButton" onClick={signOut}>Sign out</button></section></main>;
   }
@@ -380,7 +399,48 @@ export default function LeagueApp({
         <header className="heroHeader">
           <div className="heroBackdrop" aria-hidden="true"><div className="skylineLayer"/><div className="mosaicLayer"/></div>
           <div className="heroText"><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><div className="heroRule"><span>♥</span></div><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div>
-          <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div><small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small></div>
+          <div className="gameweekCard">
+            <span>Season {seasonLabel}</span>
+            {view === "dashboard" ? (
+              <>
+                <div className="dashboardGameweekControl">
+                  <button
+                    type="button"
+                    aria-label="Previous gameweek"
+                    disabled={dashboardGameweekIndex <= 0}
+                    onClick={() => moveDashboardGameweek(-1)}
+                  >‹</button>
+                  <label>
+                    <span>Gameweek</span>
+                    <select
+                      value={dashboardGameweek?.id ?? ""}
+                      onChange={(event) => setDashboardGameweekId(event.target.value)}
+                    >
+                      {initialGameweeks.map((item) => (
+                        <option key={item.id} value={item.id}>GW {item.number}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label="Next gameweek"
+                    disabled={dashboardGameweekIndex < 0 || dashboardGameweekIndex >= initialGameweeks.length - 1}
+                    onClick={() => moveDashboardGameweek(1)}
+                  >›</button>
+                </div>
+                <small>
+                  {dashboardGameweek
+                    ? `${dashboardGameweek.status.toUpperCase()} · Locks ${formatKickoff(dashboardGameweek.locks_at)}`
+                    : "Create a gameweek"}
+                </small>
+              </>
+            ) : (
+              <>
+                <div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div>
+                <small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small>
+              </>
+            )}
+          </div>
         </header>
 
         {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={sharePicks} isOpen={dashboardIsOpen} />}
