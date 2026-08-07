@@ -1,8 +1,8 @@
 /*
- * Bounce BTTS — Tynecastle photo-based watermark
+ * Bounce BTTS — Tynecastle building watermark
  *
- * Uses a simplified gold line-art outline based on the Tynecastle frontage image
- * supplied by the league owner. Applied anywhere a league table appears.
+ * Uses the supplied Tynecastle frontage photo as a subtle watermark,
+ * keeping the actual Hearts badge visible in the centre.
  */
 
 .tablePanel .miniTable,
@@ -18,21 +18,20 @@
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  background-image: url("/assets/tynecastle-facade.svg");
+  background-image: url("/assets/tynecastle-building-watermark.png");
   background-repeat: no-repeat;
-  background-position: center 58%;
-  background-size: contain;
-  opacity: 0.12;
+  background-position: center 50%;
+  opacity: 0.16;
 }
 
 .tablePanel .miniTable::before {
-  inset: 18px -40px 4px;
-  background-size: 112% auto;
+  inset: 8px -22px 2px;
+  background-size: 106% auto;
 }
 
 .largeTable::before {
-  inset: 14px 2.5% 6px;
-  background-size: min(960px, 90%) auto;
+  inset: 8px 2.5% 4px;
+  background-size: min(860px, 84%) auto;
 }
 
 .tablePanel .miniTable > *,
@@ -50,28 +49,28 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(16, 18, 23, 0.12) 0%,
-    rgba(16, 18, 23, 0.00) 35%,
-    rgba(16, 18, 23, 0.02) 70%,
-    rgba(16, 18, 23, 0.16) 100%
+    rgba(16, 18, 23, 0.10) 0%,
+    rgba(16, 18, 23, 0.00) 30%,
+    rgba(16, 18, 23, 0.02) 72%,
+    rgba(16, 18, 23, 0.10) 100%
   );
 }
 
 @media (max-width: 720px) {
   .tablePanel .miniTable::before {
-    inset: 22px -72px 0;
-    background-size: 145% auto;
+    inset: 14px -54px 2px;
+    background-size: 135% auto;
   }
 
   .largeTable::before {
-    inset: 28px -96px 4px;
-    background-size: 152% auto;
+    inset: 18px -82px 4px;
+    background-size: 142% auto;
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .tablePanel .miniTable::before,
   .largeTable::before {
-    opacity: 0.06;
+    opacity: 0.08;
   }
 }

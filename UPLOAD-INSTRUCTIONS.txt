@@ -1,31 +1,20 @@
-BOUNCE BTTS — GOLD TYNECASTLE OUTLINE UPDATE
-============================================
+BOUNCE BTTS — TYNECASTLE BUILDING + ACTUAL HEARTS BADGE UPDATE
+==============================================================
 
-This package fixes the earlier mistake.
+This revision removes the line-art ground outline.
 
-It replaces the generic stadium line art with a simplified gold outline based on
-the Tynecastle image you supplied, including:
-- the roof strip
-- the glazed frontage
-- the central Tynecastle Park sign area
-- the crest position
-- the lower entrances
-- the forecourt motif
+Instead, it uses a cropped watermark based on the Tynecastle building photo,
+so the watermark now shows:
+- the actual Tynecastle building frontage
+- the actual Hearts badge in the centre
 
 Upload and replace these files in the root of your Bounce-btts GitHub repository:
 
 1. app/tynecastle-watermark.css
 2. app/ShareTableButton.tsx
-3. public/assets/tynecastle-facade.svg
+3. public/assets/tynecastle-building-watermark.png
 
-What it changes
----------------
-- All league-table areas use the gold outline watermark:
-  - dashboard mini table
-  - full league table
-  - league history tables
-  - public/read-only table
-- Shared/downloaded JPEG table exports use the same gold outline.
+You can ignore the older SVG watermark file from the previous package.
 
 After upload
 ------------

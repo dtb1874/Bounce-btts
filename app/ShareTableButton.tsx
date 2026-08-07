@@ -30,153 +30,31 @@ function roundedRect(
   context.closePath();
 }
 
-function drawWindowGrid(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  columns: number,
-  rows: number,
-) {
-  context.strokeRect(x, y, width, height);
-
-  for (let i = 1; i < columns; i += 1) {
-    const colX = x + (width / columns) * i;
-    context.beginPath();
-    context.moveTo(colX, y);
-    context.lineTo(colX, y + height);
-    context.stroke();
-  }
-
-  for (let i = 1; i < rows; i += 1) {
-    const rowY = y + (height / rows) * i;
-    context.beginPath();
-    context.moveTo(x, rowY);
-    context.lineTo(x + width, rowY);
-    context.stroke();
-  }
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("The Tynecastle watermark image could not be loaded."));
+    image.src = src;
+  });
 }
 
-function drawTynecastleFacadeWatermark(
+async function drawTynecastleBuildingWatermark(
   context: CanvasRenderingContext2D,
   canvasWidth: number,
   tableTop: number,
   tableHeight: number,
 ) {
-  const drawingWidth = 1080;
-  const drawingHeight = 520;
-  const scale = Math.min(
-    (canvasWidth * 0.86) / drawingWidth,
-    (tableHeight * 0.92) / drawingHeight,
-  );
-  const x = (canvasWidth - drawingWidth * scale) / 2;
-  const y = tableTop + (tableHeight - drawingHeight * scale) / 2;
+  const image = await loadImage("/assets/tynecastle-building-watermark.png");
+  const imageRatio = image.width / image.height;
+  const targetWidth = Math.min(canvasWidth * 0.82, 860);
+  const targetHeight = targetWidth / imageRatio;
+  const x = (canvasWidth - targetWidth) / 2;
+  const y = tableTop + (tableHeight - targetHeight) / 2 - 10;
 
   context.save();
-  context.translate(x, y);
-  context.scale(scale, scale);
-
-  context.globalAlpha = 0.12;
-  context.strokeStyle = "#d8bf84";
-  context.fillStyle = "#d8bf84";
-  context.lineWidth = 3;
-  context.lineCap = "round";
-  context.lineJoin = "round";
-
-  // Stadium roof strip and upper frontage.
-  context.strokeRect(55, 38, 970, 28);
-  for (let i = 1; i < 22; i += 1) {
-    const mullion = 55 + (970 / 22) * i;
-    context.beginPath();
-    context.moveTo(mullion, 38);
-    context.lineTo(mullion, 66);
-    context.stroke();
-  }
-
-  // Main facade body.
-  context.strokeRect(72, 66, 936, 278);
-  for (let i = 1; i < 17; i += 1) {
-    const mullion = 72 + (936 / 17) * i;
-    context.beginPath();
-    context.moveTo(mullion, 66);
-    context.lineTo(mullion, 344);
-    context.stroke();
-  }
-
-  [118, 176, 234, 292].forEach((lineY) => {
-    context.beginPath();
-    context.moveTo(72, lineY);
-    context.lineTo(1008, lineY);
-    context.stroke();
-  });
-
-  // Central sign and crest.
-  context.font = "700 20px Georgia, serif";
-  context.textAlign = "center";
-  context.fillText("TYNECASTLE PARK", 540, 104);
-
-  context.beginPath();
-  context.moveTo(540, 125);
-  context.lineTo(582, 150);
-  context.lineTo(566, 205);
-  context.lineTo(540, 228);
-  context.lineTo(514, 205);
-  context.lineTo(498, 150);
-  context.closePath();
-  context.stroke();
-
-  context.beginPath();
-  context.arc(540, 174, 30, 0, Math.PI * 2);
-  context.stroke();
-
-  // Glazing emphasis around the middle strip.
-  drawWindowGrid(context, 92, 124, 388, 94, 6, 2);
-  drawWindowGrid(context, 600, 124, 388, 94, 6, 2);
-  drawWindowGrid(context, 92, 236, 388, 72, 6, 1);
-  drawWindowGrid(context, 600, 236, 388, 72, 6, 1);
-
-  // Lower brick/entrance zone.
-  context.strokeRect(72, 344, 936, 78);
-  [150, 264, 380, 702, 816, 932].forEach((doorX) => {
-    context.strokeRect(doorX, 350, 48, 62);
-  });
-  context.strokeRect(448, 350, 184, 62);
-
-  // Centre lower sign strip.
-  context.beginPath();
-  context.moveTo(418, 338);
-  context.lineTo(662, 338);
-  context.stroke();
-
-  // Forecourt diamond and centre motif.
-  context.beginPath();
-  context.moveTo(540, 498);
-  context.lineTo(782, 430);
-  context.lineTo(540, 360);
-  context.lineTo(298, 430);
-  context.closePath();
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(540, 474);
-  context.lineTo(728, 430);
-  context.lineTo(540, 385);
-  context.lineTo(352, 430);
-  context.closePath();
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(540, 455);
-  context.bezierCurveTo(575, 430, 590, 400, 540, 382);
-  context.bezierCurveTo(490, 400, 505, 430, 540, 455);
-  context.closePath();
-  context.stroke();
-
-  context.beginPath();
-  context.arc(540, 420, 26, 0, Math.PI * 2);
-  context.stroke();
-
+  context.globalAlpha = 0.16;
+  context.drawImage(image, x, y, targetWidth, targetHeight);
   context.restore();
 }
 
@@ -214,7 +92,7 @@ async function createSnapshot(
   context.arc(1060, 120, 235, 0, Math.PI * 2);
   context.fill();
 
-  drawTynecastleFacadeWatermark(context, width, headerHeight, tableHeight);
+  await drawTynecastleBuildingWatermark(context, width, headerHeight, tableHeight);
 
   context.fillStyle = "#e8dac7";
   context.font = "700 76px Georgia, serif";
