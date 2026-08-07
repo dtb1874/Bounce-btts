@@ -75,7 +75,12 @@ export default async function HomePage() {
     .order("number", { ascending: true });
 
   const seasonGameweeks = (allGameweeks ?? []).filter((gameweek) => gameweek.season_id === currentSeason?.id);
-  const gameweek = seasonGameweeks.length ? seasonGameweeks[seasonGameweeks.length - 1] : null;
+  const nowIso = new Date().toISOString();
+  const gameweek =
+    seasonGameweeks.find((item) => item.status === "open" && (!item.opens_at || item.opens_at <= nowIso) && item.locks_at > nowIso) ??
+    seasonGameweeks.find((item) => item.locks_at > nowIso) ??
+    seasonGameweeks[seasonGameweeks.length - 1] ??
+    null;
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
   const allGameweekIds = (allGameweeks ?? []).map((item) => item.id);
 
@@ -86,16 +91,36 @@ export default async function HomePage() {
     .order("slot_number");
 
   let fixtures: any[] = [];
-  if (gameweek) {
+  if (currentGameweekIds.length) {
     const response = await supabase
       .from("fixtures")
       .select("*")
-      .eq("gameweek_id", gameweek.id)
+      .in("gameweek_id", currentGameweekIds)
       .order("kickoff_at")
       .order("competition")
       .order("home_team");
     fixtures = response.data ?? [];
   }
+
+  // The general Fixtures page is deliberately broader than Make My Pick.
+  // Load every fixture stored for the current calendar week and the following week,
+  // regardless of gameweek, eligibility, kick-off day/time, or club exclusions.
+  const now = new Date();
+  const currentWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const mondayOffset = (currentWeekStart.getUTCDay() + 6) % 7;
+  currentWeekStart.setUTCDate(currentWeekStart.getUTCDate() - mondayOffset);
+  const followingWeekEnd = new Date(currentWeekStart);
+  followingWeekEnd.setUTCDate(followingWeekEnd.getUTCDate() + 14);
+
+  const allFixtureResponse = await supabase
+    .from("fixtures")
+    .select("*")
+    .gte("kickoff_at", currentWeekStart.toISOString())
+    .lt("kickoff_at", followingWeekEnd.toISOString())
+    .order("kickoff_at")
+    .order("competition")
+    .order("home_team");
+  const allFixtures = allFixtureResponse.data ?? [];
 
   let allPredictions: PredictionRow[] = [];
   let allAdjustments: ScoreAdjustmentRow[] = [];
@@ -173,7 +198,9 @@ export default async function HomePage() {
       initialProfile={profile}
       initialProfiles={profileRows}
       initialGameweek={gameweek ?? null}
+      initialGameweeks={seasonGameweeks}
       initialFixtures={fixtures}
+      initialAllFixtures={allFixtures}
       initialPredictions={predictions}
       initialAdjustments={adjustments}
       seasonLabel={currentSeason?.label ?? settings?.current_season_label ?? "2026/27"}

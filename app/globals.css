@@ -589,7 +589,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
 .largeTableRow {
   min-height: 58px;
   display: grid;
-  grid-template-columns: 70px 1fr 80px 80px 80px 90px;
+  grid-template-columns: 70px 1fr 70px 70px 70px 70px 90px;
   align-items: center;
   padding: 0 24px;
   border-bottom: 1px solid #292b31;
@@ -1020,7 +1020,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
 .miniTableRow {
   min-height: 40px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 40px 44px 48px;
+  grid-template-columns: 38px minmax(0, 1fr) 34px 38px 38px 44px;
   gap: 8px;
   align-items: center;
   border-bottom: 1px solid #292b31;
@@ -1135,7 +1135,7 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .statusNumbers { padding-top: 10px; }
   .miniTable { padding-left: 9px; padding-right: 9px; }
   .miniTableRow {
-    grid-template-columns: 34px minmax(0, 1fr) 32px 36px 38px;
+    grid-template-columns: 30px minmax(0, 1fr) 28px 31px 31px 34px;
     gap: 4px;
     font-size: .74rem;
   }
@@ -1488,4 +1488,45 @@ button:focus-visible { outline: 2px solid #c98d86; outline-offset: 2px; }
   .dashboardPickPlayer>span{width:28px;height:28px;font-size:.72rem}
   .dashboardPickPlayer strong,.dashboardPickFixture strong{font-size:.78rem}
   .dashboardPickFixture small{font-size:.66rem}
+}
+
+/* Two-week general fixture list */
+.fixtureDaySection {
+  margin-top: 22px;
+}
+
+.fixtureDayHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 15px;
+  border-left: 4px solid var(--gold, #d7a93d);
+  background: rgba(255,255,255,.055);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.fixtureDayHeading span {
+  font-weight: 800;
+}
+
+.fixtureDayHeading small {
+  opacity: .72;
+}
+
+.fixtureDaySection .competitionSection {
+  margin-top: 8px;
+}
+
+/* Reviewed public table: seven columns including score-nil */
+@media (max-width: 700px) {
+  .publicLargeTable .largeTableRow {
+    grid-template-columns: 30px minmax(0, 1fr) 26px 26px 31px 31px 34px;
+  }
+}
+@media (max-width: 390px) {
+  .publicLargeTable .largeTableRow {
+    grid-template-columns: 25px minmax(0, 1fr) 23px 23px 28px 28px 31px;
+  }
 }

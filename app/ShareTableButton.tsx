@@ -7,6 +7,7 @@ type ShareTableButtonProps = {
   rows: PublicStandingRow[];
   seasonLabel: string;
   prizePot: number;
+  gameweekNumber?: number | null;
   className?: string;
   compact?: boolean;
 };
@@ -33,6 +34,7 @@ async function createSnapshot(
   rows: PublicStandingRow[],
   seasonLabel: string,
   prizePot: number,
+  gameweekNumber: number | null,
   liveUrl: string,
 ) {
   const width = 1200;
@@ -67,7 +69,7 @@ async function createSnapshot(
 
   context.fillStyle = "#a68875";
   context.font = "600 18px Arial, sans-serif";
-  context.fillText(`SEASON ${seasonLabel}  •  EST 2024`, 76, 190);
+  context.fillText(`SEASON ${seasonLabel}${gameweekNumber ? `  •  GAMEWEEK ${gameweekNumber}` : ""}  •  EST 2024`, 76, 190);
   context.fillStyle = "#e7d3bc";
   context.font = "700 22px Arial, sans-serif";
   context.fillText(`PRIZE POT £${prizePot.toFixed(0)}`, 930, 190);
@@ -79,8 +81,8 @@ async function createSnapshot(
   context.lineTo(1128, 222);
   context.stroke();
 
-  const columns = [90, 180, 760, 860, 965, 1080];
-  const labels = ["POS", "PLAYER", "P", "W", "0-0", "PTS"];
+  const columns = [80, 160, 690, 785, 875, 975, 1080];
+  const labels = ["POS", "PLAYER", "P", "W", "S-N", "0-0", "PTS"];
   context.fillStyle = "#9f9893";
   context.font = "700 18px Arial, sans-serif";
   labels.forEach((label, index) => context.fillText(label, columns[index], 264));
@@ -104,10 +106,11 @@ async function createSnapshot(
     context.font = "600 23px Arial, sans-serif";
     context.fillText(String(row.played), columns[2], y + 49);
     context.fillText(String(row.wins), columns[3], y + 49);
-    context.fillText(String(row.zeroZeroCount), columns[4], y + 49);
+    context.fillText(String((row as PublicStandingRow & { oneSided?: number; scoreNilCount?: number }).oneSided ?? (row as PublicStandingRow & { scoreNilCount?: number }).scoreNilCount ?? 0), columns[4], y + 49);
+    context.fillText(String(row.zeroZeroCount), columns[5], y + 49);
     context.fillStyle = "#f0cfaa";
     context.font = "800 27px Arial, sans-serif";
-    context.fillText(String(row.points), columns[5], y + 49);
+    context.fillText(String(row.points), columns[6], y + 49);
 
     context.strokeStyle = "rgba(255,255,255,0.08)";
     context.lineWidth = 1;
@@ -144,6 +147,7 @@ export default function ShareTableButton({
   rows,
   seasonLabel,
   prizePot,
+  gameweekNumber = null,
   className = "",
   compact = false,
 }: ShareTableButtonProps) {
