@@ -240,15 +240,29 @@ export default function LeagueApp({
   useEffect(() => { if (selectedGameweekId) window.sessionStorage.setItem("bounce:gameweek", selectedGameweekId); }, [selectedGameweekId]);
 
   const gameweek = initialGameweeks.find((item) => item.id === selectedGameweekId) ?? initialGameweek;
+  const dashboardGameweek = useMemo(() => {
+    const now = Date.now();
+    const opened = initialGameweeks
+      .filter((item) => !item.opens_at || new Date(item.opens_at).getTime() <= now)
+      .sort((a, b) => b.number - a.number);
+    return opened[0] ?? initialGameweek ?? initialGameweeks[0] ?? null;
+  }, [initialGameweeks, initialGameweek]);
+  const displayedGameweek = view === "dashboard" ? dashboardGameweek : gameweek;
   const fixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === gameweek?.id), [allSeasonFixtures, gameweek?.id]);
+  const dashboardFixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === dashboardGameweek?.id), [allSeasonFixtures, dashboardGameweek?.id]);
 
   const predictionByFixture = useMemo(() => new Map(predictions.map((prediction) => [prediction.fixture_id, prediction])), [predictions]);
   const currentPrediction = gameweek ? predictions.find((prediction) => prediction.gameweek_id === gameweek.id && prediction.member_id === initialProfile.id) : undefined;
   const currentFixture = currentPrediction ? fixtures.find((fixture) => fixture.id === currentPrediction.fixture_id) : undefined;
   const currentAdjustment = gameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === gameweek.id && adjustment.member_id === initialProfile.id) : undefined;
   const submitted = gameweek ? predictions.filter((prediction) => prediction.gameweek_id === gameweek.id).length : 0;
+  const dashboardCurrentPrediction = dashboardGameweek ? predictions.find((prediction) => prediction.gameweek_id === dashboardGameweek.id && prediction.member_id === initialProfile.id) : undefined;
+  const dashboardCurrentFixture = dashboardCurrentPrediction ? dashboardFixtures.find((fixture) => fixture.id === dashboardCurrentPrediction.fixture_id) : undefined;
+  const dashboardCurrentAdjustment = dashboardGameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === dashboardGameweek.id && adjustment.member_id === initialProfile.id) : undefined;
+  const dashboardSubmitted = dashboardGameweek ? predictions.filter((prediction) => prediction.gameweek_id === dashboardGameweek.id).length : 0;
   const isAdmin = initialProfile.role === "admin" || initialProfile.role === "ultimate_admin";
   const isOpen = Boolean(gameweek && (isAdmin || (gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at) <= new Date()) && new Date(gameweek.locks_at) > new Date())));
+  const dashboardIsOpen = Boolean(dashboardGameweek && (isAdmin || (dashboardGameweek.status === "open" && (!dashboardGameweek.opens_at || new Date(dashboardGameweek.opens_at) <= new Date()) && new Date(dashboardGameweek.locks_at) > new Date())));
   const eligibleFixtures = useMemo(() => fixtures.filter((fixture) => fixture.is_eligible), [fixtures]);
   const competitions = useMemo(() => Array.from(new Set(eligibleFixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [eligibleFixtures]);
 
@@ -319,16 +333,11 @@ export default function LeagueApp({
       player: profiles.find((item) => item.id === prediction.member_id)?.display_name,
     })).filter((item): item is { prediction: Prediction; fixture: Fixture; player: string } => Boolean(item.fixture && item.player))
       .sort((a, b) => sortFixturesForBookmaker(a.fixture, b.fixture));
-    const grouped = new Map<string, Array<{ fixture: Fixture; player: string }>>();
-    for (const item of orderedPicks) {
-      grouped.set(item.fixture.competition, [...(grouped.get(item.fixture.competition) ?? []), { fixture: item.fixture, player: item.player }]);
-    }
     const lines = [`BOUNCE BTTS LEAGUE — GW${gameweek.number}`, `Season ${seasonLabel}`, ""];
-    for (const [competition, picks] of grouped) {
-      lines.push(competition.toUpperCase());
-      for (const pick of picks) lines.push(`${pick.fixture.home_team} v ${pick.fixture.away_team} — BTTS YES ${pick.fixture.odds_fractional ?? "Odds unavailable"} — ${pick.player}`);
-      lines.push("");
+    for (const pick of orderedPicks) {
+      lines.push(`${pick.player} — ${pick.fixture.home_team} v ${pick.fixture.away_team} — ${pick.fixture.odds_fractional ?? "Odds unavailable"}`);
     }
+    lines.push("");
     lines.push(`Combined odds: ${combinedFractional(selected.map((prediction) => fixtures.find((fixture) => fixture.id === prediction.fixture_id)?.odds_fractional))}`);
     lines.push("Odds may change after the daily check.");
     const text = lines.join("\n");
@@ -371,10 +380,10 @@ export default function LeagueApp({
         <header className="heroHeader">
           <div className="heroBackdrop" aria-hidden="true"><div className="skylineLayer"/><div className="mosaicLayer"/></div>
           <div className="heroText"><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><div className="heroRule"><span>♥</span></div><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div>
-          <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{gameweek ? `GW ${gameweek.number}` : "NO GW"}</strong></div><small>{gameweek ? `${gameweek.status.toUpperCase()} · Locks ${formatKickoff(gameweek.locks_at)}` : "Create a gameweek"}</small></div>
+          <div className="gameweekCard"><span>Season {seasonLabel}</span><div><strong>{displayedGameweek ? `GW ${displayedGameweek.number}` : "NO GW"}</strong></div><small>{displayedGameweek ? `${displayedGameweek.status.toUpperCase()} · Locks ${formatKickoff(displayedGameweek.locks_at)}` : "Create a gameweek"}</small></div>
         </header>
 
-        {view === "dashboard" && <Dashboard gameweek={gameweek} currentFixture={currentFixture} currentAdjustment={currentAdjustment} fixtures={fixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={submitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={sharePicks} isOpen={isOpen} />}
+        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={standings} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={sharePicks} isOpen={dashboardIsOpen} />}
         {view === "pick" && <><GameweekSelector gameweeks={initialGameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={isAdmin}/><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={sharePicks} /></>}
         {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={sharePicks} />}
         {view === "table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} entryFee={entryFee} />}

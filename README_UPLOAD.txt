@@ -16,3 +16,9 @@ Database migrations for the 38 gameweeks, Monday opening enforcement and score-n
 
 Suggested commit message:
 Add future gameweeks, opening rules and score-nil table
+
+ADDITIONAL SHARED PICKS FORMAT
+- Player name is shown first.
+- 'BTTS YES' has been removed.
+- Competition/league headings have been removed.
+- Picks remain ordered using the existing bookmaker competition order.
