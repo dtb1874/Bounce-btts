@@ -6,6 +6,7 @@ export type PublicStandingRow = {
   name: string;
   played: number;
   wins: number;
+  oneSided: number;
   zeroZeroCount: number;
   points: number;
 };
@@ -13,6 +14,7 @@ export type PublicStandingRow = {
 export type PublicTableData = {
   seasonLabel: string;
   prizePot: number;
+  gameweekNumber: number | null;
   rows: PublicStandingRow[];
 };
 
@@ -44,9 +46,13 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
     .maybeSingle();
 
   const { data: gameweeks } = currentSeason?.id
-    ? await admin.from("gameweeks").select("id").eq("season_id", currentSeason.id)
+    ? await admin.from("gameweeks").select("id,number,opens_at,locks_at,status").eq("season_id", currentSeason.id).order("number")
     : { data: [] };
   const gameweekIds = (gameweeks ?? []).map((item) => item.id);
+  const nowIso = new Date().toISOString();
+  const currentGameweek =
+    (gameweeks ?? []).filter((item) => !item.opens_at || item.opens_at <= nowIso).sort((a, b) => b.number - a.number)[0] ??
+    null;
 
   const { data: profiles } = await admin
     .from("profiles")
@@ -85,6 +91,7 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
           ...memberAdjustments.map((adjustment) => adjustment.gameweek_id),
         ]).size,
         wins: memberPredictions.filter((prediction) => prediction.points_awarded === 3).length,
+        oneSided: memberPredictions.filter((prediction) => prediction.points_awarded === 1).length,
         zeroZeroCount: memberPredictions.filter((prediction) => prediction.points_awarded === -1).length,
         points:
           memberPredictions.reduce(
@@ -104,6 +111,7 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
   return {
     seasonLabel: currentSeason?.label ?? settings?.current_season_label ?? "2026/27",
     prizePot: (profiles?.length ?? 0) * Number(settings?.entry_fee ?? 20),
+    gameweekNumber: currentGameweek?.number ?? null,
     rows,
   };
 }
