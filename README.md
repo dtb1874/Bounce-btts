@@ -1,24 +1,17 @@
-# Bounce BTTS consolidated production update
+# Bounce BTTS consolidated mobile and fixture-search update
 
-Upload everything inside this folder to the root of the existing GitHub repository and replace matching files.
+Includes all previously prepared updates, plus:
 
-This package supersedes the earlier public-table, history and admin-selection packages. It includes:
+- Corrected iPhone/mobile public league-table layout.
+- Search by home team, away team or competition on the member fixture-selection page.
+- Expand or collapse each competition in the game picker; matching leagues open automatically while searching.
+- The same search field in Admin → Selections before the fixture dropdown.
+- Weekly WhatsApp sharing ordered into bookmaker-style competition order, then kickoff and home team.
+- Shared selections display as `Home v Away — BTTS YES odds — Player`.
+- Combined fractional accumulator and the live public-table link remain included.
 
-- Unauthenticated visitors see only the live, read-only league table at the main website address.
-- A Member login button is displayed on the public table.
-- `/table` remains a permanent public-table address.
-- The dashboard mini league table layout is repaired.
-- Public and member league-table pages include a branded JPEG **Share table snapshot** control for WhatsApp.
-- League History includes 2024/25, 2025/26 and the current 2026/27 season.
-- New gameweeks default to Friday at 5pm UK time.
-- Hearts and Hibs fixtures are excluded.
-- Admin → Selections allows admins to add, replace or remove a pick for any active player, including after the normal deadline.
-- A player who has no selection when the deadline passes automatically receives **-1 point**.
-- Admin → Selections includes a points-adjustment control so the -1 can be amended or removed at admin discretion.
-- Missed-selection penalties count toward points and games played, but do not count as a 0-0 result for tie-break purposes.
-- Adding a valid late selection removes the automatic missed-selection penalty; explicit admin adjustments remain under admin control.
-- All admin changes are written to the audit log.
+Upload everything inside this folder to the root of the GitHub repository and replace matching files.
 
 Suggested commit message:
 
-`Add automatic missed-pick penalty and admin overrides`
+`Add mobile layout, searchable fixtures and ordered WhatsApp sharing`
