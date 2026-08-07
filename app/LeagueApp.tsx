@@ -285,9 +285,9 @@ export default function LeagueApp({
     if (currentDashboardGameweek?.id) setDashboardGameweekId(currentDashboardGameweek.id);
   }, [currentDashboardGameweek?.id]);
 
-  const dashboardGameweek =
-    initialGameweeks.find((item) => item.id === dashboardGameweekId) ??
-    currentDashboardGameweek;
+  // The persistent gameweek selector controls the Dashboard as well as the other sections.
+  // This keeps Everyone's Picks So Far, Your Pick, status and share output on the viewed gameweek.
+  const dashboardGameweek = gameweek;
   const displayedGameweek = view === "dashboard" ? dashboardGameweek : gameweek;
   const fixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === gameweek?.id), [allSeasonFixtures, gameweek?.id]);
   const dashboardFixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === dashboardGameweek?.id), [allSeasonFixtures, dashboardGameweek?.id]);
@@ -580,7 +580,7 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
   return <div className="dashboardGrid">
     <section className="contentColumn">
       <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><button className="dashboardPicksShareButton" onClick={sharePicks}><span aria-hidden="true">↗</span><strong>Share weekly picks</strong><small>WhatsApp ready · fractional odds</small></button></div></article>
+      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><button className="dashboardPicksShareButton" onClick={sharePicks} disabled={isFuture} aria-disabled={isFuture} title={isFuture ? `GW ${gameweek?.number ?? ""} has not opened yet` : "Share these weekly picks"}><span aria-hidden="true">{isFuture ? "🔒" : "↗"}</span><strong>Share weekly picks</strong><small>{isFuture ? `Locked until GW ${gameweek?.number ?? ""} opens` : "WhatsApp ready · fractional odds"}</small></button></div></article>
       <article className="panel formPanel brandedPanel">
         <div className="panelTitle rowTitle">
           <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
@@ -644,23 +644,50 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
     }
 
     return <section className="pagePanel panel brandedPanel fixturesListPage">
-      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>Fixtures are ordered by kickoff time, then by the Bet365-style UK competition order.</p></div></div>
+      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>Expand a day, then expand a league. Leagues are ordered by their earliest kickoff, followed by the Bet365-style UK competition order.</p></div></div>
       <div className="fixtureSearch"><label htmlFor="fixture-search-all">Search fixtures</label><input id="fixture-search-all" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>
-      {Array.from(byDay.entries()).map(([dateKey, dayFixtures]) => {
+      {Array.from(byDay.entries()).map(([dateKey, dayFixtures], dayIndex) => {
         const dayDate = new Date(dayFixtures[0].kickoff_at);
-        return <section className="fixtureDaySection" key={dateKey}>
-          <div className="fixtureDayHeading"><span>{dayFormatter.format(dayDate)}</span><small>{dayFixtures.length} fixture{dayFixtures.length === 1 ? "" : "s"}</small></div>
-          <div className="fixtureTable">
-            <div className="fixtureTableHeader"><span>Kickoff</span><span>Competition</span><span>Fixture</span><span>BTTS</span><span>Status</span></div>
-            {dayFixtures.map((fixture) => <div className="fixtureTableRow" key={fixture.id}>
-              <strong className="fixtureKickoffTime">{timeFormatter.format(new Date(fixture.kickoff_at))}</strong>
-              <span className="fixtureCompetitionName">{fixture.competition}</span>
-              <div className="fixtureTeamsCompact"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div>
-              <strong className="fixtureOddsCompact">{fixture.odds_fractional ?? "—"}</strong>
-              <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible" : "Fixture") : fixture.status}</span>
-            </div>)}
+        const byCompetition = new Map<string, Fixture[]>();
+        for (const fixture of dayFixtures) {
+          byCompetition.set(fixture.competition, [...(byCompetition.get(fixture.competition) ?? []), fixture]);
+        }
+        const competitionGroups = Array.from(byCompetition.entries()).sort(([, fixturesA], [, fixturesB]) => {
+          const firstA = Math.min(...fixturesA.map((fixture) => new Date(fixture.kickoff_at).getTime()));
+          const firstB = Math.min(...fixturesB.map((fixture) => new Date(fixture.kickoff_at).getTime()));
+          return firstA - firstB
+            || competitionRank(fixturesA[0].competition) - competitionRank(fixturesB[0].competition)
+            || fixturesA[0].competition.localeCompare(fixturesB[0].competition);
+        });
+
+        return <details className="fixtureDaySection fixtureDayDisclosure" key={dateKey} open={Boolean(query) || dayIndex === 0}>
+          <summary className="fixtureDayHeading">
+            <span>{dayFormatter.format(dayDate)}</span>
+            <small>{dayFixtures.length} fixture{dayFixtures.length === 1 ? "" : "s"}</small>
+            <b aria-hidden="true">⌄</b>
+          </summary>
+          <div className="fixtureDayBody">
+            {competitionGroups.map(([competition, competitionFixtures], competitionIndex) => {
+              const sortedCompetitionFixtures = [...competitionFixtures].sort(sortFixturesByKickoffThenCompetition);
+              return <details className="fixtureLeagueSection" key={`${dateKey}-${competition}`} open={Boolean(query) || (dayIndex === 0 && competitionIndex === 0)}>
+                <summary className="fixtureLeagueHeading">
+                  <span>{competition}</span>
+                  <small>{sortedCompetitionFixtures.length} fixture{sortedCompetitionFixtures.length === 1 ? "" : "s"}</small>
+                  <b aria-hidden="true">⌄</b>
+                </summary>
+                <div className="fixtureTable">
+                  <div className="fixtureTableHeader"><span>Kickoff</span><span>Fixture</span><span>BTTS</span><span>Status</span></div>
+                  {sortedCompetitionFixtures.map((fixture) => <div className="fixtureTableRow" key={fixture.id}>
+                    <strong className="fixtureKickoffTime">{timeFormatter.format(new Date(fixture.kickoff_at))}</strong>
+                    <div className="fixtureTeamsCompact"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div>
+                    <strong className="fixtureOddsCompact">{fixture.odds_fractional ?? "—"}</strong>
+                    <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible" : "Fixture") : fixture.status}</span>
+                  </div>)}
+                </div>
+              </details>;
+            })}
           </div>
-        </section>;
+        </details>;
       })}
       {!filtered.length && <div className="emptyState">No fixtures are currently stored for this two-week period.</div>}
     </section>;
@@ -922,9 +949,21 @@ function AdminFixtures({ gameweek, nextGameweek, onChanged, notice }: any) {
       body: JSON.stringify({ gameweekIds: [target.id] }),
     });
     const payload = await response.json();
+    const rawError = String(payload.error ?? "Fixture update failed.");
+    const freePlanDateError = rawError.includes("Free plans do not have access to this date");
+    const targetSaturday = new Date(new Date(target.locks_at).getTime() + 24 * 60 * 60 * 1000);
+    const retryDate = new Date(targetSaturday.getTime() - 24 * 60 * 60 * 1000);
+    const retryLabel = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(retryDate);
     notice(response.ok
       ? `GW ${target.number} update complete: ${payload.fixturesAdded} added, ${payload.fixturesUpdated} updated, ${payload.oddsUpdated} odds and ${payload.alertsCreated} alerts.`
-      : payload.error);
+      : freePlanDateError
+        ? `GW ${target.number} is too far ahead for the API-Football free plan. Try the automatic update again from ${retryLabel}, or add a missing fixture manually before then.`
+        : rawError);
     setSyncing("");
     if (response.ok) onChanged();
   }
