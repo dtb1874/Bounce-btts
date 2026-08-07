@@ -6,7 +6,7 @@ import { combinedFractional } from "@/lib/fractional";
 import ShareTableButton from "./ShareTableButton";
 
 type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "admin";
-type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek";
+type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "alerts";
 
 type Profile = {
   id: string;
@@ -714,7 +714,7 @@ function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any
 
 function AdminPanel({ active, setActive, gameweek, gameweeks, selectedGameweekId, setSelectedGameweekId, fixtures, profiles, predictions, adjustments, onChanged, notice, isUltimateAdmin }: any) {
   const safeActive = !isUltimateAdmin && active === "users" ? "selections" : active;
-  return <section className="pagePanel panel brandedPanel adminPanel"><GameweekSelector gameweeks={gameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={true}/><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs">{isUltimateAdmin&&<button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button>}<button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button></div>{isUltimateAdmin&&safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>}</section>;
+  return <section className="pagePanel panel brandedPanel adminPanel"><GameweekSelector gameweeks={gameweeks} selectedId={selectedGameweekId} onChange={setSelectedGameweekId} admin={true}/><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs">{isUltimateAdmin&&<button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button>}<button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="alerts"?"active":""} onClick={()=>setActive("alerts")}>Alerts</button></div>{isUltimateAdmin&&safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="alerts"&&<AdminAlerts notice={notice}/>}</section>;
 }
 
 function AdminUsers({ notice }: { notice: (message:string)=>void }) {
@@ -935,4 +935,58 @@ function AdminGameweek({ gameweek, onChanged, notice }: any) {
   async function save(){if(!gameweek||!locksAt)return;setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:gameweek.id,status,locksAt:new Date(locksAt).toISOString()})});const payload=await response.json();notice(response.ok?"Gameweek updated":payload.error);setBusy(false);if(response.ok)onChanged();}
   async function createNext(){if(!nextLocksAt)return notice("Choose the next deadline first.");setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({locksAt:new Date(nextLocksAt).toISOString()})});const payload=await response.json();notice(response.ok?`Gameweek ${payload.gameweek.number} created`:payload.error);setBusy(false);if(response.ok)onChanged();}
   return <div className="adminForm"><div className="adminNote">The standard deadline is Friday at 5:00pm UK time. Admins can still change it or lock the gameweek manually.</div><div className="formGrid"><label>Status<select value={status} onChange={e=>setStatus(e.target.value)} disabled={!gameweek}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label>Current pick deadline<input type="datetime-local" value={locksAt} onChange={e=>setLocksAt(e.target.value)}/></label><label>Next gameweek deadline<input type="datetime-local" value={nextLocksAt} onChange={e=>setNextLocksAt(e.target.value)}/><small>Defaults to Friday at 17:00 UK time.</small></label></div><div className="userActions"><button className="save" disabled={busy||!gameweek} onClick={save}>{busy?"Saving…":"Save current gameweek"}</button><button disabled={busy||!nextLocksAt} onClick={createNext}>Create next gameweek</button></div></div>;
+}
+
+
+function AdminAlerts({ notice }: { notice: (message: string) => void }) {
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const token = await token();
+    const [alertResponse, runResponse] = await Promise.all([
+      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${token}` } }),
+      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${token}` } }),
+    ]);
+    const alertPayload = await alertResponse.json();
+    const runPayload = await runResponse.json();
+    if (alertResponse.ok) setAlerts(alertPayload.alerts ?? []); else notice(alertPayload.error ?? "Could not load alerts");
+    if (runResponse.ok) setRuns(runPayload.runs ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function runSync() {
+    setSyncing(true);
+    const response = await fetch("/api/admin/provider-sync", { method: "POST", headers: { authorization: `Bearer ${await token()}` } });
+    const payload = await response.json();
+    notice(response.ok ? `Update complete: ${payload.fixturesAdded} added, ${payload.fixturesUpdated} updated, ${payload.oddsUpdated} odds, ${payload.alertsCreated} alerts.` : payload.error);
+    setSyncing(false);
+    await load();
+  }
+
+  async function resolve(id: string, resolved: boolean) {
+    const response = await fetch("/api/admin/alerts", { method: "PATCH", headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` }, body: JSON.stringify({ id, resolved }) });
+    const payload = await response.json();
+    notice(response.ok ? (resolved ? "Alert resolved" : "Alert reopened") : payload.error);
+    if (response.ok) await load();
+  }
+
+  const unresolved = alerts.filter((item) => !item.resolved);
+  const latestRun = runs[0];
+  return <div className="adminAlertsPanel">
+    <div className="providerStatusCard">
+      <div><span>API-FOOTBALL</span><strong>{latestRun ? `Last update ${new Date(latestRun.started_at).toLocaleString("en-GB")}` : "No update has run yet"}</strong><small>{latestRun ? `${latestRun.status.toUpperCase()} · ${latestRun.requests_used} requests used${latestRun.requests_remaining !== null ? ` · ${latestRun.requests_remaining} remaining` : ""}` : "The daily update runs at 08:00 UK time."}</small></div>
+      <button className="prominentShareButton" disabled={syncing} onClick={runSync}>{syncing ? "Updating fixtures…" : "Run fixture update now"}</button>
+    </div>
+    <div className="alertsSummary"><strong>{unresolved.length}</strong><span>unresolved fixture alert{unresolved.length === 1 ? "" : "s"}</span></div>
+    {loading ? <div className="emptyState">Loading alerts…</div> : alerts.length ? <div className="adminAlertList">{alerts.map((alert) => <article className={`adminAlertRow ${alert.resolved ? "resolved" : ""} ${alert.severity}`} key={alert.id}>
+      <div><span>{alert.severity.toUpperCase()} · {new Date(alert.created_at).toLocaleString("en-GB")}</span><strong>{alert.title}</strong><p>{alert.message}</p><small>{alert.profiles?.display_name ? `Affected player: ${alert.profiles.display_name}` : ""}</small></div>
+      <button onClick={() => resolve(alert.id, !alert.resolved)}>{alert.resolved ? "Reopen" : "Mark resolved"}</button>
+    </article>)}</div> : <div className="emptyState">No fixture-change alerts.</div>}
+  </div>;
 }

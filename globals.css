@@ -1755,3 +1755,23 @@ a,
     margin-top: 12px;
   }
 }
+
+/* Provider update and admin alerts */
+.providerStatusCard { display:flex; justify-content:space-between; gap:18px; align-items:center; padding:18px; margin-bottom:16px; border:1px solid #80653a; border-radius:10px; background:linear-gradient(135deg,#1e1713,#111116); }
+.providerStatusCard > div { display:grid; gap:5px; }
+.providerStatusCard span { color:#c8a86b; font-size:.7rem; letter-spacing:.12em; font-weight:900; }
+.providerStatusCard strong { color:#f2dfb2; }
+.providerStatusCard small { color:#a99d8c; }
+.alertsSummary { display:flex; align-items:baseline; gap:9px; padding:10px 2px 14px; color:#c8a86b; }
+.alertsSummary strong { font-size:1.65rem; color:#f0cc7c; }
+.adminAlertList { display:grid; gap:10px; }
+.adminAlertRow { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:15px; border:1px solid #61404a; border-left:4px solid #b27345; border-radius:8px; background:#181419; }
+.adminAlertRow.critical { border-left-color:#d05563; }
+.adminAlertRow.info { border-left-color:#6f88a9; }
+.adminAlertRow.resolved { opacity:.55; }
+.adminAlertRow > div { display:grid; gap:4px; }
+.adminAlertRow span { color:#c8a86b; font-size:.65rem; letter-spacing:.08em; }
+.adminAlertRow strong { color:#f0e2cf; }
+.adminAlertRow p { margin:0; color:#c8bbaa; }
+.adminAlertRow small { color:#b89a6a; }
+@media(max-width:760px){ .providerStatusCard,.adminAlertRow{align-items:stretch;flex-direction:column}.providerStatusCard button,.adminAlertRow button{width:100%} }
