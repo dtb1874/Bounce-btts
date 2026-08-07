@@ -1,6 +1,13 @@
 /*
- * Bounce BTTS — Tynecastle table watermark
- * Original line-art treatment, deliberately faint so standings remain readable.
+ * Bounce BTTS — Tynecastle league-table watermark
+ *
+ * Applied automatically to:
+ * - Dashboard mini league table
+ * - Full League Table page
+ * - League History tables
+ * - Public/read-only league table
+ *
+ * The exported JPEG uses the same 12% opacity in ShareTableButton.tsx.
  */
 
 .tablePanel .miniTable,
@@ -20,18 +27,17 @@
   background-repeat: no-repeat;
   background-position: center 58%;
   filter: grayscale(1) blur(0.25px);
+  opacity: 0.12;
 }
 
 .tablePanel .miniTable::before {
   inset: 18px -42px 4px;
   background-size: 112% auto;
-  opacity: 0.052;
 }
 
 .largeTable::before {
   inset: 16px 2.5% 8px;
   background-size: min(920px, 88%) auto;
-  opacity: 0.058;
 }
 
 .tablePanel .miniTable > *,
@@ -40,7 +46,10 @@
   z-index: 1;
 }
 
-/* A soft lower fade makes the architecture feel embedded rather than pasted on. */
+/*
+ * Soft edge shading keeps the line art embedded in the table rather than
+ * appearing pasted over the rows.
+ */
 .tablePanel .miniTable::after,
 .largeTable::after {
   content: "";
@@ -50,10 +59,10 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(16, 18, 23, 0.22) 0%,
-    rgba(16, 18, 23, 0.02) 34%,
-    rgba(16, 18, 23, 0.05) 70%,
-    rgba(16, 18, 23, 0.28) 100%
+    rgba(16, 18, 23, 0.18) 0%,
+    rgba(16, 18, 23, 0.01) 34%,
+    rgba(16, 18, 23, 0.03) 70%,
+    rgba(16, 18, 23, 0.22) 100%
   );
 }
 
@@ -61,20 +70,18 @@
   .tablePanel .miniTable::before {
     inset: 22px -70px 0;
     background-size: 145% auto;
-    opacity: 0.045;
   }
 
   .largeTable::before {
     inset: 28px -95px 4px;
     background-size: 150% auto;
-    opacity: 0.048;
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .tablePanel .miniTable::before,
   .largeTable::before {
-    opacity: 0.035;
+    opacity: 0.06;
     filter: grayscale(1);
   }
 }

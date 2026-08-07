@@ -2,41 +2,28 @@
   <title id="title">Tynecastle Park facade line-art watermark</title>
   <desc id="desc">An original, simplified architectural line drawing inspired by the main frontage of Tynecastle Park.</desc>
   <g fill="none" stroke="#d8c8b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <!-- ground and outer silhouette -->
     <path d="M45 438H1155"/>
     <path d="M82 438V224L150 190H388V155H430L470 112H730L770 155H812V190H1050L1118 224V438"/>
     <path d="M116 222V438M1084 222V438"/>
-
-    <!-- central pavilion and pediment -->
     <path d="M430 155V438M770 155V438"/>
     <path d="M470 112L600 58L730 112"/>
     <path d="M510 112V86M690 112V86"/>
     <path d="M492 165H708"/>
     <path d="M477 184H723"/>
     <path d="M505 207H695"/>
-
-    <!-- central signage -->
     <rect x="492" y="222" width="216" height="54" rx="3"/>
-
-    <!-- main entrance -->
     <path d="M525 438V318Q525 292 551 292H649Q675 292 675 318V438"/>
     <path d="M548 438V327H652V438"/>
     <path d="M600 327V438"/>
     <path d="M548 357H652M548 390H652"/>
-
-    <!-- central windows -->
     <rect x="456" y="302" width="46" height="68" rx="2"/>
     <path d="M479 302V370M456 336H502"/>
     <rect x="698" y="302" width="46" height="68" rx="2"/>
     <path d="M721 302V370M698 336H744"/>
-
-    <!-- wings: floor and roof lines -->
     <path d="M150 190H430M770 190H1050"/>
     <path d="M126 245H430M770 245H1074"/>
     <path d="M116 294H430M770 294H1084"/>
     <path d="M116 380H430M770 380H1084"/>
-
-    <!-- left wing windows -->
     <g>
       <rect x="155" y="263" width="54" height="75" rx="2"/><path d="M182 263V338M155 300H209"/>
       <rect x="236" y="263" width="54" height="75" rx="2"/><path d="M263 263V338M236 300H290"/>
@@ -45,8 +32,6 @@
       <rect x="236" y="393" width="54" height="45" rx="2"/><path d="M263 393V438"/>
       <rect x="317" y="393" width="54" height="45" rx="2"/><path d="M344 393V438"/>
     </g>
-
-    <!-- right wing windows -->
     <g>
       <rect x="829" y="263" width="54" height="75" rx="2"/><path d="M856 263V338M829 300H883"/>
       <rect x="910" y="263" width="54" height="75" rx="2"/><path d="M937 263V338M910 300H964"/>
@@ -55,13 +40,9 @@
       <rect x="910" y="393" width="54" height="45" rx="2"/><path d="M937 393V438"/>
       <rect x="991" y="393" width="54" height="45" rx="2"/><path d="M1018 393V438"/>
     </g>
-
-    <!-- brick/stone rhythm and side entrances -->
     <path d="M116 352H430M770 352H1084" opacity=".65"/>
     <path d="M130 438V397H145V438M1055 438V397H1070V438"/>
     <path d="M92 235L150 206M1108 235L1050 206"/>
-
-    <!-- understated stadium details -->
     <path d="M70 438V145M1130 438V145" opacity=".55"/>
     <path d="M70 145L116 184M1130 145L1084 184" opacity=".55"/>
     <path d="M58 145H82M1118 145H1142" opacity=".55"/>

@@ -54,14 +54,19 @@ function drawTynecastleFacadeWatermark(
 ) {
   const drawingWidth = 1000;
   const drawingHeight = 360;
-  const scale = Math.min((canvasWidth * 0.82) / drawingWidth, (tableHeight * 0.88) / drawingHeight);
+  const scale = Math.min(
+    (canvasWidth * 0.82) / drawingWidth,
+    (tableHeight * 0.88) / drawingHeight,
+  );
   const x = (canvasWidth - drawingWidth * scale) / 2;
   const y = tableTop + (tableHeight - drawingHeight * scale) / 2;
 
   context.save();
   context.translate(x, y);
   context.scale(scale, scale);
-  context.globalAlpha = 0.064;
+
+  // Keep the exported JPEG consistent with every live league table.
+  context.globalAlpha = 0.12;
   context.strokeStyle = "#dfcfbd";
   context.fillStyle = "#dfcfbd";
   context.lineWidth = 4;
@@ -128,7 +133,9 @@ function drawTynecastleFacadeWatermark(
   context.lineTo(562, 307);
   context.stroke();
 
-  [95, 170, 245, 680, 755, 830].forEach((windowX) => drawWindow(context, windowX, 220, 48, 58));
+  [95, 170, 245, 680, 755, 830].forEach((windowX) =>
+    drawWindow(context, windowX, 220, 48, 58),
+  );
   drawWindow(context, 370, 220, 42, 58);
   drawWindow(context, 588, 220, 42, 58);
 
@@ -159,11 +166,15 @@ async function createSnapshot(
   const footerHeight = 135;
   const tableHeight = Math.max(rows.length, 1) * rowHeight;
   const height = headerHeight + tableHeight + footerHeight;
+
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
+
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Your browser could not create the table image.");
+  if (!context) {
+    throw new Error("Your browser could not create the table image.");
+  }
 
   const background = context.createLinearGradient(0, 0, width, height);
   background.addColorStop(0, "#090a0e");
@@ -177,19 +188,29 @@ async function createSnapshot(
   context.arc(1060, 120, 235, 0, Math.PI * 2);
   context.fill();
 
-  // The same subtle Tynecastle treatment used behind the live league tables.
-  drawTynecastleFacadeWatermark(context, width, headerHeight, tableHeight);
+  drawTynecastleFacadeWatermark(
+    context,
+    width,
+    headerHeight,
+    tableHeight,
+  );
 
   context.fillStyle = "#e8dac7";
   context.font = "700 76px Georgia, serif";
   context.fillText("BOUNCE", 72, 104);
+
   context.fillStyle = "#c7af95";
   context.font = "600 28px Georgia, serif";
   context.fillText("BTTS LEAGUE", 76, 148);
 
   context.fillStyle = "#a68875";
   context.font = "600 18px Arial, sans-serif";
-  context.fillText(`SEASON ${seasonLabel}${gameweekNumber ? `  •  GAMEWEEK ${gameweekNumber}` : ""}  •  EST 2024`, 76, 190);
+  context.fillText(
+    `SEASON ${seasonLabel}${gameweekNumber ? `  •  GAMEWEEK ${gameweekNumber}` : ""}  •  EST 2024`,
+    76,
+    190,
+  );
+
   context.fillStyle = "#e7d3bc";
   context.font = "700 22px Arial, sans-serif";
   context.fillText(`PRIZE POT £${prizePot.toFixed(0)}`, 930, 190);
@@ -203,12 +224,16 @@ async function createSnapshot(
 
   const columns = [80, 160, 690, 785, 875, 975, 1080];
   const labels = ["POS", "PLAYER", "P", "W", "S-N", "0-0", "PTS"];
+
   context.fillStyle = "#9f9893";
   context.font = "700 18px Arial, sans-serif";
-  labels.forEach((label, index) => context.fillText(label, columns[index], 264));
+  labels.forEach((label, index) =>
+    context.fillText(label, columns[index], 264),
+  );
 
   rows.forEach((row, index) => {
     const y = headerHeight + index * rowHeight;
+
     if (index === 0) {
       context.fillStyle = "rgba(103, 31, 48, 0.78)";
       roundedRect(context, 60, y + 5, 1080, rowHeight - 10, 12);
@@ -221,13 +246,33 @@ async function createSnapshot(
     context.fillStyle = index === 0 ? "#fff1df" : "#eee8e0";
     context.font = "700 24px Arial, sans-serif";
     context.fillText(String(index + 1), columns[0], y + 49);
+
     context.font = "700 25px Arial, sans-serif";
     context.fillText(row.name.slice(0, 34), columns[1], y + 49);
+
     context.font = "600 23px Arial, sans-serif";
     context.fillText(String(row.played), columns[2], y + 49);
     context.fillText(String(row.wins), columns[3], y + 49);
-    context.fillText(String((row as PublicStandingRow & { oneSided?: number; scoreNilCount?: number }).oneSided ?? (row as PublicStandingRow & { scoreNilCount?: number }).scoreNilCount ?? 0), columns[4], y + 49);
+    context.fillText(
+      String(
+        (
+          row as PublicStandingRow & {
+            oneSided?: number;
+            scoreNilCount?: number;
+          }
+        ).oneSided ??
+          (
+            row as PublicStandingRow & {
+              scoreNilCount?: number;
+            }
+          ).scoreNilCount ??
+          0,
+      ),
+      columns[4],
+      y + 49,
+    );
     context.fillText(String(row.zeroZeroCount), columns[5], y + 49);
+
     context.fillStyle = "#f0cfaa";
     context.font = "800 27px Arial, sans-serif";
     context.fillText(String(row.points), columns[6], y + 49);
@@ -241,26 +286,47 @@ async function createSnapshot(
   });
 
   const footerY = headerHeight + tableHeight;
+
   context.fillStyle = "#8f8781";
   context.font = "500 17px Arial, sans-serif";
-  context.fillText("Ties: fewest 0–0s, most BTTS wins, then alphabetical.", 72, footerY + 48);
+  context.fillText(
+    "Ties: fewest 0–0s, most BTTS wins, then alphabetical.",
+    72,
+    footerY + 48,
+  );
+
   context.fillStyle = "#dbc1a6";
   context.font = "700 19px Arial, sans-serif";
-  context.fillText(liveUrl.replace(/^https?:\/\//, ""), 72, footerY + 86);
+  context.fillText(
+    liveUrl.replace(/^https?:\/\//, ""),
+    72,
+    footerY + 86,
+  );
+
   context.fillStyle = "#857b76";
   context.font = "500 15px Arial, sans-serif";
-  context.fillText(`Live table snapshot • ${new Date().toLocaleString("en-GB")}`, 770, footerY + 86);
+  context.fillText(
+    `Live table snapshot • ${new Date().toLocaleString("en-GB")}`,
+    770,
+    footerY + 86,
+  );
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
-      (result) => (result ? resolve(result) : reject(new Error("The table image could not be generated."))),
+      (result) =>
+        result
+          ? resolve(result)
+          : reject(new Error("The table image could not be generated.")),
       "image/jpeg",
       0.94,
     );
   });
-  return new File([blob], `bounce-btts-table-${seasonLabel.replace("/", "-")}.jpg`, {
-    type: "image/jpeg",
-  });
+
+  return new File(
+    [blob],
+    `bounce-btts-table-${seasonLabel.replace("/", "-")}.jpg`,
+    { type: "image/jpeg" },
+  );
 }
 
 export default function ShareTableButton({
@@ -276,16 +342,40 @@ export default function ShareTableButton({
 
   async function share() {
     if (busy) return;
+
     setBusy(true);
     setMessage("");
+
     try {
       const liveUrl = `${window.location.origin}/table`;
-      const file = await createSnapshot(rows, seasonLabel, prizePot, gameweekNumber, liveUrl);
-      const text = `Bounce BTTS League table — Season ${seasonLabel}${gameweekNumber ? ` — Gameweek ${gameweekNumber}` : ""}\nSee the live table: ${liveUrl}`;
-      const shareData: ShareData = { title: "Bounce BTTS League Table", text, url: liveUrl, files: [file] };
-      const browser = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
+      const file = await createSnapshot(
+        rows,
+        seasonLabel,
+        prizePot,
+        gameweekNumber,
+        liveUrl,
+      );
 
-      if (navigator.share && (!browser.canShare || browser.canShare({ files: [file] }))) {
+      const text =
+        `Bounce BTTS League table — Season ${seasonLabel}` +
+        `${gameweekNumber ? ` — Gameweek ${gameweekNumber}` : ""}\n` +
+        `See the live table: ${liveUrl}`;
+
+      const shareData: ShareData = {
+        title: "Bounce BTTS League Table",
+        text,
+        url: liveUrl,
+        files: [file],
+      };
+
+      const browser = navigator as Navigator & {
+        canShare?: (data: ShareData) => boolean;
+      };
+
+      if (
+        navigator.share &&
+        (!browser.canShare || browser.canShare({ files: [file] }))
+      ) {
         await navigator.share(shareData);
         setMessage("Shared");
       } else {
@@ -294,22 +384,38 @@ export default function ShareTableButton({
         link.href = objectUrl;
         link.download = file.name;
         link.click();
+
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(text)}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
         setMessage("JPEG downloaded — attach it in WhatsApp");
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      setMessage(error instanceof Error ? error.message : "Could not share the table.");
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not share the table.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <span className={`tableShareControl ${compact ? "compact" : ""} ${className}`.trim()}>
+    <span
+      className={`tableShareControl ${compact ? "compact" : ""} ${className}`.trim()}
+    >
       <button type="button" onClick={share} disabled={busy}>
-        {busy ? "Creating JPEG…" : compact ? "Share snapshot" : "Share table snapshot"}
+        {busy
+          ? "Creating JPEG…"
+          : compact
+            ? "Share snapshot"
+            : "Share table snapshot"}
       </button>
       {message && <small>{message}</small>}
     </span>

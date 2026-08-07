@@ -1,0 +1,27 @@
+BOUNCE BTTS — LEAGUE TABLE WATERMARK UPDATE
+============================================
+
+Upload these files to the matching paths in the root of the Bounce-btts
+GitHub repository and replace the existing copies when GitHub asks:
+
+1. app/tynecastle-watermark.css
+2. app/ShareTableButton.tsx
+3. public/assets/tynecastle-facade.svg
+
+What this changes
+-----------------
+- Sets the Tynecastle watermark to 12% opacity.
+- Applies it automatically to:
+  - Dashboard mini league table
+  - Full League Table page
+  - League History tables
+  - Public/read-only league table
+- Sets the same 12% watermark opacity in shared/downloaded JPEG table exports.
+- Keeps the smaller-screen layout and accessibility transparency fallback.
+
+No other files need to be changed. app/layout.tsx already imports
+app/tynecastle-watermark.css.
+
+After upload
+------------
+Commit the files to the main branch. Vercel should redeploy automatically.
