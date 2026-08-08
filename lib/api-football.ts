@@ -194,9 +194,24 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
       for (const fixture of candidates ?? []) {
         if (tracker.remaining !== null && tracker.remaining <= 8) break;
         if (tracker.used >= 75) break;
-        const result = await fixtureOdds(String(fixture.provider_fixture_id), betId, tracker);
-        await admin.from("fixtures").update({ odds_fractional: result.odds, odds_bookmaker: result.bookmaker, odds_checked_at: new Date().toISOString() }).eq("id", fixture.id);
-        if (result.odds) summary.oddsUpdated += 1;
+        const providerId = String(fixture.provider_fixture_id ?? "").trim();
+        // API-Football only accepts its numeric fixture IDs. Manual and Sky IDs
+        // must never be sent to the odds endpoint.
+        if (!/^\d+$/.test(providerId)) continue;
+        try {
+          const result = await fixtureOdds(providerId, betId, tracker);
+          const { error: oddsError } = await admin.from("fixtures").update({
+            odds_fractional: result.odds,
+            odds_bookmaker: result.bookmaker,
+            odds_checked_at: new Date().toISOString(),
+          }).eq("id", fixture.id);
+          if (oddsError) throw oddsError;
+          if (result.odds) summary.oddsUpdated += 1;
+        } catch (oddsError) {
+          // One unavailable or malformed odds response must not cancel the
+          // complete fixture import. Keep the run partial and continue.
+          summary.errors.push(`Odds ${providerId}: ${oddsError instanceof Error ? oddsError.message : "update failed"}`);
+        }
       }
     }
 

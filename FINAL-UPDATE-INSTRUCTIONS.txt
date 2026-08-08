@@ -1,0 +1,21 @@
+BOUNCE BTTS — FINAL UPDATE
+
+Upload the contents of this folder to the root of the existing GitHub repository, replacing files when prompted.
+Vercel should deploy automatically after the GitHub commit.
+
+This release includes:
+- API-Football odds fix: manual/Sky text fixture IDs are skipped.
+- One odds failure no longer cancels the whole fixture import.
+- Dashboard weekly picks can be shared as a formatted JPG image.
+- Odds remain visible beside dashboard picks.
+- Historical 2024/25 and 2025/26 tables and Roll of Honour.
+- Trophy artwork.
+
+After deployment:
+1. Open Admin > Fixtures.
+2. Select the required gameweek.
+3. Run fixture update now.
+4. Confirm fixtures appear and check which odds are available.
+5. Re-enter player selections.
+
+Note: API-Football may not supply BTTS odds for every fixture/bookmaker. Those games will correctly show a dash rather than causing the whole update to fail.

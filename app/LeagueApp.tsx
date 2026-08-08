@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { combinedFractional } from "@/lib/fractional";
 import ShareTableButton from "./ShareTableButton";
+import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
+import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
 
 type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "alerts" | "admin";
 type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "seasons";
@@ -530,7 +532,7 @@ export default function LeagueApp({
           <FutureGameweekBanner gameweek={dashboardGameweek} now={clockNow} />
         )}
 
-        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={dashboardStandings} tableThroughNumber={dashboardTableThroughNumber} isFuture={dashboardIsFuture} form={dashboardForm} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} sharePicks={() => sharePicksFor(dashboardGameweek, dashboardFixtures)} isOpen={dashboardIsOpen} />}
+        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={dashboardStandings} tableThroughNumber={dashboardTableThroughNumber} isFuture={dashboardIsFuture} form={dashboardForm} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} isOpen={dashboardIsOpen} />}
         {view === "pick" && <><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={() => sharePicksFor(gameweek, fixtures)} /></>}
         {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={() => sharePicksFor(gameweek, fixtures)} />}
         {view === "table" && <LeagueTable standings={selectedStandings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} tableThroughNumber={selectedTableThroughNumber} isFuture={selectedIsFuture} entryFee={entryFee} />}
@@ -570,7 +572,7 @@ function GameweekSelector({ gameweeks, selectedId, onChange, admin }: any) {
   return <div className="gameweekSelector"><label htmlFor={admin ? "admin-gameweek-select" : "pick-gameweek-select"}>View gameweek</label><select id={admin ? "admin-gameweek-select" : "pick-gameweek-select"} value={selectedId} onChange={(event)=>onChange(event.target.value)}>{gameweeks.map((item:Gameweek)=><option key={item.id} value={item.id}>GW {item.number} · {item.opens_at ? `opens ${formatKickoff(item.opens_at)}` : "open date not set"} · deadline {formatKickoff(item.locks_at)}</option>)}</select>{!admin&&gameweeks.find((item:Gameweek)=>item.id===selectedId)?.opens_at&&new Date(gameweeks.find((item:Gameweek)=>item.id===selectedId).opens_at as string)>new Date()&&<small>Selections open Monday at 8:00am UK time. You can view this gameweek now, but cannot submit yet.</small>}</div>;
 }
 
-function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, tableThroughNumber, isFuture, form, submitted, entryFee, seasonLabel, setView, sharePicks, isOpen }: any) {
+function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, tableThroughNumber, isFuture, form, submitted, entryFee, seasonLabel, setView, isOpen }: any) {
   const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
   const gameweekPicks = profiles.map((profile: Profile) => {
     const prediction = predictions.find((item: Prediction) => item.gameweek_id === gameweek?.id && item.member_id === profile.id);
@@ -580,7 +582,7 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
   return <div className="dashboardGrid">
     <section className="contentColumn">
       <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><button className="dashboardPicksShareButton" onClick={sharePicks} disabled={isFuture} aria-disabled={isFuture} title={isFuture ? `GW ${gameweek?.number ?? ""} has not opened yet` : "Share these weekly picks"}><span aria-hidden="true">{isFuture ? "🔒" : "↗"}</span><strong>Share weekly picks</strong><small>{isFuture ? `Locked until GW ${gameweek?.number ?? ""} opens` : "WhatsApp ready · fractional odds"}</small></button></div></article>
+      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><WeeklyPicksShareButton disabled={isFuture} gameweekNumber={gameweek?.number ?? 0} seasonLabel={seasonLabel} picks={gameweekPicks.filter(({fixture}:{fixture?:Fixture})=>Boolean(fixture)).map(({profile,fixture}:{profile:Profile;fixture?:Fixture})=>({player:profile.display_name,homeTeam:fixture!.home_team,awayTeam:fixture!.away_team,competition:fixture!.competition,kickoffAt:fixture!.kickoff_at,odds:fixture!.odds_fractional}))} /></div></article>
       <article className="panel formPanel brandedPanel">
         <div className="panelTitle rowTitle">
           <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
@@ -703,21 +705,32 @@ function LeagueTable({ standings, seasonLabel, gameweekNumber, tableThroughNumbe
 }
 
 function LeagueHistory({ seasons }: { seasons: SeasonHistory[] }) {
-  const [selectedId, setSelectedId] = useState(seasons.find((season) => !season.isCurrent)?.id ?? seasons[0]?.id ?? "");
-  const selected = seasons.find((season) => season.id === selectedId) ?? seasons[0];
+  const archived: SeasonHistory[] = historicalSeasons.map((season) => ({
+    id: `historic-${season.season}`,
+    label: season.season,
+    isCurrent: false,
+    gameweeks: season.weeks,
+    completedPicks: season.finalTable.reduce((sum, row) => sum + row.played, 0),
+    standings: season.finalTable.map((row, index) => ({
+      id: `${season.season}-${index}`,
+      name: row.name,
+      played: row.played,
+      wins: row.wins,
+      zeroZeroCount: row.losses,
+      points: row.points,
+    })),
+  }));
+  const merged = [...archived, ...seasons.filter((season) => !archived.some((archive) => archive.label === season.label))];
+  const [selectedId, setSelectedId] = useState(merged[0]?.id ?? "");
+  const selected = merged.find((season) => season.id === selectedId) ?? merged[0];
   return <section className="pagePanel panel brandedPanel historyPanel">
-    <div className="pageHeading"><div><span>EST 2024 · SEASON ARCHIVE</span><h2>League History</h2><p>View previous seasons, final tables and winners as each archive is completed.</p></div></div>
-    <div className="seasonCards">
-      {seasons.map((season) => <button key={season.id} className={selected?.id === season.id ? "active" : ""} onClick={() => setSelectedId(season.id)}>
-        <span>{season.isCurrent ? "CURRENT SEASON" : "ARCHIVE"}</span>
-        <strong>{season.label}</strong>
-        <small>{season.gameweeks} gameweek{season.gameweeks === 1 ? "" : "s"} · {season.completedPicks} scored pick{season.completedPicks === 1 ? "" : "s"}</small>
-      </button>)}
+    <div className="pageHeading"><div><span>EST 2024 · SEASON ARCHIVE</span><h2>League History</h2><p>Previous winners, final tables and the current season.</p></div></div>
+    <div className="rollOfHonour">
+      <img src="/assets/bounce-cup.png" alt="Bounce BTTS League trophy" />
+      <div><span>ROLL OF HONOUR</span>{rollOfHonour.map((winner)=><p key={winner.season}><strong>{winner.season}</strong><b>{winner.winner}</b></p>)}</div>
     </div>
-    {selected && selected.standings.length > 0 ? <>
-      <div className="historyWinner"><span>{selected.isCurrent ? "CURRENT LEADER" : "SEASON WINNER"}</span><strong>{selected.standings[0].name}</strong><b>{selected.standings[0].points} pts</b></div>
-      <div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((row,index)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div>
-    </> : <div className="emptyState historyEmpty"><strong>{selected?.label}</strong><span>No archived gameweek results have been imported for this season yet.</span></div>}
+    <div className="seasonCards">{merged.map((season)=><button key={season.id} className={selected?.id===season.id?"active":""} onClick={()=>setSelectedId(season.id)}><span>{season.isCurrent?"CURRENT SEASON":"ARCHIVE"}</span><strong>{season.label}</strong><small>{season.gameweeks} gameweeks</small></button>)}</div>
+    {selected&&selected.standings.length>0?<><div className="historyWinner"><span>{selected.isCurrent?"CURRENT LEADER":"SEASON WINNER"}</span><strong>{selected.standings[0].name}</strong><b>{selected.standings[0].points} pts</b></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((row,index)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></>:<div className="emptyState historyEmpty"><strong>{selected?.label}</strong><span>No archived results yet.</span></div>}
   </section>;
 }
 

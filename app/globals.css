@@ -2106,3 +2106,6 @@ a,
 .dashboardPicksShareButton:disabled small {
   color: #8f8984;
 }
+
+
+.rollOfHonour{display:flex;align-items:center;gap:28px;margin:20px 0 28px;padding:22px 28px;border:1px solid rgba(201,172,145,.24);border-radius:16px;background:linear-gradient(120deg,rgba(73,22,36,.62),rgba(13,14,19,.9));overflow:hidden}.rollOfHonour img{width:130px;height:190px;object-fit:contain;filter:drop-shadow(0 14px 22px rgba(0,0,0,.45))}.rollOfHonour>div{flex:1}.rollOfHonour>div>span{display:block;color:#c7ab91;font-size:.78rem;font-weight:800;letter-spacing:.18em;margin-bottom:12px}.rollOfHonour p{display:grid;grid-template-columns:100px 1fr;gap:18px;margin:0;padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}.rollOfHonour p strong{color:#a69a91}.rollOfHonour p b{color:#f1dfca;font-size:1.05rem}@media(max-width:700px){.rollOfHonour{padding:16px;gap:16px}.rollOfHonour img{width:92px;height:145px}.rollOfHonour p{grid-template-columns:74px 1fr;gap:10px}}
