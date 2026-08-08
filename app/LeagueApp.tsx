@@ -96,53 +96,113 @@ const navItems: { id: View; label: string; icon: string }[] = [
   { id: "admin", label: "Admin", icon: "⚙" },
 ];
 
-const competitionPriority: Array<{ rank: number; names: string[] }> = [
-  // These competitions move above the current list automatically when fixtures exist.
-  { rank: 0, names: ["England Premier League", "Premier League"] },
-  { rank: 1, names: ["England Championship", "EFL Championship"] },
-  { rank: 2, names: ["England League One", "EFL League One"] },
-  { rank: 3, names: ["England League Two", "EFL League Two"] },
-
-  // Current Bet365 UK order supplied by the league administrator.
-  { rank: 10, names: ["England EFL Cup", "EFL Cup", "Carabao Cup"] },
-  { rank: 11, names: ["Scotland Premiership", "Scottish Premiership"] },
-  { rank: 12, names: ["England National League", "National League"] },
-  { rank: 13, names: ["England National League North", "National League North"] },
-  { rank: 14, names: ["England National League South", "National League South"] },
-  { rank: 15, names: ["Northern Ireland Premier", "Northern Ireland Premiership", "NIFL Premiership"] },
-  { rank: 16, names: ["Northern Ireland Championship", "NIFL Championship"] },
-  { rank: 17, names: ["Scotland Championship", "Scottish Championship"] },
-  { rank: 18, names: ["Scotland League One", "Scottish League One"] },
-  { rank: 19, names: ["Scotland League Two", "Scottish League Two"] },
-  { rank: 20, names: ["Wales Premier League", "Cymru Premier"] },
-
-  { rank: 30, names: ["FA Cup"] },
-  { rank: 31, names: ["Scottish Cup", "Scotland Scottish Cup"] },
+const competitionPriority: Array<{ rank: number; labels: string[] }> = [
+  { rank: 0, labels: ["English Premier League"] },
+  { rank: 1, labels: ["English Championship"] },
+  { rank: 2, labels: ["English League One"] },
+  { rank: 3, labels: ["English League Two"] },
+  { rank: 10, labels: ["England — Carabao Cup"] },
+  { rank: 11, labels: ["Scottish Premiership"] },
+  { rank: 12, labels: ["National League"] },
+  { rank: 13, labels: ["National League North"] },
+  { rank: 14, labels: ["National League South"] },
+  { rank: 15, labels: ["Northern Irish Premiership"] },
+  { rank: 16, labels: ["Northern Irish Championship"] },
+  { rank: 17, labels: ["Scottish Championship"] },
+  { rank: 18, labels: ["Scottish League One"] },
+  { rank: 19, labels: ["Scottish League Two"] },
+  { rank: 20, labels: ["Welsh Premier League"] },
+  { rank: 21, labels: ["FAW Championship"] },
+  { rank: 30, labels: ["FA Cup"] },
+  { rank: 31, labels: ["Scottish Cup"] },
+  { rank: 32, labels: ["Premier Sports Cup"] },
+  { rank: 33, labels: ["Scottish Challenge Cup"] },
 ];
 
-function normaliseCompetition(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function normaliseText(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function competitionRank(name: string) {
-  const normalised = normaliseCompetition(name);
+function normaliseCountry(country: string) {
+  const value = normaliseText(country);
+  if (value === "northern ireland" || value === "northern ireland") return "Northern Ireland";
+  if (value === "england") return "England";
+  if (value === "scotland") return "Scotland";
+  if (value === "wales") return "Wales";
+  if (value === "europe") return "Europe";
+  if (value === "international") return "International";
+  return country.trim() || "Other";
+}
+
+function competitionDisplayName(fixture: Pick<Fixture, "country" | "competition">) {
+  const country = normaliseCountry(fixture.country);
+  const competition = normaliseText(fixture.competition);
+
+  if (country === "England") {
+    if (["premier league", "england premier league", "english premier league"].includes(competition)) return "English Premier League";
+    if (["championship", "england championship", "english championship", "efl championship"].includes(competition)) return "English Championship";
+    if (["league one", "england league one", "english league one", "efl league one"].includes(competition)) return "English League One";
+    if (["league two", "england league two", "english league two", "efl league two"].includes(competition)) return "English League Two";
+    if (["league cup", "efl cup", "england efl cup", "carabao cup", "england carabao cup"].includes(competition)) return "England — Carabao Cup";
+    if (["national league"].includes(competition)) return "National League";
+    if (["national league north", "national league north division", "national league north"].includes(competition.replace(/-/g, " "))) return "National League North";
+    if (["national league south", "national league south division"].includes(competition.replace(/-/g, " "))) return "National League South";
+  }
+
+  if (country === "Scotland") {
+    if (["premiership", "scottish premiership", "scotland premiership"].includes(competition)) return "Scottish Premiership";
+    if (["championship", "scottish championship", "scotland championship"].includes(competition)) return "Scottish Championship";
+    if (["league one", "league 1", "scottish league one", "scottish league 1", "scotland league one"].includes(competition)) return "Scottish League One";
+    if (["league two", "league 2", "scottish league two", "scottish league 2", "scotland league two"].includes(competition)) return "Scottish League Two";
+    if (["league cup", "premier sports cup", "scottish league cup"].includes(competition)) return "Premier Sports Cup";
+    if (["challenge cup", "scottish challenge cup"].includes(competition)) return "Scottish Challenge Cup";
+  }
+
+  if (country === "Northern Ireland") {
+    if (["premiership", "northern irish premiership", "northern ireland premiership", "nifl premiership", "northern ireland premier"].includes(competition)) return "Northern Irish Premiership";
+    if (["championship", "northern irish championship", "northern ireland championship", "nifl championship"].includes(competition)) return "Northern Irish Championship";
+  }
+
+  if (country === "Wales") {
+    if (["premier league", "welsh premier league", "wales premier league", "cymru premier"].includes(competition)) return "Welsh Premier League";
+    if (["faw championship", "welsh championship"].includes(competition)) return "FAW Championship";
+  }
+
+  // Generic names such as "Premier League" are ambiguous across countries,
+  // so prefix them to prevent unrelated competitions being merged together.
+  const ambiguous = ["premier league", "premiership", "championship", "league one", "league two", "league cup"];
+  if (ambiguous.includes(competition)) return `${country} — ${fixture.competition.trim()}`;
+  return fixture.competition.trim() || `${country} — Other`;
+}
+
+function competitionKey(fixture: Pick<Fixture, "country" | "competition">) {
+  return `${normaliseCountry(fixture.country)}|${normaliseText(competitionDisplayName(fixture))}`;
+}
+
+function competitionRankForFixture(fixture: Pick<Fixture, "country" | "competition">) {
+  const label = normaliseText(competitionDisplayName(fixture));
   for (const group of competitionPriority) {
-    if (group.names.some((alias) => normalised === normaliseCompetition(alias))) return group.rank;
+    if (group.labels.some((item) => normaliseText(item) === label)) return group.rank;
   }
   return 999;
 }
 
+function compareCompetitionGroups(a: Pick<Fixture, "country" | "competition">, b: Pick<Fixture, "country" | "competition">) {
+  return competitionRankForFixture(a) - competitionRankForFixture(b)
+    || competitionDisplayName(a).localeCompare(competitionDisplayName(b))
+    || normaliseCountry(a.country).localeCompare(normaliseCountry(b.country));
+}
+
 function sortFixturesForBookmaker(a: Fixture, b: Fixture) {
-  return competitionRank(a.competition) - competitionRank(b.competition)
-    || a.competition.localeCompare(b.competition)
+  return compareCompetitionGroups(a, b)
     || a.kickoff_at.localeCompare(b.kickoff_at)
-    || a.home_team.localeCompare(b.home_team);
+    || a.home_team.localeCompare(b.home_team)
+    || a.away_team.localeCompare(b.away_team);
 }
 
 function sortFixturesByKickoffThenCompetition(a: Fixture, b: Fixture) {
   return new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()
-    || competitionRank(a.competition) - competitionRank(b.competition)
-    || a.competition.localeCompare(b.competition)
+    || compareCompetitionGroups(a, b)
     || a.home_team.localeCompare(b.home_team)
     || a.away_team.localeCompare(b.away_team);
 }
@@ -244,7 +304,9 @@ export default function LeagueApp({
   const adjustments = initialAdjustments;
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
-  const profiles = initialProfiles.filter((profile) => profile.active);
+  // Keep the profiles array stable across the 30-second clock refresh.
+  // Recreating it on every render caused Admin > Selections drafts to reset before Save was pressed.
+  const profiles = useMemo(() => initialProfiles.filter((profile) => profile.active), [initialProfiles]);
   const [selectedGameweekId, setSelectedGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
   const [dashboardGameweekId, setDashboardGameweekId] = useState("");
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -307,7 +369,12 @@ export default function LeagueApp({
   const isOpen = Boolean(gameweek && (isAdmin || (gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at) <= new Date()) && new Date(gameweek.locks_at) > new Date())));
   const dashboardIsOpen = Boolean(dashboardGameweek && (isAdmin || (dashboardGameweek.status === "open" && (!dashboardGameweek.opens_at || new Date(dashboardGameweek.opens_at) <= new Date()) && new Date(dashboardGameweek.locks_at) > new Date())));
   const eligibleFixtures = useMemo(() => fixtures.filter((fixture) => fixture.is_eligible), [fixtures]);
-  const competitions = useMemo(() => Array.from(new Set(eligibleFixtures.map((fixture) => fixture.competition))).sort((a, b) => competitionRank(a) - competitionRank(b) || a.localeCompare(b)), [eligibleFixtures]);
+  const competitions = useMemo(() => {
+    const representatives = Array.from(new Map<string, Fixture>(
+      eligibleFixtures.map((fixture: Fixture) => [competitionKey(fixture), fixture])
+    ).values());
+    return representatives.sort(compareCompetitionGroups).map(competitionKey);
+  }, [eligibleFixtures]);
 
   const gameweekNumberById = useMemo(
     () => new Map(initialGameweeks.map((item) => [item.id, item.number])),
@@ -582,7 +649,7 @@ function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, prof
   return <div className="dashboardGrid">
     <section className="contentColumn">
       <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{fixture.competition}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><WeeklyPicksShareButton disabled={isFuture} gameweekNumber={gameweek?.number ?? 0} seasonLabel={seasonLabel} picks={gameweekPicks.filter(({fixture}:{fixture?:Fixture})=>Boolean(fixture)).map(({profile,fixture}:{profile:Profile;fixture?:Fixture})=>({player:profile.display_name,homeTeam:fixture!.home_team,awayTeam:fixture!.away_team,competition:fixture!.competition,kickoffAt:fixture!.kickoff_at,odds:fixture!.odds_fractional}))} /></div></article>
+      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><WeeklyPicksShareButton disabled={isFuture} gameweekNumber={gameweek?.number ?? 0} seasonLabel={seasonLabel} picks={gameweekPicks.filter(({fixture}:{fixture?:Fixture})=>Boolean(fixture)).map(({profile,fixture}:{profile:Profile;fixture?:Fixture})=>({player:profile.display_name,homeTeam:fixture!.home_team,awayTeam:fixture!.away_team,competition:competitionDisplayName(fixture!),kickoffAt:fixture!.kickoff_at,odds:fixture!.odds_fractional}))} /></div></article>
       <article className="panel formPanel brandedPanel">
         <div className="panelTitle rowTitle">
           <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
@@ -617,7 +684,7 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   const isPicker = mode === "pick";
-  const filtered = (fixtures as Fixture[]).filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition}`.toLowerCase().includes(query));
+  const filtered = (fixtures as Fixture[]).filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition} ${fixture.country} ${competitionDisplayName(fixture)}`.toLowerCase().includes(query));
 
   if (!isPicker) {
     const dayFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -652,14 +719,13 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
         const dayDate = new Date(dayFixtures[0].kickoff_at);
         const byCompetition = new Map<string, Fixture[]>();
         for (const fixture of dayFixtures) {
-          byCompetition.set(fixture.competition, [...(byCompetition.get(fixture.competition) ?? []), fixture]);
+          const key = competitionKey(fixture);
+          byCompetition.set(key, [...(byCompetition.get(key) ?? []), fixture]);
         }
         const competitionGroups = Array.from(byCompetition.entries()).sort(([, fixturesA], [, fixturesB]) => {
           const firstA = Math.min(...fixturesA.map((fixture) => new Date(fixture.kickoff_at).getTime()));
           const firstB = Math.min(...fixturesB.map((fixture) => new Date(fixture.kickoff_at).getTime()));
-          return firstA - firstB
-            || competitionRank(fixturesA[0].competition) - competitionRank(fixturesB[0].competition)
-            || fixturesA[0].competition.localeCompare(fixturesB[0].competition);
+          return firstA - firstB || compareCompetitionGroups(fixturesA[0], fixturesB[0]);
         });
 
         return <details className="fixtureDaySection fixtureDayDisclosure" key={dateKey} open={Boolean(query) || dayIndex === 0}>
@@ -669,11 +735,11 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
             <b aria-hidden="true">⌄</b>
           </summary>
           <div className="fixtureDayBody">
-            {competitionGroups.map(([competition, competitionFixtures], competitionIndex) => {
+            {competitionGroups.map(([competitionGroupKey, competitionFixtures], competitionIndex) => {
               const sortedCompetitionFixtures = [...competitionFixtures].sort(sortFixturesByKickoffThenCompetition);
-              return <details className="fixtureLeagueSection" key={`${dateKey}-${competition}`} open={Boolean(query) || (dayIndex === 0 && competitionIndex === 0)}>
+              return <details className="fixtureLeagueSection" key={`${dateKey}-${competitionGroupKey}`} open={Boolean(query) || (dayIndex === 0 && competitionIndex === 0)}>
                 <summary className="fixtureLeagueHeading">
-                  <span>{competition}</span>
+                  <span>{competitionDisplayName(sortedCompetitionFixtures[0])}</span>
                   <small>{sortedCompetitionFixtures.length} fixture{sortedCompetitionFixtures.length === 1 ? "" : "s"}</small>
                   <b aria-hidden="true">⌄</b>
                 </summary>
@@ -695,8 +761,8 @@ function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, i
     </section>;
   }
 
-  const visibleCompetitions = (competitions as string[]).filter((competition) => filtered.some((fixture) => fixture.competition === competition));
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Make My Pick</h2><p>Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search-pick">Search fixtures</label><input id="fixture-search-pick" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((competition:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>f.competition===competition).sort(sortFixturesForBookmaker);return <details className="competitionSection competitionDisclosure" key={`${mode}-${competition}-${query}`} open={Boolean(query)}><summary><span>{competition}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
+  const visibleCompetitions = (competitions as string[]).filter((groupKey) => filtered.some((fixture) => competitionKey(fixture) === groupKey));
+  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Make My Pick</h2><p>Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search-pick">Search fixtures</label><input id="fixture-search-pick" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((groupKey:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>competitionKey(f)===groupKey).sort(sortFixturesForBookmaker);const competitionLabel=competitionFixtures[0]?competitionDisplayName(competitionFixtures[0]):groupKey;return <details className="competitionSection competitionDisclosure" key={`${mode}-${groupKey}-${query}`} open={Boolean(query)}><summary><span>{competitionLabel}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
 }
 
 function LeagueTable({ standings, seasonLabel, gameweekNumber, tableThroughNumber, isFuture, entryFee }: any) {
@@ -735,7 +801,7 @@ function LeagueHistory({ seasons }: { seasons: SeasonHistory[] }) {
 }
 
 function Results({ fixtures, predictions, profiles }: any) {
-  const completed=fixtures.filter((fixture:Fixture)=>["FT","AET","PEN"].includes(fixture.status));
+  const completed=(fixtures as Fixture[]).filter((fixture:Fixture)=>["FT","AET","PEN"].includes(fixture.status)).sort(sortFixturesForBookmaker);
   return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>COMPLETED FIXTURES</span><h2>Results</h2></div></div>{completed.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="largeResult" key={fixture.id}><span>{player?.display_name??"Unselected"}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={prediction?.points_awarded===3?"yes":"no"}>{prediction?.points_awarded==null?"—":`${prediction.points_awarded>0?"+":""}${prediction.points_awarded} PTS`}</i></div>})}{!completed.length&&<div className="emptyState">No completed results yet.</div>}</section>;
 }
 
@@ -788,11 +854,16 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
   const filteredFixtures = useMemo(() => {
     const query = fixtureSearch.trim().toLowerCase();
     return (fixtures as Fixture[])
-      .filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition}`.toLowerCase().includes(query))
+      .filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition} ${fixture.country} ${competitionDisplayName(fixture)}`.toLowerCase().includes(query))
       .sort(sortFixturesForBookmaker);
   }, [fixtures, fixtureSearch]);
 
-  const sortedCompetitions = useMemo(() => Array.from(new Set(filteredFixtures.map((fixture) => fixture.competition))), [filteredFixtures]);
+  const sortedCompetitions = useMemo(() => {
+    const representatives = Array.from(new Map<string, Fixture>(
+      filteredFixtures.map((fixture: Fixture) => [competitionKey(fixture), fixture])
+    ).values());
+    return representatives.sort(compareCompetitionGroups).map(competitionKey);
+  }, [filteredFixtures]);
   const selectedMember = activeProfiles.find((profile) => profile.id === memberId);
   const existingAdjustment = currentAdjustments.find((adjustment) => adjustment.member_id === memberId);
   const changedMemberIds = activeProfiles
@@ -905,20 +976,21 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
         const currentFixtureId = currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? "";
         const changed = selectedFixtureId !== currentFixtureId;
         const selectedFixture = (fixtures as Fixture[]).find((fixture) => fixture.id === selectedFixtureId);
+        const selectedCompetitionKey = selectedFixture ? competitionKey(selectedFixture) : "";
         const competitions = selectedFixture && !filteredFixtures.some((fixture) => fixture.id === selectedFixture.id)
-          ? [selectedFixture.competition, ...sortedCompetitions.filter((competition) => competition !== selectedFixture.competition)]
+          ? [selectedCompetitionKey, ...sortedCompetitions.filter((groupKey) => groupKey !== selectedCompetitionKey)]
           : sortedCompetitions;
         return <article className={`adminBulkSelectionRow ${changed ? "changed" : ""}`} key={profile.id}>
           <div className="bulkPlayerName"><span>{profile.slot_number}</span><strong>{profile.display_name}</strong><small>{changed ? "Unsaved change" : selectedFixtureId ? "Selection saved" : "No selection"}</small></div>
           <select value={selectedFixtureId} disabled={busy} onChange={(event) => updateDraft(profile.id, event.target.value)}>
             <option value="">No selection</option>
-            {competitions.map((competition) => {
+            {competitions.map((groupKey) => {
               const competitionFixtures = (fixtures as Fixture[])
-                .filter((fixture) => fixture.competition === competition)
+                .filter((fixture) => competitionKey(fixture) === groupKey)
                 .filter((fixture) => fixture.id === selectedFixtureId || filteredFixtures.some((filtered) => filtered.id === fixture.id))
                 .sort(sortFixturesForBookmaker);
               if (!competitionFixtures.length) return null;
-              return <optgroup key={competition} label={competition}>
+              return <optgroup key={groupKey} label={competitionDisplayName(competitionFixtures[0])}>
                 {competitionFixtures.map((fixture) => {
                   const draftedFor = activeProfiles.find((otherProfile) => otherProfile.id !== profile.id && draftSelections[otherProfile.id] === fixture.id);
                   return <option key={fixture.id} value={fixture.id} disabled={Boolean(draftedFor)}>{fixture.home_team} v {fixture.away_team}{fixture.odds_fractional ? ` · ${fixture.odds_fractional}` : ""}{draftedFor ? ` · TAKEN BY ${draftedFor.display_name}` : ""}</option>;
@@ -1019,7 +1091,8 @@ function AdminFixtures({ gameweek, nextGameweek, onChanged, notice }: any) {
 function AdminResults({ fixtures, onChanged, notice }: any) {
   const [scores,setScores]=useState<Record<string,{home:string;away:string}>>(()=>Object.fromEntries(fixtures.map((f:Fixture)=>[f.id,{home:f.home_score?.toString()??"",away:f.away_score?.toString()??""}])));
   async function save(fixture:Fixture){const score=scores[fixture.id];const response=await fetch("/api/admin/results",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({fixtureId:fixture.id,homeScore:Number(score?.home),awayScore:Number(score?.away)})});const payload=await response.json();notice(response.ok?"Result and points saved":payload.error);if(response.ok)onChanged();}
-  return <div className="adminResults">{fixtures.map((fixture:Fixture)=><div className="adminResultRow" key={fixture.id}><div><small>{fixture.competition}</small><strong>{fixture.home_team} v {fixture.away_team}</strong></div><input type="number" min="0" value={scores[fixture.id]?.home??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],home:e.target.value}})}/><b>–</b><input type="number" min="0" value={scores[fixture.id]?.away??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],away:e.target.value}})}/><button onClick={()=>save(fixture)}>Save FT</button></div>)}{!fixtures.length&&<div className="emptyState">Add fixtures first.</div>}</div>;
+  const sortedFixtures = [...(fixtures as Fixture[])].sort(sortFixturesForBookmaker);
+  return <div className="adminResults">{sortedFixtures.map((fixture:Fixture)=><div className="adminResultRow" key={fixture.id}><div><small>{competitionDisplayName(fixture)}</small><strong>{fixture.home_team} v {fixture.away_team}</strong></div><input type="number" min="0" value={scores[fixture.id]?.home??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],home:e.target.value}})}/><b>–</b><input type="number" min="0" value={scores[fixture.id]?.away??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],away:e.target.value}})}/><button onClick={()=>save(fixture)}>Save FT</button></div>)}{!fixtures.length&&<div className="emptyState">Add fixtures first.</div>}</div>;
 }
 
 function AdminGameweek({ gameweek, onChanged, notice }: any) {
