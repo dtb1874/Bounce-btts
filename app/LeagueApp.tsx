@@ -883,9 +883,18 @@ function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustment
     if (!changedMemberIds.length) return notice("There are no selection changes to save.");
 
     const chosen = Object.entries(draftSelections).filter(([, fixtureId]) => fixtureId);
-    const duplicate = chosen.find(([member, fixtureId], index) => chosen.findIndex(([otherMember, otherFixture]) => otherFixture === fixtureId && otherMember !== member) !== index);
-    if (duplicate) {
-      const fixture = (fixtures as Fixture[]).find((item) => item.id === duplicate[1]);
+    const fixtureOwners = new Map<string, string>();
+    let duplicateFixtureId = "";
+    for (const [selectedMemberId, fixtureId] of chosen) {
+      const existingOwner = fixtureOwners.get(fixtureId);
+      if (existingOwner && existingOwner !== selectedMemberId) {
+        duplicateFixtureId = fixtureId;
+        break;
+      }
+      fixtureOwners.set(fixtureId, selectedMemberId);
+    }
+    if (duplicateFixtureId) {
+      const fixture = (fixtures as Fixture[]).find((item) => item.id === duplicateFixtureId);
       return notice(`${fixture ? `${fixture.home_team} v ${fixture.away_team}` : "A fixture"} has been selected for more than one player.`);
     }
 
