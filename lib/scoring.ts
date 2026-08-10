@@ -13,6 +13,14 @@ export function pointsForFinishedScore(homeScore: number, awayScore: number): 3 
   return 1;
 }
 
+
+// Backwards-compatible export used by the existing live API routes.
+// Keep this name because admin results, cron sync and API-Football import
+// already import pointsForScore from this module.
+export function pointsForScore(homeScore: number, awayScore: number): 3 | 1 | -1 {
+  return pointsForFinishedScore(homeScore, awayScore);
+}
+
 export function provisionalPoints(homeScore: number | null, awayScore: number | null, finished = false): number | null {
   if (homeScore == null || awayScore == null) return null;
   if (homeScore > 0 && awayScore > 0) return 3;
