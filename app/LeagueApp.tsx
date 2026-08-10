@@ -131,6 +131,7 @@ export default function LeagueApp(props: Props) {
   const [toast,setToast] = useState("");
   const [now,setNow] = useState(Date.now());
   const [alertsCount,setAlertsCount] = useState(0);
+  const [rouss,setRouss] = useState(false);
   const gameweek = initialGameweeks.find(g => g.id === gameweekId) ?? initialGameweek;
   const currentFixtures = useMemo(() => fixtures.filter(f => f.gameweek_id === gameweek?.id), [fixtures,gameweek?.id]);
   const currentPredictions = useMemo(() => predictions.filter(p => p.gameweek_id === gameweek?.id), [predictions,gameweek?.id]);
@@ -208,6 +209,7 @@ export default function LeagueApp(props: Props) {
     <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
       <div className={styles.brand}><img src="/assets/hearts-crest.png" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
       <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
+      <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false)}}></button>
       <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
     </aside>
     {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>} 
@@ -226,6 +228,7 @@ export default function LeagueApp(props: Props) {
         {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={initialProfile.role==="ultimate_admin"} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} notice={notice} onChanged={()=>refreshLiveData(false)}/>} 
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE</footer>
     </section>
+    {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
     {toast && <div className={styles.toast}>{toast}</div>}
   </main>;
 }
@@ -305,7 +308,6 @@ function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profi
 
 function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
   const [tab, setTab] = useState<"about" | "rules" | "instructions" | "members">("about");
-  const [rouss, setRouss] = useState(false);
   const tabs: Array<["about" | "rules" | "instructions" | "members", string]> = [
     ["about", "About"], ["rules", "Rules"], ["instructions", "Instructions"], ["members", "Members / Admins"],
   ];
@@ -317,9 +319,7 @@ function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
       {tab === "rules" && <><h3>Rules</h3><ul><li>Choose one eligible fixture to finish BTTS: Yes.</li><li>No two players may choose the same fixture in the same gameweek.</li><li>BTTS = <strong>+3</strong>; score–nil = <strong>+1</strong>; 0–0 = <strong>−1</strong>.</li><li>A missed deadline receives the configured missed-selection adjustment (normally −1).</li><li>Normal deadline is Friday 17:00 UK time unless the admin changes it.</li><li>Ties: fewest 0–0 results, then most BTTS wins, then alphabetical.</li></ul></>}
       {tab === "instructions" && <Instructions role={role}/>} 
       {tab === "members" && <><h3>Members / Admins</h3>{profiles.map(p => <div className={styles.row} style={{gridTemplateColumns:"1fr 1fr"}} key={p.id}><strong>{p.display_name}</strong><span>{p.role === "ultimate_admin" ? "Ultimate Admin" : p.role === "admin" ? "League Admin" : "Member"}</span></div>)}{role === "member" && <p className={styles.small}>Member view intentionally hides account/security administration details.</p>}</>}
-      <div className={styles.eggZone}><button type="button" className={styles.eggInvisible} aria-hidden="true" tabIndex={-1} onClick={()=>setRouss(true)}>.</button></div>
     </div>
-    {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted"><div className={`${styles.overlayCard} ${styles.flash}`}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
   </section>;
 }
 function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}

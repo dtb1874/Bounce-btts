@@ -1,21 +1,26 @@
-BOUNCE BTTS — FIXTURE DISPLAY AUDIT FIX
+BOUNCE BTTS — UI RESTORE + SCORING FIX — 10 AUGUST 2026
 
-Upload the app folder to the root of the existing GitHub repository.
-Replace app/LeagueApp.tsx when prompted.
+Upload the app folder from this ZIP to the ROOT of the existing GitHub repo.
+Replace:
+- app/LeagueApp.tsx
+- app/release.module.css
 
-This supersedes the earlier Admin Selections fix.
+Do not delete lib/scoring.ts and do not change Vercel/Supabase settings.
 
-Verified areas updated:
-- Admin > Selections team picker
-- Make My Pick competition groups
-- Two-week Fixtures page
-- Dashboard competition labels
-- Weekly picks image data
-- Results page ordering
-- Admin > Results ordering and labels
-- Fixture searches (country and canonical competition names included)
+FIXES INCLUDED
+- Restores the dark maroon / Hearts / Edinburgh presentation and imagery.
+- Restores subtle Tynecastle/St Giles imagery and panel/sidebar watermark treatment.
+- Keeps About, live/provisional result display, admin help, alert controls and scoring repair features.
+- Moves the Rousset easter egg to a large invisible target in the LEFT SIDEBAR.
+- Hidden target location: between the last navigation item and the signed-in profile card.
 
-Core correction:
-Fixtures are now grouped by COUNTRY + canonical competition rather than by the raw competition name alone. This prevents Scottish "Premiership" or "Championship" fixtures being mixed with Northern Irish, Welsh or English competitions that use the same provider league name.
+GW1 SCORING
+The production database has ALREADY been repaired:
+Ryan +3; Turnsy Fitchett +3; Yacky +3;
+Dave Pickup +1; Dave S +1; DTB +1; Ian +1; Kevin Pickup +1.
 
-No database migration is required.
+A Supabase validation migration has also been applied so privileged result/scoring jobs
+can update an existing prediction after the deadline and after a finished fixture is
+no longer eligible. This addresses the cause of the null GW1 points, not only the data.
+
+After committing these two app files, Vercel should deploy automatically.
