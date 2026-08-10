@@ -1,288 +1,26 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { combinedFractional } from "@/lib/fractional";
 import ShareTableButton from "./ShareTableButton";
 import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
 import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
+import { outcomeLabel } from "@/lib/scoring";
+import styles from "./release.module.css";
 
-type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "alerts" | "admin";
+type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "about" | "alerts" | "admin";
 type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "seasons";
+type Role = "ultimate_admin" | "admin" | "member";
 
-type Profile = {
-  id: string;
-  username: string;
-  display_name: string;
-  role: "ultimate_admin" | "admin" | "member";
-  active: boolean;
-  slot_number: number | null;
-};
+type Profile = { id: string; username: string; display_name: string; role: Role; active: boolean; slot_number: number | null };
+type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string; season_id: string | null };
+type Fixture = { id: string; gameweek_id: string | null; competition: string; country: string; home_team: string; away_team: string; kickoff_at: string; status: string; home_score: number | null; away_score: number | null; odds_fractional: string | null; odds_checked_at: string | null; source: string; is_eligible: boolean };
+type Prediction = { id: string; gameweek_id: string; member_id: string; fixture_id: string; points_awarded: number | null; created_at: string; updated_at: string };
+type ScoreAdjustment = { id: string; gameweek_id: string; member_id: string; points: number; reason: string; source: "automatic" | "admin"; created_at: string; updated_at: string };
+type SeasonHistory = { id: string; label: string; isCurrent: boolean; gameweeks: number; completedPicks: number; standings: Array<{ id: string; name: string; played: number; wins: number; zeroZeroCount: number; points: number }> };
+type Standing = { id: string; name: string; played: number; wins: number; oneSided: number; zeroZeroCount: number; points: number };
 
-type Gameweek = {
-  id: string;
-  number: number;
-  status: "open" | "locked" | "complete";
-  opens_at: string | null;
-  locks_at: string;
-  season_id: string | null;
-};
-
-type Fixture = {
-  id: string;
-  gameweek_id: string | null;
-  competition: string;
-  country: string;
-  home_team: string;
-  away_team: string;
-  kickoff_at: string;
-  status: string;
-  home_score: number | null;
-  away_score: number | null;
-  odds_fractional: string | null;
-  odds_checked_at: string | null;
-  source: string;
-  is_eligible: boolean;
-};
-
-type Prediction = {
-  id: string;
-  gameweek_id: string;
-  member_id: string;
-  fixture_id: string;
-  points_awarded: number | null;
-  created_at: string;
-  updated_at: string;
-};
-
-type ScoreAdjustment = {
-  id: string;
-  gameweek_id: string;
-  member_id: string;
-  points: number;
-  reason: string;
-  source: "automatic" | "admin";
-  created_at: string;
-  updated_at: string;
-};
-
-type UserAdminRow = Profile & { approved: boolean; password: string };
-
-type SeasonHistory = {
-  id: string;
-  label: string;
-  isCurrent: boolean;
-  gameweeks: number;
-  completedPicks: number;
-  standings: Array<{
-    id: string;
-    name: string;
-    played: number;
-    wins: number;
-    zeroZeroCount: number;
-    points: number;
-  }>;
-};
-
-const navItems: { id: View; label: string; icon: string }[] = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "pick", label: "Make My Pick", icon: "⚑" },
-  { id: "fixtures", label: "Fixtures", icon: "▦" },
-  { id: "table", label: "League Table", icon: "☷" },
-  { id: "results", label: "Results", icon: "✦" },
-  { id: "history", label: "League History", icon: "◷" },
-  { id: "players", label: "Players", icon: "◉" },
-  { id: "alerts", label: "Alerts", icon: "!" },
-  { id: "admin", label: "Admin", icon: "⚙" },
-];
-
-const competitionPriority: Array<{ rank: number; labels: string[] }> = [
-  { rank: 0, labels: ["English Premier League"] },
-  { rank: 1, labels: ["English Championship"] },
-  { rank: 2, labels: ["English League One"] },
-  { rank: 3, labels: ["English League Two"] },
-  { rank: 10, labels: ["England — Carabao Cup"] },
-  { rank: 11, labels: ["Scottish Premiership"] },
-  { rank: 12, labels: ["National League"] },
-  { rank: 13, labels: ["National League North"] },
-  { rank: 14, labels: ["National League South"] },
-  { rank: 15, labels: ["Northern Irish Premiership"] },
-  { rank: 16, labels: ["Northern Irish Championship"] },
-  { rank: 17, labels: ["Scottish Championship"] },
-  { rank: 18, labels: ["Scottish League One"] },
-  { rank: 19, labels: ["Scottish League Two"] },
-  { rank: 20, labels: ["Welsh Premier League"] },
-  { rank: 21, labels: ["FAW Championship"] },
-  { rank: 30, labels: ["FA Cup"] },
-  { rank: 31, labels: ["Scottish Cup"] },
-  { rank: 32, labels: ["Premier Sports Cup"] },
-  { rank: 33, labels: ["Scottish Challenge Cup"] },
-];
-
-function normaliseText(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function normaliseCountry(country: string) {
-  const value = normaliseText(country);
-  if (value === "northern ireland" || value === "northern ireland") return "Northern Ireland";
-  if (value === "england") return "England";
-  if (value === "scotland") return "Scotland";
-  if (value === "wales") return "Wales";
-  if (value === "europe") return "Europe";
-  if (value === "international") return "International";
-  return country.trim() || "Other";
-}
-
-function competitionDisplayName(fixture: Pick<Fixture, "country" | "competition">) {
-  const country = normaliseCountry(fixture.country);
-  const competition = normaliseText(fixture.competition);
-
-  if (country === "England") {
-    if (["premier league", "england premier league", "english premier league"].includes(competition)) return "English Premier League";
-    if (["championship", "england championship", "english championship", "efl championship"].includes(competition)) return "English Championship";
-    if (["league one", "england league one", "english league one", "efl league one"].includes(competition)) return "English League One";
-    if (["league two", "england league two", "english league two", "efl league two"].includes(competition)) return "English League Two";
-    if (["league cup", "efl cup", "england efl cup", "carabao cup", "england carabao cup"].includes(competition)) return "England — Carabao Cup";
-    if (["national league"].includes(competition)) return "National League";
-    if (["national league north", "national league north division", "national league north"].includes(competition.replace(/-/g, " "))) return "National League North";
-    if (["national league south", "national league south division"].includes(competition.replace(/-/g, " "))) return "National League South";
-  }
-
-  if (country === "Scotland") {
-    if (["premiership", "scottish premiership", "scotland premiership"].includes(competition)) return "Scottish Premiership";
-    if (["championship", "scottish championship", "scotland championship"].includes(competition)) return "Scottish Championship";
-    if (["league one", "league 1", "scottish league one", "scottish league 1", "scotland league one"].includes(competition)) return "Scottish League One";
-    if (["league two", "league 2", "scottish league two", "scottish league 2", "scotland league two"].includes(competition)) return "Scottish League Two";
-    if (["league cup", "premier sports cup", "scottish league cup"].includes(competition)) return "Premier Sports Cup";
-    if (["challenge cup", "scottish challenge cup"].includes(competition)) return "Scottish Challenge Cup";
-  }
-
-  if (country === "Northern Ireland") {
-    if (["premiership", "northern irish premiership", "northern ireland premiership", "nifl premiership", "northern ireland premier"].includes(competition)) return "Northern Irish Premiership";
-    if (["championship", "northern irish championship", "northern ireland championship", "nifl championship"].includes(competition)) return "Northern Irish Championship";
-  }
-
-  if (country === "Wales") {
-    if (["premier league", "welsh premier league", "wales premier league", "cymru premier"].includes(competition)) return "Welsh Premier League";
-    if (["faw championship", "welsh championship"].includes(competition)) return "FAW Championship";
-  }
-
-  // Generic names such as "Premier League" are ambiguous across countries,
-  // so prefix them to prevent unrelated competitions being merged together.
-  const ambiguous = ["premier league", "premiership", "championship", "league one", "league two", "league cup"];
-  if (ambiguous.includes(competition)) return `${country} — ${fixture.competition.trim()}`;
-  return fixture.competition.trim() || `${country} — Other`;
-}
-
-function competitionKey(fixture: Pick<Fixture, "country" | "competition">) {
-  return `${normaliseCountry(fixture.country)}|${normaliseText(competitionDisplayName(fixture))}`;
-}
-
-function competitionRankForFixture(fixture: Pick<Fixture, "country" | "competition">) {
-  const label = normaliseText(competitionDisplayName(fixture));
-  for (const group of competitionPriority) {
-    if (group.labels.some((item) => normaliseText(item) === label)) return group.rank;
-  }
-  return 999;
-}
-
-function compareCompetitionGroups(a: Pick<Fixture, "country" | "competition">, b: Pick<Fixture, "country" | "competition">) {
-  return competitionRankForFixture(a) - competitionRankForFixture(b)
-    || competitionDisplayName(a).localeCompare(competitionDisplayName(b))
-    || normaliseCountry(a.country).localeCompare(normaliseCountry(b.country));
-}
-
-function sortFixturesForBookmaker(a: Fixture, b: Fixture) {
-  return compareCompetitionGroups(a, b)
-    || a.kickoff_at.localeCompare(b.kickoff_at)
-    || a.home_team.localeCompare(b.home_team)
-    || a.away_team.localeCompare(b.away_team);
-}
-
-function sortFixturesByKickoffThenCompetition(a: Fixture, b: Fixture) {
-  return new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()
-    || compareCompetitionGroups(a, b)
-    || a.home_team.localeCompare(b.home_team)
-    || a.away_team.localeCompare(b.away_team);
-}
-
-function initials(name: string) {
-  return name.split(/\s+/).map((part) => part[0] ?? "").join("").slice(0, 2).toUpperCase();
-}
-
-function formatKickoff(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(value));
-}
-
-function inputDateTime(value: string) {
-  const date = new Date(value);
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-}
-
-function nextFridayAtFiveInput() {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(now);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(get("weekday"));
-  const currentHour = Number(get("hour"));
-  const currentMinute = Number(get("minute"));
-  let days = (5 - weekdayIndex + 7) % 7;
-  if (days === 0 && (currentHour > 17 || (currentHour === 17 && currentMinute >= 0))) days = 7;
-  const date = new Date(Date.UTC(Number(get("year")), Number(get("month")) - 1, Number(get("day")), 12));
-  date.setUTCDate(date.getUTCDate() + days);
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T17:00`;
-}
-
-function gameweekStatusText(gameweek: Gameweek | null | undefined, now: number) {
-  if (!gameweek) return "NO GAMEWEEK";
-  const opens = gameweek.opens_at ? new Date(gameweek.opens_at).getTime() : null;
-  const locks = new Date(gameweek.locks_at).getTime();
-  if (gameweek.status === "complete") return "COMPLETED";
-  if (gameweek.status === "locked" || now >= locks) return `CLOSED · Locked ${formatKickoff(gameweek.locks_at)}`;
-  if (opens && now < opens) return `OPENS ${formatKickoff(gameweek.opens_at as string)}`;
-  return `OPEN · Locks ${formatKickoff(gameweek.locks_at)}`;
-}
-
-async function token() {
-  const { data } = await createClient().auth.getSession();
-  return data.session?.access_token ?? "";
-}
-
-export default function LeagueApp({
-  initialProfile,
-  initialProfiles,
-  initialGameweek,
-  initialGameweeks,
-  initialFixtures,
-  initialAllFixtures,
-  initialPredictions,
-  initialAdjustments,
-  seasonLabel,
-  entryFee,
-  seasonHistory,
-}: {
+type Props = {
   initialProfile: Profile;
   initialProfiles: Profile[];
   initialGameweek: Gameweek | null;
@@ -294,882 +32,266 @@ export default function LeagueApp({
   seasonLabel: string;
   entryFee: number;
   seasonHistory: SeasonHistory[];
-}) {
-  const [view, setView] = useState<View>("dashboard");
-  const [adminView, setAdminView] = useState<AdminView>(initialProfile.role === "ultimate_admin" ? "users" : "selections");
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const allSeasonFixtures = initialFixtures;
-  const allFixtures = initialAllFixtures;
-  const [predictions, setPredictions] = useState(initialPredictions);
-  const adjustments = initialAdjustments;
-  const [toast, setToast] = useState("");
-  const [busy, setBusy] = useState(false);
-  // Keep the profiles array stable across the 30-second clock refresh.
-  // Recreating it on every render caused Admin > Selections drafts to reset before Save was pressed.
-  const profiles = useMemo(() => initialProfiles.filter((profile) => profile.active), [initialProfiles]);
-  const [selectedGameweekId, setSelectedGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
-  const [dashboardGameweekId, setDashboardGameweekId] = useState("");
-  const [clockNow, setClockNow] = useState(() => Date.now());
-  const [unresolvedAlerts, setUnresolvedAlerts] = useState(0);
+};
 
-  useEffect(() => {
-    const savedView = window.sessionStorage.getItem("bounce:view") as View | null;
-    const savedAdminView = window.sessionStorage.getItem("bounce:adminView") as AdminView | null;
-    const savedGameweek = window.sessionStorage.getItem("bounce:gameweek");
-    if (savedView) setView(savedView);
-    if (savedAdminView) setAdminView(savedAdminView);
-    if (savedGameweek && initialGameweeks.some((item) => item.id === savedGameweek)) setSelectedGameweekId(savedGameweek);
-  }, [initialGameweeks]);
+const finishedStatuses = ["FT", "AET", "PEN"];
+const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
+  { id: "dashboard", label: "Dashboard", icon: "⌂" },
+  { id: "pick", label: "Make My Pick", icon: "⚑" },
+  { id: "fixtures", label: "Fixtures", icon: "▦" },
+  { id: "table", label: "League Table", icon: "☷" },
+  { id: "results", label: "Results", icon: "✦" },
+  { id: "history", label: "League History", icon: "◷" },
+  { id: "players", label: "Players", icon: "◉" },
+  { id: "about", label: "About", icon: "?" },
+  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true },
+  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true },
+];
 
-  useEffect(() => { window.sessionStorage.setItem("bounce:view", view); }, [view]);
-  useEffect(() => { window.sessionStorage.setItem("bounce:adminView", adminView); }, [adminView]);
-  useEffect(() => { if (selectedGameweekId) window.sessionStorage.setItem("bounce:gameweek", selectedGameweekId); }, [selectedGameweekId]);
-  useEffect(() => {
-    const timer = window.setInterval(() => setClockNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    if (!isAdmin) return;
-    void (async () => {
-      const response = await fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${await token()}` } });
-      if (response.ok) { const payload = await response.json(); setUnresolvedAlerts((payload.alerts ?? []).filter((item: any) => !item.resolved).length); }
-    })();
-  }, [view]);
+const competitionPriority = [
+  "English Premier League", "English Championship", "English League One", "English League Two", "England — Carabao Cup",
+  "Scottish Premiership", "National League", "National League North", "National League South", "Northern Irish Premiership",
+  "Northern Irish Championship", "Scottish Championship", "Scottish League One", "Scottish League Two", "Welsh Premier League",
+  "FAW Championship", "FA Cup", "Scottish Cup", "Premier Sports Cup", "Scottish Challenge Cup",
+];
 
-  const gameweek = initialGameweeks.find((item) => item.id === selectedGameweekId) ?? initialGameweek;
-  const currentDashboardGameweek = useMemo(() => {
-    const now = Date.now();
-    const opened = initialGameweeks
-      .filter((item) => !item.opens_at || new Date(item.opens_at).getTime() <= now)
-      .sort((a, b) => b.number - a.number);
-    return opened[0] ?? initialGameweek ?? initialGameweeks[0] ?? null;
-  }, [initialGameweeks, initialGameweek]);
+function normaliseText(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+function normaliseCountry(country: string) {
+  const v = normaliseText(country);
+  if (v === "england") return "England";
+  if (v === "scotland") return "Scotland";
+  if (v === "wales") return "Wales";
+  if (v === "northern ireland") return "Northern Ireland";
+  if (v === "europe") return "Europe";
+  if (v === "international") return "International";
+  return country.trim() || "Other";
+}
+function competitionDisplayName(fixture: Pick<Fixture, "country" | "competition">) {
+  const country = normaliseCountry(fixture.country), c = normaliseText(fixture.competition);
+  if (country === "England") {
+    if (["premier league","england premier league","english premier league"].includes(c)) return "English Premier League";
+    if (["championship","england championship","english championship","efl championship"].includes(c)) return "English Championship";
+    if (["league one","england league one","english league one","efl league one"].includes(c)) return "English League One";
+    if (["league two","england league two","english league two","efl league two"].includes(c)) return "English League Two";
+    if (["league cup","efl cup","england efl cup","carabao cup","england carabao cup"].includes(c)) return "England — Carabao Cup";
+    if (c === "national league") return "National League";
+    if (c.includes("national league north")) return "National League North";
+    if (c.includes("national league south")) return "National League South";
+  }
+  if (country === "Scotland") {
+    if (["premiership","scottish premiership","scotland premiership"].includes(c)) return "Scottish Premiership";
+    if (["championship","scottish championship","scotland championship"].includes(c)) return "Scottish Championship";
+    if (["league one","league 1","scottish league one","scottish league 1","scotland league one"].includes(c)) return "Scottish League One";
+    if (["league two","league 2","scottish league two","scottish league 2","scotland league two"].includes(c)) return "Scottish League Two";
+    if (["league cup","premier sports cup","scottish league cup"].includes(c)) return "Premier Sports Cup";
+    if (["challenge cup","scottish challenge cup"].includes(c)) return "Scottish Challenge Cup";
+  }
+  if (country === "Northern Ireland") {
+    if (["premiership","northern irish premiership","northern ireland premiership","nifl premiership","northern ireland premier"].includes(c)) return "Northern Irish Premiership";
+    if (["championship","northern irish championship","northern ireland championship","nifl championship"].includes(c)) return "Northern Irish Championship";
+  }
+  if (country === "Wales") {
+    if (["premier league","welsh premier league","wales premier league","cymru premier"].includes(c)) return "Welsh Premier League";
+    if (["faw championship","welsh championship"].includes(c)) return "FAW Championship";
+  }
+  if (["premier league","premiership","championship","league one","league two","league cup"].includes(c)) return `${country} — ${fixture.competition.trim()}`;
+  return fixture.competition.trim() || `${country} — Other`;
+}
+function fixtureSort(a: Fixture, b: Fixture) {
+  const ar = competitionPriority.indexOf(competitionDisplayName(a)), br = competitionPriority.indexOf(competitionDisplayName(b));
+  return (ar < 0 ? 999 : ar) - (br < 0 ? 999 : br) || competitionDisplayName(a).localeCompare(competitionDisplayName(b)) || a.kickoff_at.localeCompare(b.kickoff_at) || a.home_team.localeCompare(b.home_team);
+}
+function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
+function initials(name: string) { return name.split(/\s+/).map(p => p[0] ?? "").join("").slice(0,2).toUpperCase(); }
+async function token() { const { data } = await createClient().auth.getSession(); return data.session?.access_token ?? ""; }
+function gameweekStatusText(gameweek: Gameweek | null, now: number) {
+  if (!gameweek) return "NO GAMEWEEK";
+  if (gameweek.status === "complete") return "COMPLETED";
+  if (gameweek.status === "locked" || now >= new Date(gameweek.locks_at).getTime()) return `CLOSED · Locked ${formatKickoff(gameweek.locks_at)}`;
+  if (gameweek.opens_at && now < new Date(gameweek.opens_at).getTime()) return `OPENS ${formatKickoff(gameweek.opens_at)}`;
+  return `OPEN · Locks ${formatKickoff(gameweek.locks_at)}`;
+}
+function Help({ text }: { text: string }) {
+  const [open,setOpen] = useState(false);
+  return <span className={styles.helpWrap}><button className={styles.helpButton} type="button" aria-label="Help" aria-expanded={open} onClick={() => setOpen(v=>!v)}>?</button>{open && <div className={styles.helpText}>{text}</div>}</span>;
+}
 
-  useEffect(() => {
-    if (currentDashboardGameweek?.id) setDashboardGameweekId(currentDashboardGameweek.id);
-  }, [currentDashboardGameweek?.id]);
-
-  // The persistent gameweek selector controls the Dashboard as well as the other sections.
-  // This keeps Everyone's Picks So Far, Your Pick, status and share output on the viewed gameweek.
-  const dashboardGameweek = gameweek;
-  const displayedGameweek = view === "dashboard" ? dashboardGameweek : gameweek;
-  const fixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === gameweek?.id), [allSeasonFixtures, gameweek?.id]);
-  const dashboardFixtures = useMemo(() => allSeasonFixtures.filter((fixture) => fixture.gameweek_id === dashboardGameweek?.id), [allSeasonFixtures, dashboardGameweek?.id]);
-
-  const predictionByFixture = useMemo(() => new Map(predictions.map((prediction) => [prediction.fixture_id, prediction])), [predictions]);
-  const currentPrediction = gameweek ? predictions.find((prediction) => prediction.gameweek_id === gameweek.id && prediction.member_id === initialProfile.id) : undefined;
-  const currentFixture = currentPrediction ? fixtures.find((fixture) => fixture.id === currentPrediction.fixture_id) : undefined;
-  const currentAdjustment = gameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === gameweek.id && adjustment.member_id === initialProfile.id) : undefined;
-  const submitted = gameweek ? predictions.filter((prediction) => prediction.gameweek_id === gameweek.id).length : 0;
-  const dashboardCurrentPrediction = dashboardGameweek ? predictions.find((prediction) => prediction.gameweek_id === dashboardGameweek.id && prediction.member_id === initialProfile.id) : undefined;
-  const dashboardCurrentFixture = dashboardCurrentPrediction ? dashboardFixtures.find((fixture) => fixture.id === dashboardCurrentPrediction.fixture_id) : undefined;
-  const dashboardCurrentAdjustment = dashboardGameweek ? adjustments.find((adjustment) => adjustment.gameweek_id === dashboardGameweek.id && adjustment.member_id === initialProfile.id) : undefined;
-  const dashboardSubmitted = dashboardGameweek ? predictions.filter((prediction) => prediction.gameweek_id === dashboardGameweek.id).length : 0;
+export default function LeagueApp(props: Props) {
+  const { initialProfile, initialProfiles, initialGameweek, initialGameweeks, initialFixtures, initialAllFixtures, initialPredictions, initialAdjustments, seasonLabel, entryFee, seasonHistory } = props;
   const isAdmin = initialProfile.role === "admin" || initialProfile.role === "ultimate_admin";
-  const isOpen = Boolean(gameweek && (isAdmin || (gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at) <= new Date()) && new Date(gameweek.locks_at) > new Date())));
-  const dashboardIsOpen = Boolean(dashboardGameweek && (isAdmin || (dashboardGameweek.status === "open" && (!dashboardGameweek.opens_at || new Date(dashboardGameweek.opens_at) <= new Date()) && new Date(dashboardGameweek.locks_at) > new Date())));
-  const eligibleFixtures = useMemo(() => fixtures.filter((fixture) => fixture.is_eligible), [fixtures]);
-  const competitions = useMemo(() => {
-    const representatives = Array.from(new Map<string, Fixture>(
-      eligibleFixtures.map((fixture: Fixture) => [competitionKey(fixture), fixture])
-    ).values());
-    return representatives.sort(compareCompetitionGroups).map(competitionKey);
-  }, [eligibleFixtures]);
+  const profiles = useMemo(() => initialProfiles.filter(p => p.active), [initialProfiles]);
+  const [view,setView] = useState<View>("dashboard");
+  const [adminView,setAdminView] = useState<AdminView>(initialProfile.role === "ultimate_admin" ? "users" : "selections");
+  const [gameweekId,setGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
+  const [fixtures,setFixtures] = useState(initialFixtures);
+  const [allFixtures,setAllFixtures] = useState(initialAllFixtures);
+  const [predictions,setPredictions] = useState(initialPredictions);
+  const [adjustments] = useState(initialAdjustments);
+  const [mobileMenu,setMobileMenu] = useState(false);
+  const [toast,setToast] = useState("");
+  const [now,setNow] = useState(Date.now());
+  const [alertsCount,setAlertsCount] = useState(0);
+  const gameweek = initialGameweeks.find(g => g.id === gameweekId) ?? initialGameweek;
+  const currentFixtures = useMemo(() => fixtures.filter(f => f.gameweek_id === gameweek?.id), [fixtures,gameweek?.id]);
+  const currentPredictions = useMemo(() => predictions.filter(p => p.gameweek_id === gameweek?.id), [predictions,gameweek?.id]);
+  const isOpen = Boolean(gameweek && (isAdmin || (gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at).getTime() <= now) && new Date(gameweek.locks_at).getTime() > now)));
+  const selectedPrediction = currentPredictions.find(p => p.member_id === initialProfile.id);
+  const selectedFixture = currentFixtures.find(f => f.id === selectedPrediction?.fixture_id);
+  const selectedAdjustment = adjustments.find(a => a.gameweek_id === gameweek?.id && a.member_id === initialProfile.id);
+  const gameweekNoById = useMemo(() => new Map(initialGameweeks.map(g => [g.id,g.number])), [initialGameweeks]);
 
-  const gameweekNumberById = useMemo(
-    () => new Map(initialGameweeks.map((item) => [item.id, item.number])),
-    [initialGameweeks]
-  );
+  function notice(message: string) { setToast(message); window.setTimeout(() => setToast(""), 2500); }
 
-  function calculateStandingsThrough(cutoffGameweek: number | null) {
-    const map = new Map(profiles.map((profile) => [profile.id, {
-      id: profile.id, name: profile.display_name, played: 0, wins: 0, zeroZeroCount: 0, oneSided: 0, points: 0,
-    }]));
-
-    for (const prediction of predictions) {
-      const predictionWeek = gameweekNumberById.get(prediction.gameweek_id);
-      if (prediction.points_awarded === null || predictionWeek === undefined || (cutoffGameweek !== null && predictionWeek > cutoffGameweek)) continue;
-      const row = map.get(prediction.member_id);
-      if (!row) continue;
-      row.played += 1;
-      row.points += prediction.points_awarded;
-      if (prediction.points_awarded === 3) row.wins += 1;
-      if (prediction.points_awarded === 1) row.oneSided += 1;
-      if (prediction.points_awarded === -1) row.zeroZeroCount += 1;
+  const standings = useMemo<Standing[]>(() => {
+    const rows = new Map<string, Standing>(profiles.map(p => [p.id,{ id:p.id,name:p.display_name,played:0,wins:0,oneSided:0,zeroZeroCount:0,points:0 }] as [string, Standing]));
+    for (const p of predictions) {
+      if (p.points_awarded == null) continue;
+      const row = rows.get(p.member_id); if (!row) continue;
+      row.played += 1; row.points += p.points_awarded;
+      if (p.points_awarded === 3) row.wins += 1;
+      if (p.points_awarded === 1) row.oneSided += 1;
+      if (p.points_awarded === -1) row.zeroZeroCount += 1;
     }
-
-    for (const adjustment of adjustments) {
-      const adjustmentWeek = gameweekNumberById.get(adjustment.gameweek_id);
-      if (adjustmentWeek === undefined || (cutoffGameweek !== null && adjustmentWeek > cutoffGameweek)) continue;
-      const row = map.get(adjustment.member_id);
-      if (!row) continue;
-      const hasScoredPick = predictions.some((prediction) =>
-        prediction.member_id === adjustment.member_id &&
-        prediction.gameweek_id === adjustment.gameweek_id &&
-        prediction.points_awarded !== null
-      );
-      if (!hasScoredPick) row.played += 1;
-      row.points += adjustment.points;
+    for (const a of adjustments) {
+      const row = rows.get(a.member_id); if (!row) continue;
+      const scored = predictions.some(p => p.member_id === a.member_id && p.gameweek_id === a.gameweek_id && p.points_awarded != null);
+      if (!scored) row.played += 1;
+      row.points += a.points;
     }
+    return Array.from(rows.values()).sort((a,b) => b.points-a.points || a.zeroZeroCount-b.zeroZeroCount || b.wins-a.wins || a.name.localeCompare(b.name));
+  },[profiles,predictions,adjustments]);
 
-    return Array.from(map.values()).sort((a, b) =>
-      b.points - a.points || a.zeroZeroCount - b.zeroZeroCount || b.wins - a.wins || a.name.localeCompare(b.name)
-    );
+  async function refreshLiveData(silent = true) {
+    if (!gameweek?.id) return;
+    try {
+      const client = createClient();
+      const [fx,preds] = await Promise.all([
+        client.from("fixtures").select("*").eq("gameweek_id",gameweek.id),
+        client.from("predictions").select("*").eq("gameweek_id",gameweek.id),
+      ]);
+      if (!fx.error && fx.data) {
+        const ids = new Set(fx.data.map((f: Fixture) => f.id));
+        setFixtures(old => [...old.filter(f => f.gameweek_id !== gameweek.id), ...(fx.data as Fixture[])]);
+        setAllFixtures(old => [...old.filter(f => !ids.has(f.id)), ...(fx.data as Fixture[])]);
+      }
+      if (!preds.error && preds.data) setPredictions(old => [...old.filter(p => p.gameweek_id !== gameweek.id), ...(preds.data as Prediction[])]);
+      if (!silent) notice("Live scores refreshed");
+    } catch { if (!silent) notice("Could not refresh live data"); }
   }
 
-  const standings = useMemo(
-    () => calculateStandingsThrough(null),
-    [profiles, predictions, adjustments, gameweekNumberById]
-  );
-
-  const dashboardIsFuture = Boolean(
-    dashboardGameweek?.opens_at && new Date(dashboardGameweek.opens_at).getTime() > clockNow
-  );
-  const selectedIsFuture = Boolean(
-    gameweek?.opens_at && new Date(gameweek.opens_at).getTime() > clockNow
-  );
-
-  const latestOpenedBeforeDashboard = initialGameweeks
-    .filter((item) => item.number < (dashboardGameweek?.number ?? 0) && (!item.opens_at || new Date(item.opens_at).getTime() <= clockNow))
-    .sort((a, b) => b.number - a.number)[0];
-
-  const latestOpenedBeforeSelected = initialGameweeks
-    .filter((item) => item.number < (gameweek?.number ?? 0) && (!item.opens_at || new Date(item.opens_at).getTime() <= clockNow))
-    .sort((a, b) => b.number - a.number)[0];
-
-  const dashboardTableThroughNumber = dashboardIsFuture
-    ? latestOpenedBeforeDashboard?.number ?? 0
-    : dashboardGameweek?.number ?? null;
-  const selectedTableThroughNumber = selectedIsFuture
-    ? latestOpenedBeforeSelected?.number ?? 0
-    : gameweek?.number ?? null;
-
-  const dashboardStandings = useMemo(
-    () => calculateStandingsThrough(dashboardTableThroughNumber),
-    [profiles, predictions, adjustments, gameweekNumberById, dashboardTableThroughNumber]
-  );
-  const selectedStandings = useMemo(
-    () => calculateStandingsThrough(selectedTableThroughNumber),
-    [profiles, predictions, adjustments, gameweekNumberById, selectedTableThroughNumber]
-  );
-
-  const dashboardForm = useMemo(() => {
-    const formWeeks = initialGameweeks
-      .filter((item) => item.number <= (dashboardTableThroughNumber ?? 0))
-      .sort((a, b) => b.number - a.number)
-      .slice(0, 5)
-      .reverse();
-
-    return {
-      weeks: formWeeks,
-      rows: profiles.map((profile) => ({
-        id: profile.id,
-        name: profile.display_name,
-        results: formWeeks.map((week) => {
-          const prediction = predictions.find((item) =>
-            item.member_id === profile.id &&
-            item.gameweek_id === week.id &&
-            item.points_awarded !== null
-          );
-          if (prediction) {
-            if (prediction.points_awarded === 3) return { code: "W", className: "win", title: "BTTS win (+3)" };
-            if (prediction.points_awarded === 1) return { code: "S-N", className: "scoreNil", title: "Score–nil (+1)" };
-            if (prediction.points_awarded === -1) return { code: "0-0", className: "zeroZero", title: "0–0 (−1)" };
-            return { code: String(prediction.points_awarded), className: "other", title: `${prediction.points_awarded} points` };
-          }
-          const adjustment = adjustments.find((item) => item.member_id === profile.id && item.gameweek_id === week.id);
-          if (adjustment) return { code: "M", className: "missed", title: `${adjustment.reason} (${adjustment.points})` };
-          return { code: "—", className: "empty", title: "No scored result" };
-        }),
-      })),
-    };
-  }, [initialGameweeks, profiles, predictions, adjustments, dashboardTableThroughNumber]);
-
-  function notice(message: string) {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2200);
-  }
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()),30000); return () => clearInterval(t); },[]);
+  useEffect(() => { if (!gameweek?.id) return; const t = window.setInterval(() => refreshLiveData(true),45000); return () => clearInterval(t); },[gameweek?.id]);
+  useEffect(() => { if (!isAdmin) return; (async()=>{ const r=await fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${await token()}`}}); if(r.ok){ const j=await r.json(); setAlertsCount((j.alerts ?? []).filter((a:any)=>!a.resolved).length); } })(); },[isAdmin,view]);
 
   async function selectFixture(fixtureId: string) {
-    if (!gameweek || !isOpen || busy) return;
-    const taken = predictions.find((prediction) => prediction.gameweek_id === gameweek.id && prediction.fixture_id === fixtureId && prediction.member_id !== initialProfile.id);
+    if (!gameweek || !isOpen) return;
+    const taken = predictions.find(p => p.gameweek_id === gameweek.id && p.fixture_id === fixtureId && p.member_id !== initialProfile.id);
     if (taken) return notice("That fixture has already been selected.");
-    setBusy(true);
-    const supabase = createClient();
-    let error: { message: string } | null = null;
-    if (currentPrediction) {
-      const response = await supabase.from("predictions").update({ fixture_id: fixtureId, updated_at: new Date().toISOString() }).eq("id", currentPrediction.id);
-      error = response.error;
+    const client = createClient();
+    if (selectedPrediction) {
+      const { error } = await client.from("predictions").update({fixture_id:fixtureId,updated_at:new Date().toISOString()}).eq("id",selectedPrediction.id);
+      if (error) return notice(error.message);
+      setPredictions(rows => rows.map(p => p.id === selectedPrediction.id ? {...p,fixture_id:fixtureId} : p));
     } else {
-      const response = await supabase.from("predictions").insert({ gameweek_id: gameweek.id, member_id: initialProfile.id, fixture_id: fixtureId }).select().single();
-      error = response.error;
-      if (!error && response.data) setPredictions((current) => [...current, response.data as Prediction]);
+      const { data,error } = await client.from("predictions").insert({gameweek_id:gameweek.id,member_id:initialProfile.id,fixture_id:fixtureId}).select().single();
+      if (error) return notice(error.message.includes("duplicate") ? "That fixture has just been taken by another player." : error.message);
+      if (data) setPredictions(rows => [...rows,data as Prediction]);
     }
-    if (error) notice(error.message.includes("duplicate") ? "That fixture has just been taken by another player." : error.message);
-    else {
-      if (currentPrediction) setPredictions((current) => current.map((prediction) => prediction.id === currentPrediction.id ? { ...prediction, fixture_id: fixtureId } : prediction));
-      notice("Pick saved ✓");
-    }
-    setBusy(false);
+    notice("Pick saved ✓");
   }
 
-  async function sharePicksFor(targetGameweek: Gameweek | null | undefined, targetFixtures: Fixture[]) {
-    if (!targetGameweek) return;
-    const selected = predictions.filter((prediction) => prediction.gameweek_id === targetGameweek.id);
-    const orderedPicks = selected.map((prediction) => ({
-      prediction,
-      fixture: targetFixtures.find((item) => item.id === prediction.fixture_id),
-      player: profiles.find((item) => item.id === prediction.member_id)?.display_name,
-    })).filter((item): item is { prediction: Prediction; fixture: Fixture; player: string } => Boolean(item.fixture && item.player))
-      .sort((a, b) => sortFixturesForBookmaker(a.fixture, b.fixture));
-    const lines = [`BOUNCE BTTS LEAGUE — GW${targetGameweek.number}`, `Season ${seasonLabel}`, ""];
-    for (const pick of orderedPicks) {
-      lines.push(`${pick.player} — ${pick.fixture.home_team} v ${pick.fixture.away_team} — ${pick.fixture.odds_fractional ?? "Odds unavailable"}`);
-    }
-    lines.push("");
-    lines.push(`Combined odds: ${combinedFractional(selected.map((prediction) => targetFixtures.find((fixture) => fixture.id === prediction.fixture_id)?.odds_fractional))}`);
-    lines.push("Odds may change after the daily check.");
-    const text = lines.join("\n");
-    if (navigator.share) await navigator.share({ title: `Bounce BTTS GW${targetGameweek.number}`, text, url: `${window.location.origin}/table` });
-    else { await navigator.clipboard.writeText(text); notice("Picks copied for WhatsApp"); }
-  }
+  async function signOut(){ await createClient().auth.signOut(); window.location.href="/login"; }
+  if (!initialProfile.active) return <main className={styles.shell}><div className={styles.panel}><h2>Account inactive</h2><button className={styles.primary} onClick={signOut}>Sign out</button></div></main>;
 
-  async function signOut() {
-    await createClient().auth.signOut();
-    window.location.href = "/login";
-  }
-
-  const dashboardGameweekIndex = dashboardGameweek
-    ? initialGameweeks.findIndex((item) => item.id === dashboardGameweek.id)
-    : -1;
-
-  function selectDashboardGameweek(gameweekId: string) {
-    setDashboardGameweekId(gameweekId);
-    setSelectedGameweekId(gameweekId);
-  }
-
-  function moveDashboardGameweek(direction: -1 | 1) {
-    if (dashboardGameweekIndex < 0) return;
-    const next = initialGameweeks[dashboardGameweekIndex + direction];
-    if (next) selectDashboardGameweek(next.id);
-  }
-
-  if (!initialProfile.active) {
-    return <main className="authPage"><section className="authCard"><h1>Account inactive</h1><p className="authIntro">Ask an admin to activate this user slot for the current season.</p><button className="primaryButton" onClick={signOut}>Sign out</button></section></main>;
-  }
-
-  return (
-    <main className="appShell">
-      <button className="mobileMenuButton" onClick={() => setMobileMenu(true)}>☰</button>
-      <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
-        <button className="closeMenu" onClick={() => setMobileMenu(false)}>×</button>
-        <div className="sideBrand">
-          <img className="brandCrest" src="/assets/hearts-crest.png" alt="Heart of Midlothian crest" />
-          <div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div>
-        </div>
-        <nav>
-          {navItems.filter((item) => !["admin","alerts"].includes(item.id) || isAdmin).map((item) => (
-            <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => { setView(item.id); setMobileMenu(false); }}><span>{item.icon}</span>{item.label}{item.id === "alerts" && unresolvedAlerts > 0 && <b className="navBadge">{unresolvedAlerts > 9 ? "9+" : unresolvedAlerts}</b>}</button>
-          ))}
-        </nav>
-        <div className="sidebarWatermark" aria-hidden="true"><img src="/assets/st-giles-round.jpg" alt="" /></div>
-        <button className="profileCard" onClick={signOut} title="Sign out">
-          <span>{initials(initialProfile.display_name)}</span>
-          <div><strong>{initialProfile.display_name}</strong><small>{initialProfile.role === "ultimate_admin" ? "Ultimate Admin" : initialProfile.role === "admin" ? "League Admin" : initialProfile.username}</small></div><b>↪</b>
-        </button>
-      </aside>
-      {mobileMenu && <button className="menuScrim" onClick={() => setMobileMenu(false)} aria-label="Close menu" />}
-
-      <section className="mainArea">
-        <header className="heroHeader">
-          <div className="heroBackdrop" aria-hidden="true"><div className="skylineLayer"/><div className="mosaicLayer"/></div>
-          <div className="heroText"><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><div className="heroRule"><span>♥</span></div><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div>
-          <div className="gameweekCard">
-            <span>Season {seasonLabel}</span>
-            <div className="dashboardGameweekControl">
-              <button type="button" aria-label="Previous gameweek" disabled={initialGameweeks.findIndex((item) => item.id === selectedGameweekId) <= 0} onClick={() => { const i=initialGameweeks.findIndex((item)=>item.id===selectedGameweekId); if(i>0)setSelectedGameweekId(initialGameweeks[i-1].id); }}>‹</button>
-              <label><span>Gameweek</span><select value={gameweek?.id ?? ""} onChange={(event) => setSelectedGameweekId(event.target.value)}>{initialGameweeks.map((item) => <option key={item.id} value={item.id}>GW {item.number}</option>)}</select></label>
-              <button type="button" aria-label="Next gameweek" disabled={initialGameweeks.findIndex((item) => item.id === selectedGameweekId) < 0 || initialGameweeks.findIndex((item) => item.id === selectedGameweekId) >= initialGameweeks.length - 1} onClick={() => { const i=initialGameweeks.findIndex((item)=>item.id===selectedGameweekId); if(i>=0&&i<initialGameweeks.length-1)setSelectedGameweekId(initialGameweeks[i+1].id); }}>›</button>
-            </div>
-            <small>{gameweekStatusText(gameweek, clockNow)}</small>
-          </div>
-        </header>
-
-        {view === "dashboard" && dashboardIsFuture && dashboardGameweek?.opens_at && (
-          <FutureGameweekBanner gameweek={dashboardGameweek} now={clockNow} />
-        )}
-
-        {view === "dashboard" && <Dashboard gameweek={dashboardGameweek} currentFixture={dashboardCurrentFixture} currentAdjustment={dashboardCurrentAdjustment} fixtures={dashboardFixtures} profiles={profiles} predictions={predictions} standings={dashboardStandings} tableThroughNumber={dashboardTableThroughNumber} isFuture={dashboardIsFuture} form={dashboardForm} submitted={dashboardSubmitted} entryFee={entryFee} seasonLabel={seasonLabel} setView={setView} isOpen={dashboardIsOpen} />}
-        {view === "pick" && <><FixturesPage mode="pick" fixtures={eligibleFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={competitions} sharePicks={() => sharePicksFor(gameweek, fixtures)} /></>}
-        {view === "fixtures" && <FixturesPage mode="all" fixtures={allFixtures} predictions={predictions} profiles={profiles} gameweek={gameweek} myId={initialProfile.id} isOpen={isOpen} selectFixture={selectFixture} competitions={[]} sharePicks={() => sharePicksFor(gameweek, fixtures)} />}
-        {view === "table" && <LeagueTable standings={selectedStandings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} tableThroughNumber={selectedTableThroughNumber} isFuture={selectedIsFuture} entryFee={entryFee} />}
-        {view === "results" && <Results fixtures={fixtures} predictions={predictions} profiles={profiles} />}
-        {view === "history" && <LeagueHistory seasons={seasonHistory} />}
-        {view === "players" && <Players profiles={profiles} predictions={predictions} adjustments={adjustments} fixtures={fixtures} gameweek={gameweek} />}
-        {view === "alerts" && isAdmin && <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>ADMIN NOTIFICATIONS</span><h2>Alerts</h2><p>Fixture changes and provider update status.</p></div></div><AdminAlerts notice={notice} /></section>}
-        {view === "admin" && (initialProfile.role === "admin" || initialProfile.role === "ultimate_admin") && <AdminPanel isUltimateAdmin={initialProfile.role === "ultimate_admin"} active={adminView} setActive={setAdminView} gameweek={gameweek} gameweeks={initialGameweeks} selectedGameweekId={selectedGameweekId} setSelectedGameweekId={setSelectedGameweekId} fixtures={fixtures} profiles={profiles} predictions={predictions} adjustments={adjustments} onChanged={() => window.location.reload()} notice={notice} />}
-
-        <footer className="siteFooter"><span>♡</span><strong>MADE BY THE ARTIST, FOR THE BOUNCE</strong></footer>
-      </section>
-      {toast && <div className="toast">{toast}</div>}
-    </main>
-  );
-}
-
-
-function FutureGameweekBanner({ gameweek, now }: { gameweek: Gameweek; now: number }) {
-  const opensAt = gameweek.opens_at ? new Date(gameweek.opens_at).getTime() : now;
-  const remaining = Math.max(0, opensAt - now);
-  const totalMinutes = Math.floor(remaining / 60_000);
-  const days = Math.floor(totalMinutes / 1_440);
-  const hours = Math.floor((totalMinutes % 1_440) / 60);
-  const minutes = totalMinutes % 60;
-
-  return (
-    <div className="futureGameweekBanner" role="status">
-      <strong>GAMEWEEK {gameweek.number} NOT OPEN</strong>
-      <span>Opens {formatKickoff(gameweek.opens_at as string)}</span>
-      <b>{days}d {hours}h {minutes}m</b>
-    </div>
-  );
-}
-
-
-function GameweekSelector({ gameweeks, selectedId, onChange, admin }: any) {
-  return <div className="gameweekSelector"><label htmlFor={admin ? "admin-gameweek-select" : "pick-gameweek-select"}>View gameweek</label><select id={admin ? "admin-gameweek-select" : "pick-gameweek-select"} value={selectedId} onChange={(event)=>onChange(event.target.value)}>{gameweeks.map((item:Gameweek)=><option key={item.id} value={item.id}>GW {item.number} · {item.opens_at ? `opens ${formatKickoff(item.opens_at)}` : "open date not set"} · deadline {formatKickoff(item.locks_at)}</option>)}</select>{!admin&&gameweeks.find((item:Gameweek)=>item.id===selectedId)?.opens_at&&new Date(gameweeks.find((item:Gameweek)=>item.id===selectedId).opens_at as string)>new Date()&&<small>Selections open Monday at 8:00am UK time. You can view this gameweek now, but cannot submit yet.</small>}</div>;
-}
-
-function Dashboard({ gameweek, currentFixture, currentAdjustment, fixtures, profiles, predictions, standings, tableThroughNumber, isFuture, form, submitted, entryFee, seasonLabel, setView, isOpen }: any) {
-  const recent = fixtures.filter((fixture: Fixture) => ["FT", "AET", "PEN"].includes(fixture.status));
-  const gameweekPicks = profiles.map((profile: Profile) => {
-    const prediction = predictions.find((item: Prediction) => item.gameweek_id === gameweek?.id && item.member_id === profile.id);
-    const fixture = fixtures.find((item: Fixture) => item.id === prediction?.fixture_id);
-    return { profile, fixture };
-  });
-  return <div className="dashboardGrid">
-    <section className="contentColumn">
-      <article className="panel currentPickPanel brandedPanel"><div className="panelTitle">YOUR PICK — {gameweek ? `GAMEWEEK ${gameweek.number}` : "NO ACTIVE GAMEWEEK"}</div>{currentFixture ? <div className="pickDisplay"><img className="pickBrandCrest" src="/assets/hearts-crest.png" alt=""/><div className="teamBadge">{initials(currentFixture.home_team)}</div><strong>{currentFixture.home_team}</strong><span className="versus">V</span><strong>{currentFixture.away_team}</strong><div className="teamBadge away">{initials(currentFixture.away_team)}</div><div className="pickSubmitted">✓ PICK SUBMITTED</div><small>{formatKickoff(currentFixture.kickoff_at)} · BTTS {currentFixture.odds_fractional ?? "Odds unavailable"}</small></div> : currentAdjustment ? <div className="missedPickDisplay"><strong>MISSED DEADLINE</strong><b>{currentAdjustment.points > 0 ? "+" : ""}{currentAdjustment.points} POINT{Math.abs(currentAdjustment.points) === 1 ? "" : "S"}</b><small>{currentAdjustment.reason}</small></div> : <button className="emptySelection" onClick={() => setView("pick")}>{isOpen ? "Make your Saturday 3pm BTTS pick" : "Selections are currently closed"}</button>}<div className="pickNotice">ⓘ One unique fixture per player. Picks can be changed until the gameweek deadline.</div></article>
-      <article className="panel fixturesPanel brandedPanel mosaicPanel"><div className="panelTitle rowTitle"><span>EVERYONE'S PICKS SO FAR</span><button onClick={() => setView("players")}>View players →</button></div><div className="dashboardPicks">{gameweekPicks.map(({ profile, fixture }: { profile: Profile; fixture?: Fixture }) => <div className={`dashboardPickRow ${fixture ? "picked" : "pending"}`} key={profile.id}><div className="dashboardPickPlayer"><span>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>{fixture ? <><div className="dashboardPickFixture"><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>{fixture.odds_fractional ?? "—"}</strong></div><b className="pickStatus">PICKED ✓</b></> : <><div className="dashboardPickFixture"><strong>Awaiting selection</strong><small>Gameweek {gameweek?.number ?? "—"}</small></div><div className="dashboardPickOdds"><span>BTTS</span><strong>—</strong></div><b className="pickStatus pending">PENDING</b></>}</div>)}{!profiles.length && <div className="emptyState">No active players.</div>}</div><div className="dashboardPicksActions"><WeeklyPicksShareButton disabled={isFuture} gameweekNumber={gameweek?.number ?? 0} seasonLabel={seasonLabel} picks={gameweekPicks.filter(({fixture}:{fixture?:Fixture})=>Boolean(fixture)).map(({profile,fixture}:{profile:Profile;fixture?:Fixture})=>({player:profile.display_name,homeTeam:fixture!.home_team,awayTeam:fixture!.away_team,competition:competitionDisplayName(fixture!),kickoffAt:fixture!.kickoff_at,odds:fixture!.odds_fractional}))} /></div></article>
-      <article className="panel formPanel brandedPanel">
-        <div className="panelTitle rowTitle">
-          <span>FORM — THROUGH GW {tableThroughNumber ?? "—"}</span>
-          <small>Last five scored gameweeks</small>
-        </div>
-        <div className="formTable">
-          <div className="formTableRow header">
-            <span>PLAYER</span>
-            {form.weeks.map((week: Gameweek) => <b key={week.id}>GW{week.number}</b>)}
-          </div>
-          {form.rows.map((row: any) => (
-            <div className="formTableRow" key={row.id}>
-              <strong>{row.name}</strong>
-              {row.results.map((result: any, index: number) => (
-                <span key={`${row.id}-${index}`} className={`formBadge ${result.className}`} title={result.title}>{result.code}</span>
-              ))}
-            </div>
-          ))}
-        </div>
-        <div className="formLegend"><span className="formBadge win">W</span> BTTS <span className="formBadge scoreNil">S-N</span> Score–nil <span className="formBadge zeroZero">0-0</span> 0–0 <span className="formBadge missed">M</span> Missed</div>
-      </article>
-    </section>
-    <aside className="rightColumn">
-      <article className="panel statusPanel brandedPanel"><div className="panelTitle">GAMEWEEK STATUS</div><div className="statusNumbers"><strong>{submitted}</strong><span>of {profiles.length} picks submitted</span></div><div className="progressTrack"><i style={{width:`${profiles.length ? submitted/profiles.length*100 : 0}%`}}/></div><small>Prize pot: £{(profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee).toFixed(0)}</small></article>
-      <article className="panel tablePanel brandedPanel"><div className="panelTitle">{isFuture ? `STANDINGS BEFORE GW ${gameweek?.number}` : `LEAGUE TABLE AFTER GW ${tableThroughNumber ?? gameweek?.number ?? "—"}`}</div><div className="miniTable"><div className="miniTableRow header"><span>POS</span><span>PLAYER</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.slice(0,8).map((row: any,index:number)=><div className={`miniTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div><div className="tablePanelActions"><button className="panelFooterButton" onClick={() => setView("table")}>View full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number ?? null} prizePot={profiles.filter((p:Profile)=>!/^user\d+$/i.test(p.display_name.trim())).length * entryFee} /></div></article>
-      <article className="panel resultsPanel brandedPanel"><div className="panelTitle">LATEST RESULTS</div>{recent.slice(0,5).map((fixture: Fixture)=><div className="resultRow" key={fixture.id}><span>GW{gameweek?.number}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"yes":"no"}>{(fixture.home_score??0)>0&&(fixture.away_score??0)>0?"✓":"–"}</i></div>)}{!recent.length&&<div className="emptyState compact">No completed results yet.</div>}</article>
+  return <main className={styles.shell}>
+    <button className={styles.mobileMenu} onClick={()=>setMobileMenu(true)}>☰</button>
+    <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
+      <div className={styles.brand}><img src="/assets/hearts-crest.png" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
+      <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
+      <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
     </aside>
-  </div>;
+    {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>} 
+    <section className={styles.main}>
+      <header className={styles.hero}><div><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div><div className={styles.gwCard}><label>Season {seasonLabel}</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small></div></header>
+      <div className={styles.content}><div className={styles.page}>
+        {view==="dashboard" && <Dashboard gameweek={gameweek??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen} setView={setView}/>} 
+        {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={initialProfile.id} selectFixture={selectFixture}/>} 
+        {view==="fixtures" && <FixturesPage fixtures={allFixtures}/>} 
+        {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee}/>} 
+        {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>} 
+        {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>} 
+        {view==="players" && <PlayersPage profiles={profiles} gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments}/>} 
+        {view==="about" && <AboutPage role={initialProfile.role} profiles={profiles}/>} 
+        {view==="alerts" && isAdmin && <AlertsPage notice={notice} onCount={setAlertsCount}/>} 
+        {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={initialProfile.role==="ultimate_admin"} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} notice={notice} onChanged={()=>refreshLiveData(false)}/>} 
+      </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE</footer>
+    </section>
+    {toast && <div className={styles.toast}>{toast}</div>}
+  </main>;
 }
 
-function FixturesPage({ mode, fixtures, predictions, profiles, gameweek, myId, isOpen, selectFixture, competitions, sharePicks }: any) {
-  const [search, setSearch] = useState("");
-  const query = search.trim().toLowerCase();
-  const isPicker = mode === "pick";
-  const filtered = (fixtures as Fixture[]).filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition} ${fixture.country} ${competitionDisplayName(fixture)}`.toLowerCase().includes(query));
+function Heading({eyebrow,title,children,actions}:{eyebrow:string;title:string;children?:ReactNode;actions?:ReactNode}){return <div className={styles.heading}><div><span>{eyebrow}</span><h2>{title}</h2>{children}</div>{actions}</div>}
 
-  if (!isPicker) {
-    const dayFormatter = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-    const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/London",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-    const timeFormatter = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
-    const byDay = new Map<string, Fixture[]>();
-    for (const fixture of [...filtered].sort(sortFixturesByKickoffThenCompetition)) {
-      const key = dateKeyFormatter.format(new Date(fixture.kickoff_at));
-      byDay.set(key, [...(byDay.get(key) ?? []), fixture]);
-    }
-
-    return <section className="pagePanel panel brandedPanel fixturesListPage">
-      <div className="pageHeading"><div><span>TWO-WEEK FIXTURE LIST</span><h2>Fixtures</h2><p>Expand a day, then expand a league. Leagues are ordered by their earliest kickoff, followed by the Bet365-style UK competition order.</p></div></div>
-      <div className="fixtureSearch"><label htmlFor="fixture-search-all">Search fixtures</label><input id="fixture-search-all" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>
-      {Array.from(byDay.entries()).map(([dateKey, dayFixtures], dayIndex) => {
-        const dayDate = new Date(dayFixtures[0].kickoff_at);
-        const byCompetition = new Map<string, Fixture[]>();
-        for (const fixture of dayFixtures) {
-          const key = competitionKey(fixture);
-          byCompetition.set(key, [...(byCompetition.get(key) ?? []), fixture]);
-        }
-        const competitionGroups = Array.from(byCompetition.entries()).sort(([, fixturesA], [, fixturesB]) => {
-          const firstA = Math.min(...fixturesA.map((fixture) => new Date(fixture.kickoff_at).getTime()));
-          const firstB = Math.min(...fixturesB.map((fixture) => new Date(fixture.kickoff_at).getTime()));
-          return firstA - firstB || compareCompetitionGroups(fixturesA[0], fixturesB[0]);
-        });
-
-        return <details className="fixtureDaySection fixtureDayDisclosure" key={dateKey} open={Boolean(query) || dayIndex === 0}>
-          <summary className="fixtureDayHeading">
-            <span>{dayFormatter.format(dayDate)}</span>
-            <small>{dayFixtures.length} fixture{dayFixtures.length === 1 ? "" : "s"}</small>
-            <b aria-hidden="true">⌄</b>
-          </summary>
-          <div className="fixtureDayBody">
-            {competitionGroups.map(([competitionGroupKey, competitionFixtures], competitionIndex) => {
-              const sortedCompetitionFixtures = [...competitionFixtures].sort(sortFixturesByKickoffThenCompetition);
-              return <details className="fixtureLeagueSection" key={`${dateKey}-${competitionGroupKey}`} open={Boolean(query) || (dayIndex === 0 && competitionIndex === 0)}>
-                <summary className="fixtureLeagueHeading">
-                  <span>{competitionDisplayName(sortedCompetitionFixtures[0])}</span>
-                  <small>{sortedCompetitionFixtures.length} fixture{sortedCompetitionFixtures.length === 1 ? "" : "s"}</small>
-                  <b aria-hidden="true">⌄</b>
-                </summary>
-                <div className="fixtureTable">
-                  <div className="fixtureTableHeader"><span>Kickoff</span><span>Fixture</span><span>BTTS</span><span>Status</span></div>
-                  {sortedCompetitionFixtures.map((fixture) => <div className="fixtureTableRow" key={fixture.id}>
-                    <strong className="fixtureKickoffTime">{timeFormatter.format(new Date(fixture.kickoff_at))}</strong>
-                    <div className="fixtureTeamsCompact"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div>
-                    <strong className="fixtureOddsCompact">{fixture.odds_fractional ?? "—"}</strong>
-                    <span className={`fixtureStatus ${fixture.is_eligible ? "eligible" : "ineligible"}`}>{fixture.status === "NS" ? (fixture.is_eligible ? "Eligible" : "Fixture") : fixture.status}</span>
-                  </div>)}
-                </div>
-              </details>;
-            })}
-          </div>
-        </details>;
-      })}
-      {!filtered.length && <div className="emptyState">No fixtures are currently stored for this two-week period.</div>}
-    </section>;
-  }
-
-  const visibleCompetitions = (competitions as string[]).filter((groupKey) => filtered.some((fixture) => competitionKey(fixture) === groupKey));
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>{gameweek ? `GAMEWEEK ${gameweek.number}` : "NO GAMEWEEK"}</span><h2>Make My Pick</h2><p>Only valid UK Saturday 3pm selections are shown. Hearts and Hibs matches are excluded.</p></div><button className="prominentShareButton" onClick={sharePicks}>↗ Share weekly picks</button></div><div className="fixtureSearch"><label htmlFor="fixture-search-pick">Search fixtures</label><input id="fixture-search-pick" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" /></div>{visibleCompetitions.map((groupKey:string)=>{const competitionFixtures=filtered.filter((f:Fixture)=>competitionKey(f)===groupKey).sort(sortFixturesForBookmaker);const competitionLabel=competitionFixtures[0]?competitionDisplayName(competitionFixtures[0]):groupKey;return <details className="competitionSection competitionDisclosure" key={`${mode}-${groupKey}-${query}`} open={Boolean(query)}><summary><span>{competitionLabel}</span><small>{competitionFixtures.length} fixture{competitionFixtures.length===1?"":"s"}</small><b aria-hidden="true">⌄</b></summary><div className="competitionFixtures">{competitionFixtures.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id&&p.gameweek_id===gameweek?.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="fullFixture" key={fixture.id}><div><span>{formatKickoff(fixture.kickoff_at).split(",")[0]}</span><strong>{formatKickoff(fixture.kickoff_at).split(", ").pop()}</strong></div><div className="fullTeams"><strong>{fixture.home_team}</strong><b>v</b><strong>{fixture.away_team}</strong></div><div className="fullOdds"><span>BTTS</span><strong>{fixture.odds_fractional??"—"}</strong></div><button disabled={!isOpen||Boolean(player&&player.id!==myId)} onClick={()=>selectFixture(fixture.id)}>{player?.id===myId?"Picked ✓":player?`Taken by ${player.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div></details>})}{!filtered.length&&<div className="emptyState">No fixtures match your search.</div>}</section>;
+function Dashboard({gameweek,profiles,fixtures,predictions,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,setView}:{gameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustment?:ScoreAdjustment;myFixture?:Fixture;standings:Standing[];entryFee:number;seasonLabel:string;isOpen:boolean;setView:(v:View)=>void}){
+  const picks=profiles.map(profile=>{const prediction=predictions.find(p=>p.member_id===profile.id);return {profile,prediction,fixture:fixtures.find(f=>f.id===prediction?.fixture_id)}});
+  const finished=fixtures.filter(f=>finishedStatuses.includes(f.status));
+  return <div className={styles.grid2}><section>
+    <article className={styles.panel}><div className={styles.title}>YOUR PICK — {gameweek?`GAMEWEEK ${gameweek.number}`:"NO ACTIVE GAMEWEEK"}</div>{myFixture?<div className={styles.pickHero}><strong>{myFixture.home_team}</strong><span className={styles.versus}>{myFixture.home_score!=null?`${myFixture.home_score} — ${myFixture.away_score}`:"V"}</span><strong>{myFixture.away_team}</strong><small className={styles.subtle} style={{gridColumn:"1/-1"}}>{formatKickoff(myFixture.kickoff_at)} · BTTS {myFixture.odds_fractional??"Odds unavailable"}</small></div>:adjustment?<div><strong>MISSED DEADLINE</strong><p>{adjustment.points} point(s) · {adjustment.reason}</p></div>:<button className={styles.primary} onClick={()=>setView("pick")}>{isOpen?"Make your BTTS pick":"Selections are currently closed"}</button>}</article>
+    <article className={styles.panel}><div className={styles.title}>EVERYONE'S PICKS SO FAR</div>{picks.map(({profile,prediction,fixture})=>{const outcome=fixture?outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction?.points_awarded??null):null;return <div className={styles.row} key={profile.id}><strong>{profile.display_name}</strong><span>{fixture?`${fixture.home_team} v ${fixture.away_team}`:"Awaiting selection"}</span><span>{fixture?.odds_fractional??"—"}</span><span className={outcome?.tone==="good"?styles.statusGood:outcome?.tone==="warn"?styles.statusWarn:outcome?.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome?`${outcome.label}${outcome.points!=null?` · ${outcome.points>0?"+":""}${outcome.points}`:""}`:"PENDING"}</span></div>})}<div className={styles.buttonRow}><WeeklyPicksShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional}))}/></div></article>
+  </section><aside><article className={styles.panel}><div className={styles.title}>GAMEWEEK STATUS</div><div className={styles.miniCards}><div className={styles.miniCard}><strong>{predictions.length}</strong><span>of {profiles.length} picks</span></div><div className={styles.miniCard}><strong>£{(profiles.length*entryFee).toFixed(0)}</strong><span>Prize pot</span></div><div className={styles.miniCard}><strong>{finished.length}</strong><span>Finished</span></div></div></article><article className={styles.panel}><div className={styles.title}>LEAGUE TABLE</div>{standings.slice(0,8).map((r,i)=><div className={styles.row} style={{gridTemplateColumns:"40px 1fr 70px 70px"}} key={r.id}><span>{i+1}</span><strong>{r.name}</strong><span>{r.wins} W</span><b>{r.points}</b></div>)}<div className={styles.buttonRow}><button className={styles.button} onClick={()=>setView("table")}>View full table →</button><span className={styles.shareInline}><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={profiles.length*entryFee}/></span></div></article></aside></div>
 }
 
-function LeagueTable({ standings, seasonLabel, gameweekNumber, tableThroughNumber, isFuture, entryFee }: any) {
-  const prizePot = standings.length * entryFee;
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>SEASON {seasonLabel} · {gameweekNumber ? `GAMEWEEK ${gameweekNumber} · ` : ""}EST 2024</span><h2>{isFuture ? `Standings before Gameweek ${gameweekNumber}` : `League Table after Gameweek ${tableThroughNumber ?? gameweekNumber}`}</h2><p>S-N means a score–nil result worth +1. Ties: fewest 0–0s, most BTTS wins, then alphabetical.</p></div><div className="pageHeadingActions"><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweekNumber} prizePot={prizePot} /><a href="/table" target="_blank" rel="noreferrer">Public table ↗</a></div></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((row:any,index:number)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></section>;
+function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixture}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];isOpen:boolean;myId:string;selectFixture:(id:string)=>void}){
+  const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
+  const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.competition} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort(fixtureSort);
+  const groups=Array.from(new Set(filtered.map(competitionDisplayName)));
+  return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team or competition, then choose your BTTS: Yes selection. You can change it until the deadline."/></p></Heading><div className={styles.panel}><input className={styles.search} type="search" placeholder="Search team or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{groups.map(group=><div key={group}><h3 className={styles.groupTitle}>{group}</h3>{filtered.filter(f=>competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={styles.row} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{f.odds_fractional??"—"}</span><button className={styles.button} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</div>)}</div></section>
 }
 
-function LeagueHistory({ seasons }: { seasons: SeasonHistory[] }) {
-  const archived: SeasonHistory[] = historicalSeasons.map((season) => ({
-    id: `historic-${season.season}`,
-    label: season.season,
-    isCurrent: false,
-    gameweeks: season.weeks,
-    completedPicks: season.finalTable.reduce((sum, row) => sum + row.played, 0),
-    standings: season.finalTable.map((row, index) => ({
-      id: `${season.season}-${index}`,
-      name: row.name,
-      played: row.played,
-      wins: row.wins,
-      zeroZeroCount: row.losses,
-      points: row.points,
-    })),
-  }));
-  const merged = [...archived, ...seasons.filter((season) => !archived.some((archive) => archive.label === season.label))];
-  const [selectedId, setSelectedId] = useState(merged[0]?.id ?? "");
-  const selected = merged.find((season) => season.id === selectedId) ?? merged[0];
-  return <section className="pagePanel panel brandedPanel historyPanel">
-    <div className="pageHeading"><div><span>EST 2024 · SEASON ARCHIVE</span><h2>League History</h2><p>Previous winners, final tables and the current season.</p></div></div>
-    <div className="rollOfHonour">
-      <img src="/assets/bounce-cup.png" alt="Bounce BTTS League trophy" />
-      <div><span>ROLL OF HONOUR</span>{rollOfHonour.map((winner)=><p key={winner.season}><strong>{winner.season}</strong><b>{winner.winner}</b></p>)}</div>
+function FixturesPage({fixtures}:{fixtures:Fixture[]}){const [search,setSearch]=useState("");const q=search.toLowerCase().trim();const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));const days=Array.from(new Set(filtered.map(f=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at)))));return <section><Heading eyebrow="TWO-WEEK FIXTURE LIST" title="Fixtures"><p>All stored fixtures, searchable by team, country or competition.</p></Heading><div className={styles.panel}><input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search fixtures…"/>{days.map(day=><div key={day}><h3 className={styles.groupTitle}>{new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"long",day:"numeric",month:"long"}).format(new Date(`${day}T12:00:00Z`))}</h3>{filtered.filter(f=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at))===day).map(f=><div className={styles.row} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span><strong>{f.home_team} v {f.away_team}</strong><br/><small>{competitionDisplayName(f)}</small></span><strong>{f.odds_fractional??"—"}</strong><span>{f.status}</span></div>)}</div>)}</div></section>}
+
+function LeagueTable({standings,seasonLabel,gameweek,entryFee}:{standings:Standing[];seasonLabel:string;gameweek:Gameweek|null;entryFee:number}){return <section><Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={standings.length*entryFee}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading><div className={`${styles.panel} ${styles.table}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""}`}><span>{i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div></section>}
+
+function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];onRefresh:()=>void}){const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter(x=>x.fixture&&x.profile);const groups=Array.from(new Set(fixtures.map(f=>`${normaliseCountry(f.country)}|${competitionDisplayName(f)}`))).sort();return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Results" actions={<button className={styles.button} onClick={onRefresh}>Refresh displayed data</button>}><p>Selected matches first, followed by every fixture in the gameweek.</p></Heading><div className={styles.panel}><div className={styles.title}>SELECTED MATCHES</div>{selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture!.home_score,fixture!.away_score,fixture!.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile!.display_name}</strong><span>{fixture!.home_team} v {fixture!.away_team}</span><b className={styles.score}>{fixture!.home_score==null?"—":`${fixture!.home_score}-${fixture!.away_score}`}</b><span>{fixture!.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}{!selected.length&&<div className={styles.notice}>No selected matches yet.</div>}</div><div className={styles.panel}><div className={styles.title}>ALL RESULTS / FIXTURES</div>{groups.map(key=>{const [country,competition]=key.split("|");return <div key={key}><h3 className={styles.groupTitle}>{country} · {competition}</h3>{fixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={styles.resultRow} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}</div>})}</div></section>}
+
+function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){const legacy=(historicalSeasons as any[]).map((s:any)=>({id:`historic-${s.season}`,label:s.season,isCurrent:false,gameweeks:s.weeks,completedPicks:s.finalTable.reduce((n:number,r:any)=>n+r.played,0),standings:s.finalTable.map((r:any,i:number)=>({id:`${s.season}-${i}`,name:r.name,played:r.played,wins:r.wins,zeroZeroCount:r.losses,points:r.points}))}));const seasons=[...legacy,...seasonHistory.filter(s=>!legacy.some(l=>l.label===s.label))];const [id,setId]=useState(seasons[0]?.id??"");const selected=seasons.find(s=>s.id===id)??seasons[0];return <section><Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History"><p>Previous winners and final tables.</p></Heading><div className={styles.panel}><div className={styles.title}>ROLL OF HONOUR</div><div className={styles.buttonRow}>{(rollOfHonour as any[]).map((r:any)=><div className={styles.miniCard} key={r.season}><strong>{r.season}</strong><span>{r.winner}</span></div>)}</div></div><div className={styles.buttonRow}>{seasons.map(s=><button className={s.id===selected?.id?styles.primary:styles.button} key={s.id} onClick={()=>setId(s.id)}>{s.label}</button>)}</div>{selected&&<div className={`${styles.panel} ${styles.table}`}><div className={`${styles.tableRow} ${styles.header}`} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((r,i)=><div className={styles.tableRow} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}} key={r.id}><span>{i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div>}</section>}
+
+function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={styles.panel}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={styles.row} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{fx?.odds_fractional??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
+
+function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
+  const [tab, setTab] = useState<"about" | "rules" | "instructions" | "members">("about");
+  const [rouss, setRouss] = useState(false);
+  const tabs: Array<["about" | "rules" | "instructions" | "members", string]> = [
+    ["about", "About"], ["rules", "Rules"], ["instructions", "Instructions"], ["members", "Members / Admins"],
+  ];
+  return <section>
+    <Heading eyebrow="BOUNCE BTTS LEAGUE · EST 2024" title="About"><p>League information, rules and role-specific help.</p></Heading>
+    <div className={styles.aboutTabs}>{tabs.map(([id,label]) => <button key={id} className={tab===id?styles.active:""} onClick={()=>setTab(id)}>{label}</button>)}</div>
+    <div className={`${styles.panel} ${styles.aboutSection}`}>
+      {tab === "about" && <><h3>What is Bounce BTTS?</h3><p>The app runs the private Bounce Both Teams To Score league: one unique BTTS pick per player per gameweek, automatic standings and a shareable public table.</p><p>Established 2024. Current season management, historical tables and weekly sharing are all kept in one place.</p></>}
+      {tab === "rules" && <><h3>Rules</h3><ul><li>Choose one eligible fixture to finish BTTS: Yes.</li><li>No two players may choose the same fixture in the same gameweek.</li><li>BTTS = <strong>+3</strong>; score–nil = <strong>+1</strong>; 0–0 = <strong>−1</strong>.</li><li>A missed deadline receives the configured missed-selection adjustment (normally −1).</li><li>Normal deadline is Friday 17:00 UK time unless the admin changes it.</li><li>Ties: fewest 0–0 results, then most BTTS wins, then alphabetical.</li></ul></>}
+      {tab === "instructions" && <Instructions role={role}/>} 
+      {tab === "members" && <><h3>Members / Admins</h3>{profiles.map(p => <div className={styles.row} style={{gridTemplateColumns:"1fr 1fr"}} key={p.id}><strong>{p.display_name}</strong><span>{p.role === "ultimate_admin" ? "Ultimate Admin" : p.role === "admin" ? "League Admin" : "Member"}</span></div>)}{role === "member" && <p className={styles.small}>Member view intentionally hides account/security administration details.</p>}</>}
+      <div className={styles.eggZone}><button type="button" className={styles.eggInvisible} aria-hidden="true" tabIndex={-1} onClick={()=>setRouss(true)}>.</button></div>
     </div>
-    <div className="seasonCards">{merged.map((season)=><button key={season.id} className={selected?.id===season.id?"active":""} onClick={()=>setSelectedId(season.id)}><span>{season.isCurrent?"CURRENT SEASON":"ARCHIVE"}</span><strong>{season.label}</strong><small>{season.gameweeks} gameweeks</small></button>)}</div>
-    {selected&&selected.standings.length>0?<><div className="historyWinner"><span>{selected.isCurrent?"CURRENT LEADER":"SEASON WINNER"}</span><strong>{selected.standings[0].name}</strong><b>{selected.standings[0].points} pts</b></div><div className="largeTable"><div className="largeTableRow header"><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((row,index)=><div className={`largeTableRow ${index===0?"leader":""}`} key={row.id}><span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}</div></>:<div className="emptyState historyEmpty"><strong>{selected?.label}</strong><span>No archived results yet.</span></div>}
+    {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted"><div className={`${styles.overlayCard} ${styles.flash}`}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
   </section>;
 }
+function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}
 
-function Results({ fixtures, predictions, profiles }: any) {
-  const completed=(fixtures as Fixture[]).filter((fixture:Fixture)=>["FT","AET","PEN"].includes(fixture.status)).sort(sortFixturesForBookmaker);
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>COMPLETED FIXTURES</span><h2>Results</h2></div></div>{completed.map((fixture:Fixture)=>{const prediction=predictions.find((p:Prediction)=>p.fixture_id===fixture.id);const player=profiles.find((p:Profile)=>p.id===prediction?.member_id);return <div className="largeResult" key={fixture.id}><span>{player?.display_name??"Unselected"}</span><strong>{fixture.home_team}</strong><b>{fixture.home_score} - {fixture.away_score}</b><strong>{fixture.away_team}</strong><i className={prediction?.points_awarded===3?"yes":"no"}>{prediction?.points_awarded==null?"—":`${prediction.points_awarded>0?"+":""}${prediction.points_awarded} PTS`}</i></div>})}{!completed.length&&<div className="emptyState">No completed results yet.</div>}</section>;
-}
+function AdminPage({active,setActive,isUltimate,gameweek,nextGameweek,profiles,fixtures,predictions,adjustments,notice,onChanged}:{active:AdminView;setActive:(v:AdminView)=>void;isUltimate:boolean;gameweek:Gameweek|null;nextGameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];notice:(m:string)=>void;onChanged:()=>void}){return <section><Heading eyebrow="ADMIN CONTROL" title="League Management"><p>{isUltimate?"Full league, user and security administration.":"Manage selections, fixtures, results and gameweek status."}</p></Heading><div className={styles.adminTabs}>{(["users","selections","fixtures","results","gameweek","seasons"] as AdminView[]).filter(v=>v!=="users"||isUltimate).map(v=><button key={v} className={active===v?styles.active:""} onClick={()=>setActive(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div><div className={styles.panel}>{active==="users"&&isUltimate&&<UsersAdmin notice={notice}/>} {active==="selections"&&<SelectionsAdmin gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} notice={notice} onChanged={onChanged}/>} {active==="fixtures"&&<FixturesAdmin gameweek={gameweek} nextGameweek={nextGameweek} notice={notice} onChanged={onChanged}/>} {active==="results"&&<ResultsAdmin gameweek={gameweek} fixtures={fixtures} predictions={predictions} notice={notice} onChanged={onChanged}/>} {active==="gameweek"&&<GameweekAdmin gameweek={gameweek} notice={notice} onChanged={onChanged}/>} {active==="seasons"&&<SeasonsAdmin notice={notice} onChanged={onChanged}/>}</div></section>}
 
-function Players({ profiles, predictions, adjustments, fixtures, gameweek }: any) {
-  return <section className="pagePanel panel brandedPanel"><div className="pageHeading"><div><span>LEAGUE MEMBERS</span><h2>Players</h2><p>{predictions.filter((p:Prediction)=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted a pick.</p></div></div><div className="playerGrid">{profiles.map((profile:Profile)=>{const prediction=predictions.find((p:Prediction)=>p.member_id===profile.id&&p.gameweek_id===gameweek?.id);const adjustment=(adjustments as ScoreAdjustment[]).find((item)=>item.member_id===profile.id&&item.gameweek_id===gameweek?.id);const fixture=fixtures.find((f:Fixture)=>f.id===prediction?.fixture_id);return <article key={profile.id}><span>{initials(profile.display_name)}</span><div><strong>{profile.display_name}</strong><small>{fixture?`${fixture.home_team} v ${fixture.away_team} · ${fixture.odds_fractional??"Odds unavailable"}`:adjustment?`${adjustment.reason}: ${adjustment.points>0?"+":""}${adjustment.points} point${Math.abs(adjustment.points)===1?"":"s"}`:"Awaiting selection"}</small></div><b className={fixture?"picked":adjustment?"missed":"pending"}>{fixture?"PICKED ✓":adjustment?`MISSED ${adjustment.points>0?"+":""}${adjustment.points}`:"PENDING"}</b></article>})}</div></section>;
-}
+function UsersAdmin({notice}:{notice:(m:string)=>void}){const [users,setUsers]=useState<any[]>([]);const [loading,setLoading]=useState(true);async function load(){const r=await fetch("/api/admin/users",{headers:{authorization:`Bearer ${await token()}`}});const j=await r.json();if(r.ok)setUsers(j.users??[]);else notice(j.error);setLoading(false)}useEffect(()=>{load()},[]);async function save(u:any){const r=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:u.id,username:u.username,displayName:u.display_name,role:u.role,active:u.active,password:u.password})});const j=await r.json();notice(r.ok?`${u.username} saved`:j.error)}if(loading)return <div>Loading users…</div>;return <div><p className={styles.notice}>Passwords and access controls remain Ultimate Admin only. <Help text="Use Generate to make a simple replacement password, Save to apply it, and Copy to send the login privately."/></p>{users.map((u:any)=><div className={styles.row} key={u.id}><input value={u.display_name} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,display_name:e.target.value}:x))}/><input value={u.password} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:e.target.value}:x))}/><select value={u.role} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,role:e.target.value}:x))}><option value="member">Member</option><option value="admin">League Admin</option>{u.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select><div className={styles.buttonRow}><button className={styles.button} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:`bounce${u.slot_number}${Math.floor(10+Math.random()*90)}`}:x))}>Generate</button><button className={styles.button} onClick={()=>navigator.clipboard.writeText(`${u.display_name}\nUsername: ${u.username}\nPassword: ${u.password}`).then(()=>notice("Login details copied"))}>Copy</button><button className={styles.primary} onClick={()=>save(u)}>Save</button></div></div>)}</div>}
 
-function AdminPanel({ active, setActive, gameweek, gameweeks, selectedGameweekId, setSelectedGameweekId, fixtures, profiles, predictions, adjustments, onChanged, notice, isUltimateAdmin }: any) {
-  const safeActive = active;
-  return <section className="pagePanel panel brandedPanel adminPanel"><div className="pageHeading"><div><span>ADMIN CONTROL</span><h2>League Management</h2><p>{isUltimateAdmin ? "Full league, user and security administration." : "Manage deadlines, selections, fixtures and results."}</p></div></div><div className="adminTabs"><button className={safeActive==="users"?"active":""} onClick={()=>setActive("users")}>Users</button><button className={safeActive==="selections"?"active":""} onClick={()=>setActive("selections")}>Selections</button><button className={safeActive==="fixtures"?"active":""} onClick={()=>setActive("fixtures")}>Fixtures</button><button className={safeActive==="results"?"active":""} onClick={()=>setActive("results")}>Results</button><button className={safeActive==="gameweek"?"active":""} onClick={()=>setActive("gameweek")}>Gameweek</button><button className={safeActive==="seasons"?"active":""} onClick={()=>setActive("seasons")}>Seasons</button></div>{safeActive==="users"&&<AdminUsers notice={notice}/>} {safeActive==="selections"&&<AdminSelections gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} onChanged={onChanged} notice={notice}/>} {safeActive==="fixtures"&&<AdminFixtures gameweek={gameweek} nextGameweek={(gameweeks as Gameweek[]).find((item) => item.number === (gameweek?.number ?? 0) + 1) ?? null} onChanged={onChanged} notice={notice}/>} {safeActive==="results"&&<AdminResults fixtures={fixtures} onChanged={onChanged} notice={notice}/>} {safeActive==="gameweek"&&<AdminGameweek gameweek={gameweek} onChanged={onChanged} notice={notice}/>} {safeActive==="seasons"&&<AdminSeasons notice={notice} onChanged={onChanged}/>}</section>;
-}
+function SelectionsAdmin({gameweek,profiles,fixtures,predictions,adjustments,notice,onChanged}:{gameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];notice:(m:string)=>void;onChanged:()=>void}){const active=useMemo(()=>profiles.filter(p=>p.active).sort((a,b)=>(a.slot_number??99)-(b.slot_number??99)),[profiles]);const current=useMemo(()=>predictions.filter(p=>p.gameweek_id===gameweek?.id),[predictions,gameweek?.id]);const [draft,setDraft]=useState<Record<string,string>>({});const [search,setSearch]=useState("");const [busy,setBusy]=useState(false);useEffect(()=>{setDraft(Object.fromEntries(active.map(p=>[p.id,current.find(x=>x.member_id===p.id)?.fixture_id??""])))},[active,current]);const q=search.toLowerCase();const available=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort(fixtureSort);const changed=active.filter(p=>(draft[p.id]??"")!==(current.find(x=>x.member_id===p.id)?.fixture_id??""));async function saveAll(){if(!gameweek||!changed.length)return;const owners=new Map<string,string>();for(const [memberId,fixtureId] of Object.entries(draft) as Array<[string,string]>){if(!fixtureId)continue;const owner=owners.get(fixtureId);if(owner&&owner!==memberId){const f=fixtures.find(x=>x.id===fixtureId);return notice(`${f?`${f.home_team} v ${f.away_team}`:"A fixture"} has been selected for more than one player.`)}owners.set(fixtureId,memberId)}setBusy(true);try{for(const p of changed){const old=current.find(x=>x.member_id===p.id);if(old){const d=await fetch("/api/admin/predictions",{method:"DELETE",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,memberId:p.id})});if(!d.ok)throw new Error((await d.json()).error??"Could not remove selection")}const fixtureId=draft[p.id];if(fixtureId){const r=await fetch("/api/admin/predictions",{method:"PUT",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,memberId:p.id,fixtureId})});if(!r.ok)throw new Error((await r.json()).error??"Could not save selection")}}notice(`${changed.length} selection change${changed.length===1?"":"s"} saved`);onChanged()}catch(e){notice(e instanceof Error?e.message:"Could not save selections")}finally{setBusy(false)}}if(!gameweek)return <div>Create a gameweek first.</div>;return <div><p className={styles.notice}>Enter multiple selections, then press Save all once. Unsaved values are held locally and are not reset by the 45-second live-score refresh. <Help text="A fixture can belong to only one player. Taken fixtures are disabled; duplicate validation is rechecked before saving."/></p><input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search team or competition…"/>{active.map(p=><div className={styles.row} key={p.id}><strong>{p.slot_number}. {p.display_name}</strong><select value={draft[p.id]??""} disabled={busy} onChange={e=>setDraft(d=>({...d,[p.id]:e.target.value}))}><option value="">No selection</option>{available.map(f=>{const takenBy=active.find(other=>other.id!==p.id&&draft[other.id]===f.id);return <option key={f.id} value={f.id} disabled={!!takenBy}>{competitionDisplayName(f)} · {f.home_team} v {f.away_team}{f.odds_fractional?` · ${f.odds_fractional}`:""}{takenBy?` · TAKEN BY ${takenBy.display_name}`:""}</option>})}</select><span>{changed.some(x=>x.id===p.id)?"Unsaved":"Saved"}</span><span/></div>)}<div className={styles.buttonRow}><button className={styles.button} disabled={busy||!changed.length} onClick={()=>setDraft(Object.fromEntries(active.map(p=>[p.id,current.find(x=>x.member_id===p.id)?.fixture_id??""])))}>Discard changes</button><button className={styles.primary} disabled={busy||!changed.length} onClick={saveAll}>{busy?"Saving…":`Save all selections (${changed.length})`}</button></div><PointsAdjustment gameweek={gameweek} profiles={active} adjustments={adjustments} notice={notice} onChanged={onChanged}/></div>}
 
-function AdminUsers({ notice }: { notice: (message:string)=>void }) {
-  const [users,setUsers]=useState<UserAdminRow[]>([]);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState("");
-  async function addUser(){const displayName=window.prompt("New player name");if(!displayName?.trim())return;setSaving("new");const response=await fetch("/api/admin/users",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({displayName:displayName.trim()})});const payload=await response.json();notice(response.ok?`${payload.user.display_name} created`:payload.error);setSaving("");if(response.ok)window.location.reload();}
-  async function resetPlaceholder(user:UserAdminRow){if(!window.confirm(`Remove ${user.display_name} access and return this login to a placeholder? Historical records will remain unchanged.`))return;setSaving(user.id);const response=await fetch("/api/admin/users",{method:"DELETE",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:user.id})});const payload=await response.json();notice(response.ok?`Account reset to ${payload.username}`:payload.error);setSaving("");if(response.ok)window.location.reload();}
-  useEffect(()=>{void (async()=>{const response=await fetch("/api/admin/users",{headers:{authorization:`Bearer ${await token()}`}});const payload=await response.json();if(response.ok)setUsers(payload.users);else notice(payload.error);setLoading(false);})();},[]);
-  function update(id:string,patch:Partial<UserAdminRow>){setUsers(current=>current.map(user=>user.id===id?{...user,...patch}:user));}
-  function generate(user:UserAdminRow){update(user.id,{password:`bounce${user.slot_number}${Math.floor(10+Math.random()*90)}`});}
-  async function save(user:UserAdminRow){setSaving(user.id);const response=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:user.id,username:user.username,displayName:user.display_name,role:user.role,active:user.active,password:user.password})});const payload=await response.json();notice(response.ok?`${user.username} saved`:payload.error);setSaving("");}
-  async function copy(user:UserAdminRow){await navigator.clipboard.writeText(`${user.display_name}\nUsername: ${user.username}\nPassword: ${user.password}`);notice("Login details copied");}
-  if(loading)return <div className="emptyState">Loading users…</div>;
-  return <div className="userAdminList"><div className="userAdminHeader"><div className="adminNote">Passwords are visible only to logged-in admins and can be changed at any time.</div><button className="primaryButton" disabled={saving==="new"} onClick={addUser}>{saving==="new"?"Creating…":"+ Add New User"}</button></div>{users.map(user=><article className="userAdminRow" key={user.id}><div className="slotBadge">{user.slot_number}</div><label>Username<input value={user.username} disabled={user.slot_number===1} onChange={e=>update(user.id,{username:e.target.value})}/></label><label>Assigned player<input value={user.display_name} disabled={user.slot_number===1} onChange={e=>update(user.id,{display_name:e.target.value})}/></label><label>Role<select value={user.role} disabled={user.slot_number===1} onChange={e=>update(user.id,{role:e.target.value as "ultimate_admin"|"admin"|"member"})}><option value="member">Member</option><option value="admin">League Admin</option>{user.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><label>Password<input value={user.password} onChange={e=>update(user.id,{password:e.target.value})}/></label><label className="activeToggle"><input type="checkbox" checked={user.active} disabled={user.slot_number===1} onChange={e=>update(user.id,{active:e.target.checked})}/> Active</label><div className="userActions"><button onClick={()=>generate(user)}>Generate</button><button onClick={()=>copy(user)}>Copy</button><button className="save" disabled={saving===user.id} onClick={()=>save(user)}>{saving===user.id?"Saving…":"Save"}</button>{user.slot_number!==1&&<button className="dangerButton" disabled={saving===user.id} onClick={()=>resetPlaceholder(user)}>Return to placeholder</button>}</div></article>)}</div>;
-}
+function PointsAdjustment({gameweek,profiles,adjustments,notice,onChanged}:{gameweek:Gameweek;profiles:Profile[];adjustments:ScoreAdjustment[];notice:(m:string)=>void;onChanged:()=>void}){const [memberId,setMemberId]=useState(profiles[0]?.id??"");const existing=adjustments.find(a=>a.gameweek_id===gameweek.id&&a.member_id===memberId);const [points,setPoints]=useState("-1");const [reason,setReason]=useState("Missed selection");useEffect(()=>{setPoints(String(existing?.points??-1));setReason(existing?.reason??"Missed selection")},[existing?.id]);async function save(){const r=await fetch("/api/admin/adjustments",{method:"PUT",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,memberId,points:Number(points),reason})});const j=await r.json();notice(r.ok?"Points adjustment saved":j.error);if(r.ok)onChanged()}return <div style={{marginTop:20}}><h3>Missed-selection / manual points <Help text="Use only for a missed deadline or a deliberate manual correction. Normal match scoring comes from the saved fixture result."/></h3><div className={styles.formGrid}><label className={styles.field}>Player<select value={memberId} onChange={e=>setMemberId(e.target.value)}>{profiles.map(p=><option value={p.id} key={p.id}>{p.display_name}</option>)}</select></label><label className={styles.field}>Points<input type="number" step="1" value={points} onChange={e=>setPoints(e.target.value)}/></label><label className={styles.field}>Reason<input value={reason} onChange={e=>setReason(e.target.value)}/></label></div><button className={styles.primary} onClick={save}>Save adjustment</button></div>}
 
-function AdminSelections({ gameweek, profiles, fixtures, predictions, adjustments, onChanged, notice }: any) {
-  const activeProfiles = useMemo(() => (profiles as Profile[]).filter((profile) => profile.active).sort((a, b) => (a.slot_number ?? 99) - (b.slot_number ?? 99)), [profiles]);
-  const currentPredictions = useMemo(() => (predictions as Prediction[]).filter((prediction) => prediction.gameweek_id === gameweek?.id), [predictions, gameweek?.id]);
-  const currentAdjustments = useMemo(() => (adjustments as ScoreAdjustment[]).filter((adjustment) => adjustment.gameweek_id === gameweek?.id), [adjustments, gameweek?.id]);
-  const [draftSelections, setDraftSelections] = useState<Record<string, string>>({});
-  const [fixtureSearch, setFixtureSearch] = useState("");
-  const [memberId, setMemberId] = useState("");
-  const [adjustmentPoints, setAdjustmentPoints] = useState("-1");
-  const [adjustmentReason, setAdjustmentReason] = useState("Missed selection");
-  const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState("");
+function FixturesAdmin({gameweek,nextGameweek,notice,onChanged}:{gameweek:Gameweek|null;nextGameweek:Gameweek|null;notice:(m:string)=>void;onChanged:()=>void}){const [busy,setBusy]=useState("");const [form,setForm]=useState({competition:"Scottish Premiership",country:"Scotland",homeTeam:"",awayTeam:"",kickoffLocal:"",oddsFractional:""});async function sync(gw:Gameweek|null,mode:"results"|"full"){if(!gw)return;setBusy(mode);const r=await fetch("/api/admin/provider-sync",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekIds:[gw.id],mode})});const j=await r.json();notice(r.ok?(mode==="results"?`Results refresh complete · ${j.fixturesUpdated??0} updated`:`Full refresh complete · ${j.fixturesAdded??0} added, ${j.fixturesUpdated??0} updated, ${j.oddsUpdated??0} odds`):j.error);setBusy("");if(r.ok)onChanged()}async function add(e:FormEvent){e.preventDefault();if(!gameweek)return;const r=await fetch("/api/admin/fixtures",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({...form,kickoffAt:new Date(form.kickoffLocal).toISOString(),gameweekId:gameweek.id})});const j=await r.json();notice(r.ok?"Fixture added":j.error);if(r.ok)onChanged()}return <div><div className={styles.notice}><strong>Update controls</strong><br/>Quick results refresh asks the live provider-sync route for results mode, while Full fixture & odds refresh performs the full catalogue update. The request is backward-compatible with the existing live route. <Help text="Use Quick during match time. Use Full when you need new fixtures, kickoff changes or refreshed BTTS odds."/></div><div className={styles.buttonRow} style={{margin:"12px 0"}}><button className={styles.primary} disabled={!gameweek||!!busy} onClick={()=>sync(gameweek,"results")}>{busy==="results"?"Refreshing results…":"Quick results refresh"}</button><button className={styles.button} disabled={!gameweek||!!busy} onClick={()=>sync(gameweek,"full")}>{busy==="full"?"Refreshing fixtures & odds…":"Full fixture & odds refresh"}</button>{nextGameweek&&<button className={styles.button} disabled={!!busy} onClick={()=>sync(nextGameweek,"full")}>Full refresh next GW {nextGameweek.number}</button>}</div><form onSubmit={add}><h3>Manual fixture entry</h3><div className={styles.formGrid}><label className={styles.field}>Competition<input value={form.competition} onChange={e=>setForm({...form,competition:e.target.value})}/></label><label className={styles.field}>Country<input value={form.country} onChange={e=>setForm({...form,country:e.target.value})}/></label><label className={styles.field}>Home team<input required value={form.homeTeam} onChange={e=>setForm({...form,homeTeam:e.target.value})}/></label><label className={styles.field}>Away team<input required value={form.awayTeam} onChange={e=>setForm({...form,awayTeam:e.target.value})}/></label><label className={styles.field}>Kickoff <Help text="Local UK date/time for this fixture."/><input type="datetime-local" required value={form.kickoffLocal} onChange={e=>setForm({...form,kickoffLocal:e.target.value})}/></label><label className={styles.field}>BTTS fractional odds <Help text="Optional manual odds such as 8/11. The full provider refresh can replace this when provider odds exist."/><input value={form.oddsFractional} onChange={e=>setForm({...form,oddsFractional:e.target.value})}/></label></div><button className={styles.primary}>Add fixture manually</button></form></div>}
 
-  useEffect(() => {
-    const nextDrafts = Object.fromEntries(activeProfiles.map((profile) => [profile.id, currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""]));
-    setDraftSelections(nextDrafts);
-    setMemberId((current) => current && activeProfiles.some((profile) => profile.id === current) ? current : activeProfiles[0]?.id ?? "");
-  }, [activeProfiles, currentPredictions]);
+function ResultsAdmin({gameweek,fixtures,predictions,notice,onChanged}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];notice:(m:string)=>void;onChanged:()=>void}){const [scores,setScores]=useState<Record<string,{home:string;away:string}>>(()=>Object.fromEntries(fixtures.map(f=>[f.id,{home:f.home_score?.toString()??"",away:f.away_score?.toString()??""}])));useEffect(()=>{setScores(Object.fromEntries(fixtures.map(f=>[f.id,{home:f.home_score?.toString()??"",away:f.away_score?.toString()??""}])))},[fixtures]);const [busy,setBusy]=useState(false);async function save(f:Fixture,silent=false){const row=scores[f.id];if(!row||row.home===""||row.away==="")return false;const r=await fetch("/api/admin/results",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({fixtureId:f.id,homeScore:Number(row.home),awayScore:Number(row.away)})});const j=await r.json();if(!silent)notice(r.ok?"Result and points saved":j.error);return r.ok}async function recalc(){const selectedFinished=fixtures.filter(f=>predictions.some(p=>p.fixture_id===f.id)&&finishedStatuses.includes(f.status)&&f.home_score!=null&&f.away_score!=null);if(!selectedFinished.length)return notice("No finished selected fixtures to recalculate.");if(!window.confirm(`Recalculate points for ${selectedFinished.length} finished selected match${selectedFinished.length===1?"":"es"}?`))return;setBusy(true);let ok=0;for(const f of selectedFinished){if(await save(f,true))ok++}setBusy(false);notice(`Recalculated ${ok}/${selectedFinished.length} finished selected matches`);onChanged()}return <div><div className={styles.buttonRow}><button className={styles.primary} disabled={busy} onClick={recalc}>{busy?"Recalculating…":"Recalculate Gameweek Points"}</button><Help text="Repairs scoring by re-saving each finished selected fixture through the same live result endpoint used by manual FT entry."/></div>{fixtures.sort(fixtureSort).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id);const warning=finishedStatuses.includes(f.status)&&pred&&pred.points_awarded==null;return <div className={styles.row} key={f.id}><span><small>{competitionDisplayName(f)}</small><br/><strong>{f.home_team} v {f.away_team}</strong>{warning&&<><br/><small className={styles.error}>Finished selected fixture has no awarded points</small></>}</span><input type="number" min="0" value={scores[f.id]?.home??""} onChange={e=>setScores(s=>({...s,[f.id]:{...s[f.id],home:e.target.value}}))}/><input type="number" min="0" value={scores[f.id]?.away??""} onChange={e=>setScores(s=>({...s,[f.id]:{...s[f.id],away:e.target.value}}))}/><button className={styles.button} onClick={async()=>{if(await save(f)){onChanged()}}}>Save FT</button></div>})}</div>}
 
-  useEffect(() => {
-    const adjustment = currentAdjustments.find((item) => item.member_id === memberId);
-    setAdjustmentPoints(String(adjustment?.points ?? -1));
-    setAdjustmentReason(adjustment?.reason ?? "Missed selection");
-  }, [memberId, currentAdjustments]);
+function GameweekAdmin({gameweek,notice,onChanged}:{gameweek:Gameweek|null;notice:(m:string)=>void;onChanged:()=>void}){const [status,setStatus]=useState(gameweek?.status??"open");const [deadline,setDeadline]=useState(gameweek?new Date(gameweek.locks_at).toISOString().slice(0,16):"");useEffect(()=>{setStatus(gameweek?.status??"open");setDeadline(gameweek?new Date(gameweek.locks_at).toISOString().slice(0,16):"")},[gameweek?.id]);async function save(){if(!gameweek)return;const r=await fetch("/api/admin/gameweek",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:gameweek.id,status,locksAt:new Date(deadline).toISOString()})});const j=await r.json();notice(r.ok?"Gameweek updated":j.error);if(r.ok)onChanged()}return <div><div className={styles.formGrid}><label className={styles.field}>Status <Help text="Open accepts normal member picks; Locked closes them; Complete marks the gameweek finished."/><select value={status} onChange={e=>setStatus(e.target.value as any)}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label className={styles.field}>Deadline <Help text="Normal league deadline is Friday at 17:00 UK time unless you deliberately change it."/><input type="datetime-local" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label></div><button className={styles.primary} onClick={save}>Save current gameweek</button></div>}
+function SeasonsAdmin({notice,onChanged}:{notice:(m:string)=>void;onChanged:()=>void}){const [label,setLabel]=useState("");const [gameweeks,setGameweeks]=useState("38");async function create(){if(!label.trim())return;const r=await fetch("/api/admin/seasons",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({label:label.trim(),gameweeks:Number(gameweeks)})});const j=await r.json();notice(r.ok?`Season ${label} created`:j.error);if(r.ok)onChanged()}return <div><div className={styles.formGrid}><label className={styles.field}>Season name <Help text="Use the season label, for example 2027/28. The app header and archive use this value."/><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="2027/28"/></label><label className={styles.field}>Planned gameweeks<input type="number" min="1" max="60" value={gameweeks} onChange={e=>setGameweeks(e.target.value)}/></label></div><button className={styles.primary} onClick={create}>Create New Season</button></div>}
 
-  const filteredFixtures = useMemo(() => {
-    const query = fixtureSearch.trim().toLowerCase();
-    return (fixtures as Fixture[])
-      .filter((fixture) => !query || `${fixture.home_team} ${fixture.away_team} ${fixture.competition} ${fixture.country} ${competitionDisplayName(fixture)}`.toLowerCase().includes(query))
-      .sort(sortFixturesForBookmaker);
-  }, [fixtures, fixtureSearch]);
-
-  const sortedCompetitions = useMemo(() => {
-    const representatives = Array.from(new Map<string, Fixture>(
-      filteredFixtures.map((fixture: Fixture) => [competitionKey(fixture), fixture])
-    ).values());
-    return representatives.sort(compareCompetitionGroups).map(competitionKey);
-  }, [filteredFixtures]);
-  const selectedMember = activeProfiles.find((profile) => profile.id === memberId);
-  const existingAdjustment = currentAdjustments.find((adjustment) => adjustment.member_id === memberId);
-  const changedMemberIds = activeProfiles
-    .filter((profile) => (draftSelections[profile.id] ?? "") !== (currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""))
-    .map((profile) => profile.id);
-
-  function updateDraft(member: string, fixture: string) {
-    setDraftSelections((current) => ({ ...current, [member]: fixture }));
-  }
-
-  function resetDrafts() {
-    setDraftSelections(Object.fromEntries(activeProfiles.map((profile) => [profile.id, currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? ""])));
-  }
-
-  async function saveAllSelections() {
-    if (!gameweek) return;
-    if (!changedMemberIds.length) return notice("There are no selection changes to save.");
-
-    const chosen = Object.entries(draftSelections).filter(([, fixtureId]) => fixtureId);
-    const fixtureOwners = new Map<string, string>();
-    let duplicateFixtureId = "";
-    for (const [selectedMemberId, fixtureId] of chosen) {
-      const existingOwner = fixtureOwners.get(fixtureId);
-      if (existingOwner && existingOwner !== selectedMemberId) {
-        duplicateFixtureId = fixtureId;
-        break;
-      }
-      fixtureOwners.set(fixtureId, selectedMemberId);
-    }
-    if (duplicateFixtureId) {
-      const fixture = (fixtures as Fixture[]).find((item) => item.id === duplicateFixtureId);
-      return notice(`${fixture ? `${fixture.home_team} v ${fixture.away_team}` : "A fixture"} has been selected for more than one player.`);
-    }
-
-    setBusy(true);
-    let completed = 0;
-    try {
-      // Remove changed existing selections first so fixtures can be reassigned safely in the same batch.
-      for (const changedMemberId of changedMemberIds) {
-        const existing = currentPredictions.find((prediction) => prediction.member_id === changedMemberId);
-        if (!existing) continue;
-        setProgress(`Preparing changes ${++completed}/${changedMemberIds.length}`);
-        const response = await fetch("/api/admin/predictions", {
-          method: "DELETE",
-          headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-          body: JSON.stringify({ gameweekId: gameweek.id, memberId: changedMemberId }),
-        });
-        if (!response.ok) {
-          const payload = await response.json();
-          throw new Error(payload.error ?? "A selection could not be removed.");
-        }
-      }
-
-      completed = 0;
-      for (const changedMemberId of changedMemberIds) {
-        const fixtureId = draftSelections[changedMemberId] ?? "";
-        setProgress(`Saving selections ${++completed}/${changedMemberIds.length}`);
-        if (!fixtureId) continue;
-        const response = await fetch("/api/admin/predictions", {
-          method: "PUT",
-          headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-          body: JSON.stringify({ gameweekId: gameweek.id, memberId: changedMemberId, fixtureId }),
-        });
-        if (!response.ok) {
-          const payload = await response.json();
-          throw new Error(payload.error ?? "A selection could not be saved.");
-        }
-      }
-
-      notice(`${changedMemberIds.length} selection change${changedMemberIds.length === 1 ? "" : "s"} saved`);
-      await onChanged();
-    } catch (error) {
-      notice(error instanceof Error ? error.message : "The selections could not all be saved.");
-      await onChanged();
-    } finally {
-      setBusy(false);
-      setProgress("");
-    }
-  }
-
-  async function saveAdjustment() {
-    if (!gameweek || !memberId || !Number.isInteger(Number(adjustmentPoints))) return notice("Enter a whole-number points adjustment.");
-    setBusy(true);
-    const response = await fetch("/api/admin/adjustments", {
-      method: "PUT",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ gameweekId: gameweek.id, memberId, points: Number(adjustmentPoints), reason: adjustmentReason }),
-    });
-    const payload = await response.json();
-    notice(response.ok ? `${selectedMember?.display_name ?? "Player"} points adjustment saved` : payload.error);
-    setBusy(false);
-    if (response.ok) onChanged();
-  }
-
-  async function removeAdjustment() {
-    if (!gameweek || !memberId || !existingAdjustment) return notice("This player has no points adjustment.");
-    setBusy(true);
-    const response = await fetch("/api/admin/adjustments", {
-      method: "DELETE",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ gameweekId: gameweek.id, memberId }),
-    });
-    const payload = await response.json();
-    notice(response.ok ? "Points adjustment removed" : payload.error);
-    setBusy(false);
-    if (response.ok) onChanged();
-  }
-
-  if (!gameweek) return <div className="emptyState">Create a gameweek before entering selections.</div>;
-
-  return <div className="adminBulkSelections">
-    <div className="adminNote">Enter or amend every player&apos;s fixture below, then press <strong>Save all selections</strong> once. Leaving a player blank removes their current selection. A player who misses the deadline automatically receives −1.</div>
-    <label className="bulkFixtureSearch">Search fixtures
-      <input type="search" value={fixtureSearch} onChange={(event) => setFixtureSearch(event.target.value)} placeholder="Type a team or competition…" autoComplete="off" />
-    </label>
-    <div className="adminBulkSelectionList">
-      {activeProfiles.map((profile) => {
-        const selectedFixtureId = draftSelections[profile.id] ?? "";
-        const currentFixtureId = currentPredictions.find((prediction) => prediction.member_id === profile.id)?.fixture_id ?? "";
-        const changed = selectedFixtureId !== currentFixtureId;
-        const selectedFixture = (fixtures as Fixture[]).find((fixture) => fixture.id === selectedFixtureId);
-        const selectedCompetitionKey = selectedFixture ? competitionKey(selectedFixture) : "";
-        const competitions = selectedFixture && !filteredFixtures.some((fixture) => fixture.id === selectedFixture.id)
-          ? [selectedCompetitionKey, ...sortedCompetitions.filter((groupKey) => groupKey !== selectedCompetitionKey)]
-          : sortedCompetitions;
-        return <article className={`adminBulkSelectionRow ${changed ? "changed" : ""}`} key={profile.id}>
-          <div className="bulkPlayerName"><span>{profile.slot_number}</span><strong>{profile.display_name}</strong><small>{changed ? "Unsaved change" : selectedFixtureId ? "Selection saved" : "No selection"}</small></div>
-          <select value={selectedFixtureId} disabled={busy} onChange={(event) => updateDraft(profile.id, event.target.value)}>
-            <option value="">No selection</option>
-            {competitions.map((groupKey) => {
-              const competitionFixtures = (fixtures as Fixture[])
-                .filter((fixture) => competitionKey(fixture) === groupKey)
-                .filter((fixture) => fixture.id === selectedFixtureId || filteredFixtures.some((filtered) => filtered.id === fixture.id))
-                .sort(sortFixturesForBookmaker);
-              if (!competitionFixtures.length) return null;
-              return <optgroup key={groupKey} label={competitionDisplayName(competitionFixtures[0])}>
-                {competitionFixtures.map((fixture) => {
-                  const draftedFor = activeProfiles.find((otherProfile) => otherProfile.id !== profile.id && draftSelections[otherProfile.id] === fixture.id);
-                  return <option key={fixture.id} value={fixture.id} disabled={Boolean(draftedFor)}>{fixture.home_team} v {fixture.away_team}{fixture.odds_fractional ? ` · ${fixture.odds_fractional}` : ""}{draftedFor ? ` · TAKEN BY ${draftedFor.display_name}` : ""}</option>;
-                })}
-              </optgroup>;
-            })}
-          </select>
-        </article>;
-      })}
-    </div>
-    <div className="adminBulkSaveBar">
-      <span>{changedMemberIds.length ? `${changedMemberIds.length} unsaved change${changedMemberIds.length === 1 ? "" : "s"}` : "All selections are saved"}</span>
-      <button disabled={busy || !changedMemberIds.length} onClick={resetDrafts}>Discard changes</button>
-      <button className="primaryButton" disabled={busy || !changedMemberIds.length} onClick={saveAllSelections}>{busy ? progress || "Saving…" : "Save all selections"}</button>
-    </div>
-    <div className="adminAdjustmentBox adminBulkAdjustmentBox">
-      <h3>Missed-selection / manual points</h3>
-      <div className="formGrid">
-        <label>Player<select value={memberId} onChange={(event) => setMemberId(event.target.value)}>{activeProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.slot_number}. {profile.display_name}</option>)}</select></label>
-        <label>Points<input type="number" step="1" value={adjustmentPoints} onChange={(event) => setAdjustmentPoints(event.target.value)} /></label>
-        <label>Reason<input value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} /></label>
-      </div>
-      <div className="adminSelectionActions">
-        <button className="save" disabled={busy || !memberId} onClick={saveAdjustment}>{existingAdjustment ? "Amend points" : "Add points adjustment"}</button>
-        <button disabled={busy || !existingAdjustment} onClick={removeAdjustment}>Remove adjustment</button>
-      </div>
-    </div>
-  </div>;
-}
-function AdminFixtures({ gameweek, nextGameweek, onChanged, notice }: any) {
-  const [form, setForm] = useState({ competition: "Scottish Premiership", country: "Scotland", homeTeam: "", awayTeam: "", kickoffLocal: "", oddsFractional: "" });
-  const [busy, setBusy] = useState(false);
-  const [syncing, setSyncing] = useState<"selected" | "next" | "">("");
-
-  async function runFixtureUpdate(target: Gameweek | null, mode: "selected" | "next") {
-    if (!target) return notice(mode === "next" ? "There is no following gameweek to update." : "Choose a gameweek first.");
-    setSyncing(mode);
-    const response = await fetch("/api/admin/provider-sync", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ gameweekIds: [target.id] }),
-    });
-    const payload = await response.json();
-    const rawError = String(payload.error ?? "Fixture update failed.");
-    const freePlanDateError = rawError.includes("Free plans do not have access to this date");
-    const targetSaturday = new Date(new Date(target.locks_at).getTime() + 24 * 60 * 60 * 1000);
-    const retryDate = new Date(targetSaturday.getTime() - 24 * 60 * 60 * 1000);
-    const retryLabel = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(retryDate);
-    notice(response.ok
-      ? `GW ${target.number} update complete: ${payload.fixturesAdded} added, ${payload.fixturesUpdated} updated, ${payload.oddsUpdated} odds and ${payload.alertsCreated} alerts.`
-      : freePlanDateError
-        ? `GW ${target.number} is too far ahead for the API-Football free plan. Try the automatic update again from ${retryLabel}, or add a missing fixture manually before then.`
-        : rawError);
-    setSyncing("");
-    if (response.ok) onChanged();
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!gameweek) return;
-    setBusy(true);
-    const kickoffAt = new Date(form.kickoffLocal).toISOString();
-    const response = await fetch("/api/admin/fixtures", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` },
-      body: JSON.stringify({ ...form, kickoffAt, gameweekId: gameweek.id }),
-    });
-    const payload = await response.json();
-    notice(response.ok ? "Fixture added" : payload.error);
-    setBusy(false);
-    if (response.ok) onChanged();
-  }
-
-  return <div className="adminFixturesTools">
-    <section className="adminFixtureSyncCard">
-      <div><span>AUTOMATIC IMPORT / UPDATE</span><strong>Refresh fixtures from API-FOOTBALL</strong><p>Import missing fixtures and refresh kickoff times, statuses, scores and available BTTS odds. The second button prepares the following gameweek early.</p></div>
-      <div className="adminFixtureSyncActions">
-        <button className="primaryButton" type="button" disabled={!gameweek || Boolean(syncing)} onClick={() => runFixtureUpdate(gameweek, "selected")}>{syncing === "selected" ? `Updating GW ${gameweek?.number ?? ""}…` : `Update selected GW ${gameweek?.number ?? "—"}`}</button>
-        <button type="button" disabled={!nextGameweek || Boolean(syncing)} onClick={() => runFixtureUpdate(nextGameweek, "next")}>{syncing === "next" ? `Updating GW ${nextGameweek?.number ?? ""}…` : nextGameweek ? `Update next GW ${nextGameweek.number}` : "No next gameweek"}</button>
-      </div>
-      <small>To update another week, change the gameweek selector at the top first.</small>
-    </section>
-
-    <form className="adminForm adminManualFixtureForm" onSubmit={submit}>
-      <div className="adminFixtureFormHeading"><span>MANUAL FIXTURE ENTRY</span><strong>Add one fixture to GW {gameweek?.number ?? "—"}</strong></div>
-      <div className="adminNote">Use this only when a fixture is missing from the automatic import. Add any eligible UK Saturday 3pm match. Hearts and Hibs fixtures are excluded. Fractional odds can be entered now or later.</div>
-      <div className="formGrid"><label>Competition<input value={form.competition} onChange={e => setForm({ ...form, competition: e.target.value })}/></label><label>Country<input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}/></label><label>Home team<input value={form.homeTeam} onChange={e => setForm({ ...form, homeTeam: e.target.value })} required/></label><label>Away team<input value={form.awayTeam} onChange={e => setForm({ ...form, awayTeam: e.target.value })} required/></label><label>Kickoff<input type="datetime-local" value={form.kickoffLocal} onChange={e => setForm({ ...form, kickoffLocal: e.target.value })} required/></label><label>BTTS fractional odds<input placeholder="e.g. 8/11" value={form.oddsFractional} onChange={e => setForm({ ...form, oddsFractional: e.target.value })}/></label></div>
-      <button className="primaryButton" disabled={busy || !gameweek}>{busy ? "Adding…" : "Add fixture manually"}</button>
-    </form>
-  </div>;
-}
-
-function AdminResults({ fixtures, onChanged, notice }: any) {
-  const [scores,setScores]=useState<Record<string,{home:string;away:string}>>(()=>Object.fromEntries(fixtures.map((f:Fixture)=>[f.id,{home:f.home_score?.toString()??"",away:f.away_score?.toString()??""}])));
-  async function save(fixture:Fixture){const score=scores[fixture.id];const response=await fetch("/api/admin/results",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({fixtureId:fixture.id,homeScore:Number(score?.home),awayScore:Number(score?.away)})});const payload=await response.json();notice(response.ok?"Result and points saved":payload.error);if(response.ok)onChanged();}
-  const sortedFixtures = [...(fixtures as Fixture[])].sort(sortFixturesForBookmaker);
-  return <div className="adminResults">{sortedFixtures.map((fixture:Fixture)=><div className="adminResultRow" key={fixture.id}><div><small>{competitionDisplayName(fixture)}</small><strong>{fixture.home_team} v {fixture.away_team}</strong></div><input type="number" min="0" value={scores[fixture.id]?.home??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],home:e.target.value}})}/><b>–</b><input type="number" min="0" value={scores[fixture.id]?.away??""} onChange={e=>setScores({...scores,[fixture.id]:{...scores[fixture.id],away:e.target.value}})}/><button onClick={()=>save(fixture)}>Save FT</button></div>)}{!fixtures.length&&<div className="emptyState">Add fixtures first.</div>}</div>;
-}
-
-function AdminGameweek({ gameweek, onChanged, notice }: any) {
-  const [status,setStatus]=useState(gameweek?.status??"open");
-  const [locksAt,setLocksAt]=useState(gameweek?inputDateTime(gameweek.locks_at):nextFridayAtFiveInput());
-  const [nextLocksAt,setNextLocksAt]=useState(nextFridayAtFiveInput());
-  const [busy,setBusy]=useState(false);
-  async function save(){if(!gameweek||!locksAt)return;setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:gameweek.id,status,locksAt:new Date(locksAt).toISOString()})});const payload=await response.json();notice(response.ok?"Gameweek updated":payload.error);setBusy(false);if(response.ok)onChanged();}
-  async function createNext(){if(!nextLocksAt)return notice("Choose the next deadline first.");setBusy(true);const response=await fetch("/api/admin/gameweek",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({locksAt:new Date(nextLocksAt).toISOString()})});const payload=await response.json();notice(response.ok?`Gameweek ${payload.gameweek.number} created`:payload.error);setBusy(false);if(response.ok)onChanged();}
-  return <div className="adminForm"><div className="adminNote">The standard deadline is Friday at 5:00pm UK time. Admins can still change it or lock the gameweek manually.</div><div className="formGrid"><label>Status<select value={status} onChange={e=>setStatus(e.target.value)} disabled={!gameweek}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label>Current pick deadline<input type="datetime-local" value={locksAt} onChange={e=>setLocksAt(e.target.value)}/></label><label>Next gameweek deadline<input type="datetime-local" value={nextLocksAt} onChange={e=>setNextLocksAt(e.target.value)}/><small>Defaults to Friday at 17:00 UK time.</small></label></div><div className="userActions"><button className="save" disabled={busy||!gameweek} onClick={save}>{busy?"Saving…":"Save current gameweek"}</button><button disabled={busy||!nextLocksAt} onClick={createNext}>Create next gameweek</button></div></div>;
-}
-
-
-function AdminSeasons({ notice, onChanged }: { notice:(message:string)=>void; onChanged:()=>void }) {
-  const [label,setLabel]=useState(""); const [gameweeks,setGameweeks]=useState("38"); const [busy,setBusy]=useState(false);
-  async function createSeason(){if(!label.trim())return notice("Enter a season name.");setBusy(true);const response=await fetch("/api/admin/seasons",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({label:label.trim(),gameweeks:Number(gameweeks)})});const payload=await response.json();notice(response.ok?`Season ${label} created with current users included`:payload.error);setBusy(false);if(response.ok)onChanged();}
-  return <div className="adminForm"><div className="adminNote">All active named users receive access automatically. Placeholder accounts are excluded. Access can then be removed or restored per season without changing historical records.</div><div className="formGrid"><label>Season name<input value={label} onChange={e=>setLabel(e.target.value)} placeholder="2027/28"/></label><label>Planned gameweeks<input type="number" min="1" max="60" value={gameweeks} onChange={e=>setGameweeks(e.target.value)}/></label></div><button className="primaryButton" disabled={busy} onClick={createSeason}>{busy?"Creating…":"Create New Season"}</button></div>;
-}
-
-function AdminAlerts({ notice }: { notice: (message: string) => void }) {
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [runs, setRuns] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-
-  async function load() {
-    setLoading(true);
-    const accessToken = await token();
-    const [alertResponse, runResponse] = await Promise.all([
-      fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${accessToken}` } }),
-      fetch("/api/admin/provider-sync", { headers: { authorization: `Bearer ${accessToken}` } }),
-    ]);
-    const alertPayload = await alertResponse.json();
-    const runPayload = await runResponse.json();
-    if (alertResponse.ok) setAlerts(alertPayload.alerts ?? []); else notice(alertPayload.error ?? "Could not load alerts");
-    if (runResponse.ok) setRuns(runPayload.runs ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
-
-  async function runSync() {
-    setSyncing(true);
-    const response = await fetch("/api/admin/provider-sync", { method: "POST", headers: { authorization: `Bearer ${await token()}` } });
-    const payload = await response.json();
-    notice(response.ok ? `Update complete: ${payload.fixturesAdded} added, ${payload.fixturesUpdated} updated, ${payload.oddsUpdated} odds, ${payload.alertsCreated} alerts.` : payload.error);
-    setSyncing(false);
-    await load();
-  }
-
-  async function resolve(id: string, resolved: boolean) {
-    const response = await fetch("/api/admin/alerts", { method: "PATCH", headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` }, body: JSON.stringify({ id, resolved }) });
-    const payload = await response.json();
-    notice(response.ok ? (resolved ? "Alert resolved" : "Alert reopened") : payload.error);
-    if (response.ok) await load();
-  }
-
-  const unresolved = alerts.filter((item) => !item.resolved);
-  const latestRun = runs[0];
-  return <div className="adminAlertsPanel">
-    <div className="providerStatusCard">
-      <div><span>API-FOOTBALL</span><strong>{latestRun ? `Last update ${new Date(latestRun.started_at).toLocaleString("en-GB")}` : "No update has run yet"}</strong><small>{latestRun ? `${latestRun.status.toUpperCase()} · ${latestRun.requests_used} requests used${latestRun.requests_remaining !== null ? ` · ${latestRun.requests_remaining} remaining` : ""}` : "The daily update runs at 08:00 UK time."}</small></div>
-      <button className="prominentShareButton" disabled={syncing} onClick={runSync}>{syncing ? "Updating fixtures…" : "Run fixture update now"}</button>
-    </div>
-    <div className="alertsSummary"><strong>{unresolved.length}</strong><span>unresolved fixture alert{unresolved.length === 1 ? "" : "s"}</span></div>
-    {loading ? <div className="emptyState">Loading alerts…</div> : alerts.length ? <div className="adminAlertList">{alerts.map((alert) => <article className={`adminAlertRow ${alert.resolved ? "resolved" : ""} ${alert.severity}`} key={alert.id}>
-      <div><span>{alert.severity.toUpperCase()} · {new Date(alert.created_at).toLocaleString("en-GB")}</span><strong>{alert.title}</strong><p>{alert.message}</p><small>{alert.profiles?.display_name ? `Affected player: ${alert.profiles.display_name}` : ""}</small></div>
-      <button onClick={() => resolve(alert.id, !alert.resolved)}>{alert.resolved ? "Reopen" : "Mark resolved"}</button>
-    </article>)}</div> : <div className="emptyState">No fixture-change alerts.</div>}
-  </div>;
-}
+function AlertsPage({notice,onCount}:{notice:(m:string)=>void;onCount:(n:number)=>void}){const [alerts,setAlerts]=useState<any[]>([]);const [runs,setRuns]=useState<any[]>([]);const [loading,setLoading]=useState(true);async function load(){setLoading(true);const auth=await token();const [a,r]=await Promise.all([fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${auth}`}}),fetch("/api/admin/provider-sync",{headers:{authorization:`Bearer ${auth}`}})]);const aj=await a.json();const rj=await r.json();if(a.ok){setAlerts(aj.alerts??[]);onCount((aj.alerts??[]).filter((x:any)=>!x.resolved).length)}else notice(aj.error);if(r.ok)setRuns(rj.runs??[]);setLoading(false)}useEffect(()=>{load()},[]);async function resolve(id:string,resolved=true){const r=await fetch("/api/admin/alerts",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id,resolved})});if(!r.ok)notice((await r.json()).error);return r.ok}async function bulk(rows:any[],label:string){if(!rows.length)return;if(!window.confirm(`${label}? This will affect ${rows.length} alert${rows.length===1?"":"s"}.`))return;let ok=0;for(const a of rows){if(await resolve(a.id,true))ok++}notice(`${ok} alert${ok===1?"":"s"} cleared`);load()}const unresolved=alerts.filter(a=>!a.resolved);return <section><Heading eyebrow="ADMIN NOTIFICATIONS" title="Alerts"><p>Fixture changes and provider update status.</p></Heading><div className={styles.panel}><div className={styles.buttonRow}><button className={styles.button} onClick={()=>bulk(unresolved,"Clear all visible unresolved alerts")}>Clear all alerts</button></div>{runs[0]&&<p className={styles.notice}>Last provider run: {new Date(runs[0].started_at).toLocaleString("en-GB")} · {String(runs[0].status).toUpperCase()} · {runs[0].requests_used} requests</p>}{loading?<div>Loading alerts…</div>:alerts.length?alerts.map(a=><div className={`${styles.alert} ${a.resolved?styles.resolved:""}`} key={a.id}><div><small>{String(a.severity).toUpperCase()} · {new Date(a.created_at).toLocaleString("en-GB")}</small><strong style={{display:"block"}}>{a.title}</strong><p>{a.message}</p></div><div className={styles.buttonRow}><button className={styles.button} onClick={async()=>{if(await resolve(a.id,!a.resolved))load()}}>{a.resolved?"Reopen":"Clear this alert"}</button>{!a.resolved&&<button className={styles.button} onClick={()=>bulk(unresolved.filter(x=>x.title===a.title),`Clear all alerts of type “${a.title}”`)}>Clear this type</button>}</div></div>):<div>No alerts.</div>}</div></section>}

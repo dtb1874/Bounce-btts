@@ -1,0 +1,26 @@
+BOUNCE BTTS RELEASE PACKAGE MANIFEST
+====================================
+Release date: 2026-08-10
+Live production baseline used: ce5407d13dc72c7306cac5649ee416cedb9b70d8
+
+CODE FILES TO UPLOAD
+- app/LeagueApp.tsx      REPLACE existing live file
+- app/release.module.css NEW
+- lib/scoring.ts         NEW
+
+DOCUMENTATION ONLY
+- README-UPLOAD.txt
+- RELEASE-SUMMARY.txt
+- PACKAGE-MANIFEST.txt
+
+No database migration.
+No environment-variable change.
+No Vercel setting change.
+Do not delete any existing repository files.
+
+SHA-256 CHECKSUMS
+c0c298ce1ef6d80ec102607eb7c3f10981e07e2a134098353c107ef4f80ab236  app/LeagueApp.tsx
+2cd5f16bca8fa374f7465d763caaff4d7a64480aaddbe7f70be092d1ccf0df19  app/release.module.css
+9469de401bfbab0d51d1f5d245301eb00da9b6eb8e23aeab88c0ef7c9c8991b8  lib/scoring.ts
+e7f7120a75dc0260e58cbd5d2b5e486fa021497aa627631e94df93b08bff59b8  README-UPLOAD.txt
+aa479f032a2c2b3e5e6067d8d32e14e8d568fcba7ee63d66b47a9774351745e0  RELEASE-SUMMARY.txt

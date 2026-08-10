@@ -1,0 +1,16 @@
+Bounce BTTS combined release — 10 August 2026
+
+Live baseline: ce5407d13dc72c7306cac5649ee416cedb9b70d8
+
+Safe overwrite:
+- app/LeagueApp.tsx
+
+New files:
+- app/release.module.css
+- lib/scoring.ts
+
+No SQL/database migration is required for this package.
+No environment-variable change is required for this package.
+No Vercel setting change is required for this package.
+
+Normal GitHub upload process remains the same.
