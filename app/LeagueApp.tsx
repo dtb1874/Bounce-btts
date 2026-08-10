@@ -254,7 +254,52 @@ function LeagueTable({standings,seasonLabel,gameweek,entryFee}:{standings:Standi
 
 function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];onRefresh:()=>void}){const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter(x=>x.fixture&&x.profile);const groups=Array.from(new Set(fixtures.map(f=>`${normaliseCountry(f.country)}|${competitionDisplayName(f)}`))).sort();return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Results" actions={<button className={styles.button} onClick={onRefresh}>Refresh displayed data</button>}><p>Selected matches first, followed by every fixture in the gameweek.</p></Heading><div className={styles.panel}><div className={styles.title}>SELECTED MATCHES</div>{selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture!.home_score,fixture!.away_score,fixture!.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile!.display_name}</strong><span>{fixture!.home_team} v {fixture!.away_team}</span><b className={styles.score}>{fixture!.home_score==null?"—":`${fixture!.home_score}-${fixture!.away_score}`}</b><span>{fixture!.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}{!selected.length&&<div className={styles.notice}>No selected matches yet.</div>}</div><div className={styles.panel}><div className={styles.title}>ALL RESULTS / FIXTURES</div>{groups.map(key=>{const [country,competition]=key.split("|");return <div key={key}><h3 className={styles.groupTitle}>{country} · {competition}</h3>{fixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={styles.resultRow} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}</div>})}</div></section>}
 
-function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){const legacy=(historicalSeasons as readonly any[]).map((s:any)=>({id:`historic-${s.season}`,label:s.season,isCurrent:false,gameweeks:s.weeks,completedPicks:s.finalTable.reduce((n:number,r:any)=>n+r.played,0),standings:s.finalTable.map((r:any,i:number)=>({id:`${s.season}-${i}`,name:r.name,played:r.played,wins:r.wins,zeroZeroCount:r.losses,points:r.points}))}));const seasons=[...legacy,...seasonHistory.filter(s=>!legacy.some(l=>l.label===s.label))];const [id,setId]=useState(seasons[0]?.id??"");const selected=seasons.find(s=>s.id===id)??seasons[0];return <section><Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History"><p>Previous winners and final tables.</p></Heading><div className={styles.panel}><div className={styles.title}>ROLL OF HONOUR</div><div className={styles.buttonRow}>{(rollOfHonour as readonly any[]).map((r:any)=><div className={styles.miniCard} key={r.season}><strong>{r.season}</strong><span>{r.winner}</span></div>)}</div></div><div className={styles.buttonRow}>{seasons.map(s=><button className={s.id===selected?.id?styles.primary:styles.button} key={s.id} onClick={()=>setId(s.id)}>{s.label}</button>)}</div>{selected&&<div className={`${styles.panel} ${styles.table}`}><div className={`${styles.tableRow} ${styles.header}`} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span></div>{selected.standings.map((r,i)=><div className={styles.tableRow} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}} key={r.id}><span>{i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div>}</section>}
+function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
+  const legacy: SeasonHistory[] = Array.from(historicalSeasons).map((season)=>({
+    id:`historic-${season.season}`,
+    label:season.season,
+    isCurrent:false,
+    gameweeks:season.weeks,
+    completedPicks:season.finalTable.reduce((total,row)=>total+row.played,0),
+    standings:season.finalTable.map((row,index)=>({
+      id:`${season.season}-${index}`,
+      name:row.name,
+      played:row.played,
+      wins:row.wins,
+      zeroZeroCount:row.losses,
+      points:row.points
+    }))
+  }));
+  const seasons: SeasonHistory[] = [
+    ...legacy,
+    ...seasonHistory.filter((season)=>!legacy.some((item)=>item.label===season.label))
+  ];
+  const [id,setId]=useState(seasons[0]?.id??"");
+  const selected: SeasonHistory | undefined = seasons.find((season)=>season.id===id)??seasons[0];
+
+  return <section>
+    <Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History">
+      <p>Previous winners and final tables.</p>
+    </Heading>
+    <div className={styles.panel}>
+      <div className={styles.title}>ROLL OF HONOUR</div>
+      <div className={styles.buttonRow}>
+        {rollOfHonour.map((row)=><div className={styles.miniCard} key={row.season}><strong>{row.season}</strong><span>{row.winner}</span></div>)}
+      </div>
+    </div>
+    <div className={styles.buttonRow}>
+      {seasons.map((season)=><button className={season.id===selected?.id?styles.primary:styles.button} key={season.id} onClick={()=>setId(season.id)}>{season.label}</button>)}
+    </div>
+    {selected&&<div className={`${styles.panel} ${styles.table}`}>
+      <div className={`${styles.tableRow} ${styles.header}`} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}}>
+        <span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>0-0</span><span>PTS</span>
+      </div>
+      {selected.standings.map((row,index)=><div className={styles.tableRow} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(4,80px)"}} key={row.id}>
+        <span>{index+1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
+      </div>)}
+    </div>}
+  </section>
+}
 
 function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={styles.panel}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={styles.row} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{fx?.odds_fractional??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
 
