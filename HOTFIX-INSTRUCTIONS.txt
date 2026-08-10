@@ -1,0 +1,14 @@
+BOUNCE BTTS — DASHBOARD RESTORE HOTFIX
+
+Vercel compiled the dashboard successfully but TypeScript rejected the 6-week
+form total reducer because its nullable array caused the accumulator to be
+inferred as possibly null.
+
+This hotfix changes only the reducer typing in app/LeagueApp.tsx.
+
+UPLOAD:
+1. Extract ZIP.
+2. Upload the app folder to the repository root.
+3. Replace app/LeagueApp.tsx.
+4. Commit.
+5. Do not change any other files or settings.

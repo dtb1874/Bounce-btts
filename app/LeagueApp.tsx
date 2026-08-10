@@ -409,7 +409,7 @@ function Dashboard({
           <div className={`${styles.formCell} ${styles.formHeader}`}>TOTAL</div>
           {standings.map(player=>{
             const values=formGameweeks.map(g=>pointsFor(player.id,g.id));
-            const total=values.reduce((sum,p)=>sum+(p??0),0);
+            const total=values.reduce<number>((sum,p)=>sum+(p??0),0);
             return <div className={styles.formRow} style={{gridColumn:"1/-1",display:"grid",gridTemplateColumns:`minmax(150px,1.5fr) repeat(${Math.max(formGameweeks.length,1)},minmax(54px,1fr)) 72px`}} key={player.id}>
               <div className={`${styles.formCell} ${styles.formName}`}>{player.name}</div>
               {values.map((p,i)=><div className={styles.formCell} key={`${player.id}-${formGameweeks[i].id}`}><span className={`${styles.formPill} ${formClass(p)}`}>{p==null?"—":p>0?`+${p}`:p}</span></div>)}
