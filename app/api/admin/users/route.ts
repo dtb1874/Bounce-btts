@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
   const { admin } = context;
   const { data: profiles, error } = await admin
     .from("profiles")
@@ -25,19 +26,24 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
   const { admin, user: actor } = context;
   const body = await request.json();
   const id = String(body.id ?? "");
   const username = normaliseUsername(String(body.username ?? ""));
   const displayName = String(body.displayName ?? "").trim();
   const password = String(body.password ?? "");
-  const role = body.role === "admin" ? "admin" : "member";
+  const requestedRole = String(body.role ?? "member");
+  const role: "ultimate_admin" | "admin" | "member" | "guest" =
+    requestedRole === "ultimate_admin" || requestedRole === "admin" || requestedRole === "guest"
+      ? requestedRole
+      : "member";
   const active = Boolean(body.active);
 
   const { data: existing } = await admin.from("profiles").select("slot_number,username").eq("id", id).single();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (!username || !displayName) return NextResponse.json({ error: "Username and player name are required." }, { status: 400 });
-  if (existing.slot_number === 1 && (username !== "user1" || displayName !== "DTB" || role !== "admin" || !active)) {
+  if (existing.slot_number === 1 && (username !== "user1" || displayName !== "DTB" || role !== "ultimate_admin" || !active)) {
     return NextResponse.json({ error: "user1 is permanently reserved for DTB as an active administrator." }, { status: 400 });
   }
   if (password && password.length < 6) return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
@@ -72,7 +78,7 @@ export async function PATCH(request: Request) {
     await admin.from("season_memberships").upsert({
       season_id: currentSeason.id,
       profile_id: id,
-      active,
+      active: active && role !== "guest",
       display_name_snapshot: displayName,
     }, { onConflict: "season_id,profile_id" });
   }
@@ -95,6 +101,7 @@ function generatedPassword(slot: number) {
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
   const { admin, user: actor } = context;
   const body = await request.json();
   const displayName = String(body.displayName ?? "").trim();
@@ -123,6 +130,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
   const { admin, user: actor } = context;
   const { id } = await request.json();
   const { data: existing } = await admin.from("profiles").select("id,slot_number,display_name").eq("id", String(id)).maybeSingle();

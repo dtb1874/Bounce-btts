@@ -56,9 +56,10 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id,display_name,active")
+    .select("id,display_name,role,active")
     .eq("approved", true)
-    .eq("active", true);
+    .eq("active", true)
+    .neq("role", "guest");
 
   let predictions: PublicPrediction[] = [];
   let adjustments: PublicAdjustment[] = [];

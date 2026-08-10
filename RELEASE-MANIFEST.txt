@@ -1,0 +1,16 @@
+Bounce BTTS v1.4.1 — 10 Aug 2026
+Baseline: GitHub main 144d9d355aeed14ac5d6c6f78f97c6ff03f4862c
+Supersedes: UPLOAD_THIS_BOUNCE_BTTS_v1.4.0_2026-08-10.zip
+
+Runtime files:
+- app/LeagueApp.tsx
+- app/release.module.css
+- app/api/admin/users/route.ts
+- app/page.tsx
+- lib/public-table.ts
+
+Migration record:
+- supabase/migrations/20260810_demo_guest_role.sql
+
+Scoring files changed: NONE
+Dependency/config files changed: NONE

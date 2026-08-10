@@ -12,7 +12,7 @@ type ProfileRow = {
   id: string;
   username: string;
   display_name: string;
-  role: "ultimate_admin" | "admin" | "member";
+  role: "ultimate_admin" | "admin" | "member" | "guest";
   approved?: boolean;
   active: boolean;
   slot_number: number | null;
@@ -150,16 +150,17 @@ export default async function HomePage() {
   const seasonHistory = (seasons ?? []).map((season) => {
     const gameweeks = (allGameweeks ?? []).filter((item) => item.season_id === season.id);
     const gameweekIds = new Set(gameweeks.map((item) => item.id));
+    const leagueMemberIds = new Set(profileRows.filter((member) => member.role !== "guest").map((member) => member.id));
     const scored = allPredictions.filter((prediction) =>
-      gameweekIds.has(prediction.gameweek_id) && prediction.points_awarded !== null
+      leagueMemberIds.has(prediction.member_id) && gameweekIds.has(prediction.gameweek_id) && prediction.points_awarded !== null
     );
-    const seasonAdjustments = allAdjustments.filter((adjustment) => gameweekIds.has(adjustment.gameweek_id));
+    const seasonAdjustments = allAdjustments.filter((adjustment) => leagueMemberIds.has(adjustment.member_id) && gameweekIds.has(adjustment.gameweek_id));
     const participantIds = new Set([
       ...scored.map((prediction) => prediction.member_id),
       ...seasonAdjustments.map((adjustment) => adjustment.member_id),
     ]);
     const standings = profileRows
-      .filter((member) => participantIds.has(member.id))
+      .filter((member) => member.role !== "guest" && participantIds.has(member.id))
       .map((member) => {
         const memberPredictions = scored.filter((prediction) => prediction.member_id === member.id);
         const memberAdjustments = seasonAdjustments.filter((adjustment) => adjustment.member_id === member.id);

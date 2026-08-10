@@ -1,33 +1,53 @@
-BOUNCE BTTS — DASHBOARD / LEAGUE TABLE RESTORE — 10 AUGUST 2026
+BOUNCE BTTS LEAGUE — COMPATIBILITY-SAFE RELEASE v1.4.1 — 10 AUG 2026
+=====================================================================
 
-This package corrects the remaining UI regression from the combined release.
+USE THIS PACKAGE INSTEAD OF v1.4.0.
+It was reviewed against the fresh GitHub main ZIP at commit:
+144d9d355aeed14ac5d6c6f78f97c6ff03f4862c
 
-WHAT IS RESTORED / ADDED
-- Dashboard is again a full overview rather than a condensed utility screen.
-- Desktop: large league overview, role-aware summary cards, current pick, everyone’s picks/live results,
-  rich league-table preview, trophy/crest imagery, quick links, and 6-week form.
-- Mobile: same information is retained but stacked into clean cards rather than shrinking the desktop layout.
-- Admins see an admin-focused overview including outstanding alert count and Admin shortcut.
-- Members see their own position, points, pick, current gameweek and the same league overview.
-- League Table page has its richer presentation back, including the Bounce cup artwork and leader treatment.
-- 6-WEEK FORM is restored to the Dashboard. It shows the selected/current gameweek and up to the previous 5 weeks.
-  +3 = BTTS win, +1 = score-nil, -1 = 0-0/missed, — = not yet scored.
-- Existing scoring fix, About page, alerts/admin controls and sidebar Rousset easter egg remain.
+UPLOAD FROM GITHUB
+1. Extract this ZIP.
+2. Open dtb1874/Bounce-btts.
+3. Upload the CONTENTS of this package to the repository root, preserving folders.
+4. Replace the existing files when GitHub asks.
+5. Commit to main.
+6. Vercel will deploy automatically.
+7. Do not delete any other repository files and do not upload the ZIP itself.
 
-IMPORTANT
-This package uses only assets already known to exist in the project:
-- /assets/hearts-crest.png
-- /assets/bounce-cup.png
+FILES REPLACED
+- app/LeagueApp.tsx
+- app/release.module.css
+- app/api/admin/users/route.ts
+- app/page.tsx
+- lib/public-table.ts
 
-UPLOAD
-1. Extract the ZIP.
-2. In GitHub Bounce-btts choose Add file -> Upload files.
-3. Upload the APP folder to the repository ROOT.
-4. Replace:
-   app/LeagueApp.tsx
-   app/release.module.css
-5. Commit.
-6. Vercel deploys automatically.
+FILE ADDED FOR VERSION CONTROL
+- supabase/migrations/20260810_demo_guest_role.sql
 
-Do NOT remove lib/scoring.ts.
-No Supabase or Vercel configuration changes are needed.
+DATABASE STATUS
+The production Supabase project was checked during this review.
+The 'guest' member_role enum and guest prediction RLS protections are already present.
+No additional database action is required before uploading this package.
+There is currently no active Demo Guest profile, so the live 8-player league is unchanged.
+
+COMPATIBILITY FIXES ADDED TO v1.4.0
+- Preserves the dashboard reduce<number> TypeScript hotfix from current production.
+- Keeps lib/scoring.ts and all scoring/result API routes unchanged.
+- Users API correctly understands ultimate_admin, admin, member and guest roles.
+- user1 / DTB remains Ultimate Admin when saved.
+- Users endpoint is server-protected as Ultimate Admin only.
+- Active/Inactive control restored to Users so an unused slot can become Demo Guest.
+- Demo Guest is excluded from current-season membership, public standings, prize pot and history calculations.
+- Read-only emulation uses disabled form controls, not pointer-blocking alone.
+- Self-emulation is prevented.
+
+VALIDATION
+- Current production commit verified as READY on Vercel.
+- Current production Vercel build compiled and passed type checking on Next.js 15.5.23.
+- 54 project TS/TSX files parser-checked after merge: 0 syntax errors.
+- CSS module references checked: 0 missing classes.
+- CSS brace balance: PASS.
+- Scoring module SHA-256 is unchanged from current production.
+
+NOTE
+A complete local `next build` could not be reproduced in the ChatGPT container because its internal npm mirror does not provide @supabase/ssr. package.json is deliberately unchanged, so Vercel will use the same dependency configuration/build cache as the working production build. After your GitHub upload, the Vercel build log should be checked before considering v1.4.1 live.
