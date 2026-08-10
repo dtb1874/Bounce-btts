@@ -216,7 +216,7 @@ export default function LeagueApp(props: Props) {
     <section className={styles.main}>
       <header className={styles.hero}><div><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div><div className={styles.gwCard}><label>Season {seasonLabel}</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small></div></header>
       <div className={styles.content}><div className={styles.page}>
-        {view==="dashboard" && <Dashboard gameweek={gameweek??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen} setView={setView}/>} 
+        {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen} role={initialProfile.role} myId={initialProfile.id} alertsCount={alertsCount} setView={setView}/>} 
         {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={initialProfile.id} selectFixture={selectFixture}/>} 
         {view==="fixtures" && <FixturesPage fixtures={allFixtures}/>} 
         {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee}/>} 
@@ -235,13 +235,192 @@ export default function LeagueApp(props: Props) {
 
 function Heading({eyebrow,title,children,actions}:{eyebrow:string;title:string;children?:ReactNode;actions?:ReactNode}){return <div className={styles.heading}><div><span>{eyebrow}</span><h2>{title}</h2>{children}</div>{actions}</div>}
 
-function Dashboard({gameweek,profiles,fixtures,predictions,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,setView}:{gameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustment?:ScoreAdjustment;myFixture?:Fixture;standings:Standing[];entryFee:number;seasonLabel:string;isOpen:boolean;setView:(v:View)=>void}){
-  const picks=profiles.map(profile=>{const prediction=predictions.find(p=>p.member_id===profile.id);return {profile,prediction,fixture:fixtures.find(f=>f.id===prediction?.fixture_id)}});
+function Dashboard({
+  gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,role,myId,alertsCount,setView
+}:{
+  gameweek:Gameweek|null;
+  gameweeks:Gameweek[];
+  profiles:Profile[];
+  fixtures:Fixture[];
+  predictions:Prediction[];
+  allPredictions:Prediction[];
+  allAdjustments:ScoreAdjustment[];
+  adjustment?:ScoreAdjustment;
+  myFixture?:Fixture;
+  standings:Standing[];
+  entryFee:number;
+  seasonLabel:string;
+  isOpen:boolean;
+  role:Role;
+  myId:string;
+  alertsCount:number;
+  setView:(v:View)=>void;
+}){
+  const isAdmin = role==="admin" || role==="ultimate_admin";
+  const picks=profiles.map(profile=>{
+    const prediction=predictions.find(p=>p.member_id===profile.id);
+    return {profile,prediction,fixture:fixtures.find(f=>f.id===prediction?.fixture_id)};
+  });
   const finished=fixtures.filter(f=>finishedStatuses.includes(f.status));
-  return <div className={styles.grid2}><section>
-    <article className={styles.panel}><div className={styles.title}>YOUR PICK — {gameweek?`GAMEWEEK ${gameweek.number}`:"NO ACTIVE GAMEWEEK"}</div>{myFixture?<div className={styles.pickHero}><strong>{myFixture.home_team}</strong><span className={styles.versus}>{myFixture.home_score!=null?`${myFixture.home_score} — ${myFixture.away_score}`:"V"}</span><strong>{myFixture.away_team}</strong><small className={styles.subtle} style={{gridColumn:"1/-1"}}>{formatKickoff(myFixture.kickoff_at)} · BTTS {myFixture.odds_fractional??"Odds unavailable"}</small></div>:adjustment?<div><strong>MISSED DEADLINE</strong><p>{adjustment.points} point(s) · {adjustment.reason}</p></div>:<button className={styles.primary} onClick={()=>setView("pick")}>{isOpen?"Make your BTTS pick":"Selections are currently closed"}</button>}</article>
-    <article className={styles.panel}><div className={styles.title}>EVERYONE'S PICKS SO FAR</div>{picks.map(({profile,prediction,fixture})=>{const outcome=fixture?outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction?.points_awarded??null):null;return <div className={styles.row} key={profile.id}><strong>{profile.display_name}</strong><span>{fixture?`${fixture.home_team} v ${fixture.away_team}`:"Awaiting selection"}</span><span>{fixture?.odds_fractional??"—"}</span><span className={outcome?.tone==="good"?styles.statusGood:outcome?.tone==="warn"?styles.statusWarn:outcome?.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome?`${outcome.label}${outcome.points!=null?` · ${outcome.points>0?"+":""}${outcome.points}`:""}`:"PENDING"}</span></div>})}<div className={styles.buttonRow}><WeeklyPicksShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional}))}/></div></article>
-  </section><aside><article className={styles.panel}><div className={styles.title}>GAMEWEEK STATUS</div><div className={styles.miniCards}><div className={styles.miniCard}><strong>{predictions.length}</strong><span>of {profiles.length} picks</span></div><div className={styles.miniCard}><strong>£{(profiles.length*entryFee).toFixed(0)}</strong><span>Prize pot</span></div><div className={styles.miniCard}><strong>{finished.length}</strong><span>Finished</span></div></div></article><article className={styles.panel}><div className={styles.title}>LEAGUE TABLE</div>{standings.slice(0,8).map((r,i)=><div className={styles.row} style={{gridTemplateColumns:"40px 1fr 70px 70px"}} key={r.id}><span>{i+1}</span><strong>{r.name}</strong><span>{r.wins} W</span><b>{r.points}</b></div>)}<div className={styles.buttonRow}><button className={styles.button} onClick={()=>setView("table")}>View full table →</button><span className={styles.shareInline}><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={profiles.length*entryFee}/></span></div></article></aside></div>
+  const myStanding=standings.find(s=>s.id===myId);
+  const myPosition=Math.max(1,standings.findIndex(s=>s.id===myId)+1);
+  const submitted=predictions.length;
+  const currentPoints=predictions.reduce((sum,p)=>sum+(p.points_awarded??0),0)+allAdjustments.filter(a=>a.gameweek_id===gameweek?.id).reduce((sum,a)=>sum+a.points,0);
+
+  const selectedNumber=gameweek?.number??Math.max(0,...gameweeks.map(g=>g.number));
+  const formGameweeks=[...gameweeks]
+    .filter(g=>g.number<=selectedNumber)
+    .sort((a,b)=>b.number-a.number)
+    .slice(0,6)
+    .sort((a,b)=>a.number-b.number);
+
+  function pointsFor(playerId:string,gwId:string){
+    const pred=allPredictions.find(p=>p.member_id===playerId&&p.gameweek_id===gwId&&p.points_awarded!=null);
+    if(pred?.points_awarded!=null)return pred.points_awarded;
+    const adj=allAdjustments.find(a=>a.member_id===playerId&&a.gameweek_id===gwId);
+    return adj?.points??null;
+  }
+  function formClass(points:number|null){
+    if(points===3)return styles.formWin;
+    if(points===1)return styles.formScoreNil;
+    if(points===-1)return styles.formLoss;
+    return styles.formEmpty;
+  }
+
+  const statusText = !gameweek ? "No gameweek selected" :
+    gameweek.status==="complete" ? "Gameweek complete" :
+    isOpen ? "Selections open" : "Selections closed";
+
+  return <section className={styles.dashboard}>
+    <div className={styles.dashboardIntro}>
+      <div>
+        <span className={styles.eyebrow}>SEASON {seasonLabel} · {gameweek?`GAMEWEEK ${gameweek.number}`:"OVERVIEW"}</span>
+        <h2>{isAdmin?"League Control Centre":"Your League Dashboard"}</h2>
+        <p>{isAdmin?"Live league position, selections, results and admin status in one place.":"Your pick, current standing, weekly results and recent form in one place."}</p>
+      </div>
+      <div className={styles.dashboardArt} aria-hidden="true">
+        <img src="/assets/hearts-crest.png" alt=""/>
+        <img src="/assets/bounce-cup.png" alt=""/>
+      </div>
+    </div>
+
+    <div className={styles.dashboardStats}>
+      <article className={styles.statCard}>
+        <span>YOUR POSITION</span><strong>{myStanding?`${myPosition}${myPosition===1?"st":myPosition===2?"nd":myPosition===3?"rd":"th"}`:"—"}</strong>
+        <small>{myStanding?`${myStanding.points} pts · ${myStanding.wins} BTTS wins`:"No scored picks yet"}</small>
+      </article>
+      <article className={styles.statCard}>
+        <span>GAMEWEEK</span><strong>{gameweek?`GW ${gameweek.number}`:"—"}</strong>
+        <small>{statusText}</small>
+      </article>
+      <article className={styles.statCard}>
+        <span>SELECTIONS</span><strong>{submitted}/{profiles.length}</strong>
+        <small>{finished.length} selected fixtures finished</small>
+      </article>
+      <article className={styles.statCard}>
+        <span>PRIZE POT</span><strong>£{(profiles.length*entryFee).toFixed(0)}</strong>
+        <small>{isAdmin?`${currentPoints>=0?"+":""}${currentPoints} net GW points awarded`:"Current season pot"}</small>
+      </article>
+      {isAdmin&&<article className={styles.statCard}>
+        <span>ADMIN ALERTS</span><strong>{alertsCount}</strong>
+        <small>{alertsCount?`${alertsCount} need attention`:"Nothing outstanding"}</small>
+      </article>}
+    </div>
+
+    <div className={styles.dashboardMain}>
+      <div className={styles.dashboardPrimary}>
+        <article className={`${styles.panel} ${styles.pickPanel}`}>
+          <div className={styles.panelHeading}>
+            <div><div className={styles.title}>YOUR PICK</div><h3>{gameweek?`Gameweek ${gameweek.number}`:"Current gameweek"}</h3></div>
+            <button className={styles.linkButton} onClick={()=>setView("pick")}>{isOpen?"Change / make pick":"View picks"} →</button>
+          </div>
+          {myFixture?<div className={styles.pickHeroLarge}>
+            <div><span>HOME</span><strong>{myFixture.home_team}</strong></div>
+            <div className={styles.pickScore}>
+              <b>{myFixture.home_score!=null?`${myFixture.home_score} — ${myFixture.away_score}`:"V"}</b>
+              <small>{myFixture.status}</small>
+            </div>
+            <div><span>AWAY</span><strong>{myFixture.away_team}</strong></div>
+            <footer>{formatKickoff(myFixture.kickoff_at)} · BTTS {myFixture.odds_fractional??"Odds unavailable"}</footer>
+          </div>:adjustment?<div className={styles.missedPick}><strong>MISSED DEADLINE</strong><span>{adjustment.points} point(s)</span><small>{adjustment.reason}</small></div>:<div className={styles.emptyPick}><p>No selection has been saved for this gameweek.</p><button className={styles.primary} disabled={!isOpen} onClick={()=>setView("pick")}>{isOpen?"Make your BTTS pick":"Selections are currently closed"}</button></div>}
+        </article>
+
+        <article className={styles.panel}>
+          <div className={styles.panelHeading}>
+            <div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div><h3>Everyone at a glance</h3></div>
+            <div className={styles.buttonRow}>
+              <button className={styles.button} onClick={()=>setView("results")}>Results →</button>
+              <WeeklyPicksShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional}))}/>
+            </div>
+          </div>
+          <div className={styles.pickList}>
+            {picks.map(({profile,prediction,fixture})=>{
+              const outcome=fixture?outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction?.points_awarded??null):null;
+              return <div className={styles.pickListRow} key={profile.id}>
+                <div className={styles.playerCell}><span className={styles.avatar}>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>
+                <div className={styles.fixtureCell}>{fixture?<><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)} · {fixture.odds_fractional??"—"}</small></>:<span>Awaiting selection</span>}</div>
+                <div className={styles.liveCell}>{fixture?.home_score!=null?<strong>{fixture.home_score}-{fixture.away_score}</strong>:<strong>—</strong>}<small>{fixture?.status??"PENDING"}</small></div>
+                <div className={outcome?.tone==="good"?styles.statusGood:outcome?.tone==="warn"?styles.statusWarn:outcome?.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome?`${outcome.label}${outcome.points!=null?` · ${outcome.points>0?"+":""}${outcome.points}`:""}`:"PENDING"}</div>
+              </div>
+            })}
+          </div>
+        </article>
+      </div>
+
+      <aside className={styles.dashboardSide}>
+        <article className={`${styles.panel} ${styles.tablePreview}`}>
+          <div className={styles.tableArtwork} aria-hidden="true"><img src="/assets/bounce-cup.png" alt=""/></div>
+          <div className={styles.panelHeading}>
+            <div><div className={styles.title}>LEAGUE TABLE</div><h3>Season standings</h3></div>
+            <button className={styles.linkButton} onClick={()=>setView("table")}>Full table →</button>
+          </div>
+          <div className={styles.miniTable}>
+            {standings.slice(0,8).map((r,i)=><div className={`${styles.miniTableRow} ${r.id===myId?styles.myRow:""} ${i===0?styles.firstRow:""}`} key={r.id}>
+              <span className={styles.position}>{i+1}</span>
+              <span className={styles.tableName}>{i===0&&<span className={styles.trophy}>🏆</span>}<strong>{r.name}</strong></span>
+              <span>{r.played}</span><span>{r.wins}W</span><b>{r.points}</b>
+            </div>)}
+          </div>
+          <div className={styles.tableActions}><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={profiles.length*entryFee}/></div>
+        </article>
+
+        <article className={styles.panel}>
+          <div className={styles.title}>{isAdmin?"ADMIN SHORTCUTS":"QUICK LINKS"}</div>
+          <div className={styles.quickLinks}>
+            <button onClick={()=>setView("table")}>☷ <span><strong>League Table</strong><small>Full standings & tie-break detail</small></span></button>
+            <button onClick={()=>setView("results")}>✦ <span><strong>Results</strong><small>Selected matches & all fixtures</small></span></button>
+            <button onClick={()=>setView("players")}>◉ <span><strong>Players</strong><small>Who has picked this week</small></span></button>
+            {isAdmin&&<button onClick={()=>setView("admin")}>⚙ <span><strong>Admin</strong><small>Selections, results & fixture controls</small></span></button>}
+          </div>
+        </article>
+      </aside>
+    </div>
+
+    <article className={`${styles.panel} ${styles.formPanel}`}>
+      <div className={styles.panelHeading}>
+        <div><div className={styles.title}>6-WEEK FORM</div><h3>Recent league form</h3></div>
+        <div className={styles.formLegend}><span className={styles.formWin}>+3</span><small>BTTS</small><span className={styles.formScoreNil}>+1</span><small>Score–nil</small><span className={styles.formLoss}>-1</span><small>0–0 / missed</small></div>
+      </div>
+      <div className={styles.formTableWrap}>
+        <div className={styles.formTable} style={{gridTemplateColumns:`minmax(150px,1.5fr) repeat(${Math.max(formGameweeks.length,1)},minmax(54px,1fr)) 72px`}}>
+          <div className={`${styles.formCell} ${styles.formHeader}`}>PLAYER</div>
+          {formGameweeks.map(g=><div className={`${styles.formCell} ${styles.formHeader}`} key={g.id}>GW {g.number}</div>)}
+          {!formGameweeks.length&&<div className={`${styles.formCell} ${styles.formHeader}`}>FORM</div>}
+          <div className={`${styles.formCell} ${styles.formHeader}`}>TOTAL</div>
+          {standings.map(player=>{
+            const values=formGameweeks.map(g=>pointsFor(player.id,g.id));
+            const total=values.reduce((sum,p)=>sum+(p??0),0);
+            return <div className={styles.formRow} style={{gridColumn:"1/-1",display:"grid",gridTemplateColumns:`minmax(150px,1.5fr) repeat(${Math.max(formGameweeks.length,1)},minmax(54px,1fr)) 72px`}} key={player.id}>
+              <div className={`${styles.formCell} ${styles.formName}`}>{player.name}</div>
+              {values.map((p,i)=><div className={styles.formCell} key={`${player.id}-${formGameweeks[i].id}`}><span className={`${styles.formPill} ${formClass(p)}`}>{p==null?"—":p>0?`+${p}`:p}</span></div>)}
+              {!values.length&&<div className={styles.formCell}><span className={`${styles.formPill} ${styles.formEmpty}`}>—</span></div>}
+              <div className={`${styles.formCell} ${styles.formTotal}`}>{total>0?`+${total}`:total}</div>
+            </div>
+          })}
+        </div>
+      </div>
+    </article>
+  </section>
 }
 
 function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixture}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];isOpen:boolean;myId:string;selectFixture:(id:string)=>void}){
@@ -253,8 +432,24 @@ function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixt
 
 function FixturesPage({fixtures}:{fixtures:Fixture[]}){const [search,setSearch]=useState("");const q=search.toLowerCase().trim();const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));const days=Array.from(new Set(filtered.map(f=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at)))));return <section><Heading eyebrow="TWO-WEEK FIXTURE LIST" title="Fixtures"><p>All stored fixtures, searchable by team, country or competition.</p></Heading><div className={styles.panel}><input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search fixtures…"/>{days.map(day=><div key={day}><h3 className={styles.groupTitle}>{new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"long",day:"numeric",month:"long"}).format(new Date(`${day}T12:00:00Z`))}</h3>{filtered.filter(f=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at))===day).map(f=><div className={styles.row} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span><strong>{f.home_team} v {f.away_team}</strong><br/><small>{competitionDisplayName(f)}</small></span><strong>{f.odds_fractional??"—"}</strong><span>{f.status}</span></div>)}</div>)}</div></section>}
 
-function LeagueTable({standings,seasonLabel,gameweek,entryFee}:{standings:Standing[];seasonLabel:string;gameweek:Gameweek|null;entryFee:number}){return <section><Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={standings.length*entryFee}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading><div className={`${styles.panel} ${styles.table}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""}`}><span>{i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div></section>}
-
+function LeagueTable({standings,seasonLabel,gameweek,entryFee}:{standings:Standing[];seasonLabel:string;gameweek:Gameweek|null;entryFee:number}){
+  return <section className={styles.leaguePage}>
+    <Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={standings.length*entryFee}/></span>}>
+      <p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p>
+    </Heading>
+    <div className={styles.leagueHero}>
+      <div><span>BOUNCE BTTS LEAGUE</span><h3>Season Standings</h3><p>{standings.length} players · £{(standings.length*entryFee).toFixed(0)} prize pot</p></div>
+      <img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/>
+    </div>
+    <div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable}`}>
+      <div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>
+      {standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""}`}>
+        <span className={styles.positionCell}>{i===0?"🏆":i+1}</span>
+        <strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b>
+      </div>)}
+    </div>
+  </section>
+}
 function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];onRefresh:()=>void}){const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter(x=>x.fixture&&x.profile);const groups=Array.from(new Set(fixtures.map(f=>`${normaliseCountry(f.country)}|${competitionDisplayName(f)}`))).sort();return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Results" actions={<button className={styles.button} onClick={onRefresh}>Refresh displayed data</button>}><p>Selected matches first, followed by every fixture in the gameweek.</p></Heading><div className={styles.panel}><div className={styles.title}>SELECTED MATCHES</div>{selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture!.home_score,fixture!.away_score,fixture!.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile!.display_name}</strong><span>{fixture!.home_team} v {fixture!.away_team}</span><b className={styles.score}>{fixture!.home_score==null?"—":`${fixture!.home_score}-${fixture!.away_score}`}</b><span>{fixture!.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}{!selected.length&&<div className={styles.notice}>No selected matches yet.</div>}</div><div className={styles.panel}><div className={styles.title}>ALL RESULTS / FIXTURES</div>{groups.map(key=>{const [country,competition]=key.split("|");return <div key={key}><h3 className={styles.groupTitle}>{country} · {competition}</h3>{fixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={styles.resultRow} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}</div>})}</div></section>}
 
 function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){

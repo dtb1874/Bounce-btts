@@ -1,26 +1,33 @@
-BOUNCE BTTS — UI RESTORE + SCORING FIX — 10 AUGUST 2026
+BOUNCE BTTS — DASHBOARD / LEAGUE TABLE RESTORE — 10 AUGUST 2026
 
-Upload the app folder from this ZIP to the ROOT of the existing GitHub repo.
-Replace:
-- app/LeagueApp.tsx
-- app/release.module.css
+This package corrects the remaining UI regression from the combined release.
 
-Do not delete lib/scoring.ts and do not change Vercel/Supabase settings.
+WHAT IS RESTORED / ADDED
+- Dashboard is again a full overview rather than a condensed utility screen.
+- Desktop: large league overview, role-aware summary cards, current pick, everyone’s picks/live results,
+  rich league-table preview, trophy/crest imagery, quick links, and 6-week form.
+- Mobile: same information is retained but stacked into clean cards rather than shrinking the desktop layout.
+- Admins see an admin-focused overview including outstanding alert count and Admin shortcut.
+- Members see their own position, points, pick, current gameweek and the same league overview.
+- League Table page has its richer presentation back, including the Bounce cup artwork and leader treatment.
+- 6-WEEK FORM is restored to the Dashboard. It shows the selected/current gameweek and up to the previous 5 weeks.
+  +3 = BTTS win, +1 = score-nil, -1 = 0-0/missed, — = not yet scored.
+- Existing scoring fix, About page, alerts/admin controls and sidebar Rousset easter egg remain.
 
-FIXES INCLUDED
-- Restores the dark maroon / Hearts / Edinburgh presentation and imagery.
-- Restores subtle Tynecastle/St Giles imagery and panel/sidebar watermark treatment.
-- Keeps About, live/provisional result display, admin help, alert controls and scoring repair features.
-- Moves the Rousset easter egg to a large invisible target in the LEFT SIDEBAR.
-- Hidden target location: between the last navigation item and the signed-in profile card.
+IMPORTANT
+This package uses only assets already known to exist in the project:
+- /assets/hearts-crest.png
+- /assets/bounce-cup.png
 
-GW1 SCORING
-The production database has ALREADY been repaired:
-Ryan +3; Turnsy Fitchett +3; Yacky +3;
-Dave Pickup +1; Dave S +1; DTB +1; Ian +1; Kevin Pickup +1.
+UPLOAD
+1. Extract the ZIP.
+2. In GitHub Bounce-btts choose Add file -> Upload files.
+3. Upload the APP folder to the repository ROOT.
+4. Replace:
+   app/LeagueApp.tsx
+   app/release.module.css
+5. Commit.
+6. Vercel deploys automatically.
 
-A Supabase validation migration has also been applied so privileged result/scoring jobs
-can update an existing prediction after the deadline and after a finished fixture is
-no longer eligible. This addresses the cause of the null GW1 points, not only the data.
-
-After committing these two app files, Vercel should deploy automatically.
+Do NOT remove lib/scoring.ts.
+No Supabase or Vercel configuration changes are needed.
