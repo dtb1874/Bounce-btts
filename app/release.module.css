@@ -130,6 +130,24 @@
 .row select,.row input,.field input,.field select,.field textarea{
   width:100%;box-sizing:border-box;background:#0c0e13;color:#fff;border:1px solid #4c3139;border-radius:8px;padding:9px
 }
+
+.selectionRow{position:relative;overflow:visible}
+.fixturePicker{position:relative;min-width:0;z-index:3}
+.fixturePickerOpen{z-index:60}
+.fixturePickerTrigger{width:100%;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:#0c0e13;color:#fff;border:1px solid #4c3139;border-radius:9px;padding:8px 10px;cursor:pointer}
+.fixturePickerTrigger:hover,.fixturePickerOpen .fixturePickerTrigger{border-color:#8b4a5c;background:#141017}
+.fixturePickerTrigger:disabled{opacity:.55;cursor:not-allowed}
+.fixturePickerTrigger>span{display:block;min-width:0}.fixturePickerTrigger strong,.fixturePickerTrigger small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fixturePickerTrigger strong{font-size:12px;color:#f0e1d6}.fixturePickerTrigger small{margin-top:3px;font-size:10px;color:#9f938c}.fixturePickerTrigger>b{color:#c9a78e;font-size:16px;flex:0 0 auto}
+.fixturePickerMenu{position:relative;z-index:80;margin-top:6px;background:#101116;border:1px solid #70404d;border-radius:12px;box-shadow:0 14px 32px rgba(0,0,0,.38);padding:9px}
+.fixturePickerSearchWrap{display:grid;grid-template-columns:24px minmax(0,1fr) 32px;align-items:center;background:#090b0f;border:1px solid #53323b;border-radius:9px;padding:0 4px;margin-bottom:8px}
+.fixturePickerSearchWrap>span{color:#b99b85;text-align:center;font-size:16px}.fixturePickerSearchWrap input{border:0!important;background:transparent!important;outline:0;padding:10px 5px!important;margin:0!important;color:#fff}.fixturePickerSearchWrap button{border:0;background:transparent;color:#c7b6aa;font-size:20px;cursor:pointer}
+.fixturePickerResults{max-height:310px;overflow:auto;display:grid;gap:4px;padding-right:2px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.fixturePickerOption{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;padding:10px 11px;border-radius:8px;border:1px solid transparent;background:#15151a;color:#e8ddd4;cursor:pointer}
+.fixturePickerOption:hover{background:#21151b;border-color:#633642}.fixturePickerOption:disabled{opacity:.48;cursor:not-allowed;background:#111116}.fixturePickerOptionSelected{background:linear-gradient(90deg,rgba(116,32,52,.42),rgba(116,32,52,.12));border-color:#79374a}
+.fixturePickerTeams{min-width:0}.fixturePickerTeams strong,.fixturePickerTeams small,.fixturePickerOption>span>strong,.fixturePickerOption>span>small{display:block}.fixturePickerTeams strong,.fixturePickerOption>span>strong{font-size:12px;color:#f0e2d7}.fixturePickerTeams small,.fixturePickerOption>span>small{margin-top:3px;font-size:10px;color:#998f89}
+.fixtureAvailable,.fixtureTaken{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}.fixtureAvailable{color:#9fd8b8}.fixtureTaken{color:#d49ca8}
+.fixturePickerEmpty{padding:18px 12px;text-align:center;color:#a59b95;font-size:12px}
+.savedSelection,.unsavedSelection{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.savedSelection{color:#8fc7a6}.unsavedSelection{color:#efc17d}
 .table{overflow:auto}
 .tableRow{
   min-width:680px;display:grid;grid-template-columns:55px minmax(180px,1.7fr) repeat(5,80px);
@@ -272,6 +290,43 @@
 .fullLeagueTable .tableRow{position:relative;z-index:1}.fullLeagueTable .leader{background:linear-gradient(90deg,rgba(108,31,50,.42),rgba(108,31,50,.08));box-shadow:inset 3px 0 0 #d1b08f}
 .positionCell{font-weight:900;color:#d3b99f}
 
+.leaderboardShowcase{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.positionSpotlight{position:relative;overflow:hidden;padding:15px 16px;border-radius:15px;background:linear-gradient(145deg,#16141a,#24131b);border:1px solid rgba(113,69,81,.48);box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.positionSpotlight::after{content:"";position:absolute;right:-16px;bottom:-22px;width:74px;height:74px;background:url("/assets/bounce-cup.png") center/contain no-repeat;opacity:.05}
+.positionSpotlight span{display:block;font-size:9px;letter-spacing:.12em;font-weight:900;color:#bfa694}
+.positionSpotlight strong{display:block;margin-top:8px;color:#f1e4d7;font:700 22px Georgia,serif}
+.positionSpotlightMeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.positionSpotlightMeta b{color:#f2cfaa;font-size:14px}.positionSpotlightMeta small{color:#9c9189;font-size:11px}
+.positionSpotlightLeader{background:linear-gradient(130deg,#2b1119,#5e1b30 70%,#7b2440);border-color:rgba(194,145,120,.36)}
+.leagueStatsBand,.historyStatsBand,.historySpotlight{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.leagueStatsBand article,.historyStatsBand article,.historySpotlightCard{position:relative;overflow:hidden;padding:14px 16px;border-radius:14px;background:linear-gradient(145deg,#17151b,#21131a);border:1px solid rgba(113,69,81,.5);box-shadow:0 12px 30px rgba(0,0,0,.16)}
+.leagueStatsBand article::after,.historyStatsBand article::after,.historySpotlightCard::after{content:"";position:absolute;right:-18px;bottom:-20px;width:72px;height:72px;background:url("/assets/hearts-crest.png") center/contain no-repeat;opacity:.04}
+.leagueStatsBand span,.historyStatsBand span,.historySpotlightCard span{display:block;color:#bca99d;font-size:9px;letter-spacing:.12em;font-weight:900}
+.leagueStatsBand strong,.historyStatsBand strong,.historySpotlightCard strong{display:block;color:#f0dcc8;font:700 25px Georgia,serif;margin:8px 0 2px}
+.leagueStatsBand small,.historyStatsBand small,.historySpotlightCard small{display:block;color:#958b85;font-size:11px}
+.enhancedTableShell,.historyTableShell{overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.2)}
+.tableRowTopThree{background:linear-gradient(90deg,rgba(99,46,58,.18),rgba(99,46,58,.04))}
+.historyPage{display:grid;gap:16px}
+.historyHero{height:150px;border-radius:18px;overflow:hidden;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;background:radial-gradient(circle at 78% 30%,rgba(199,153,105,.18),transparent 13rem),linear-gradient(110deg,#1a1015,#341420 62%,#5b1c32);border:1px solid rgba(176,126,97,.3);box-shadow:0 16px 40px rgba(0,0,0,.22)}
+.historyHero span{font-size:9px;letter-spacing:.14em;font-weight:900;color:#d9b793}.historyHero h3{font:700 34px Georgia,serif;color:#f2e5da;margin:4px 0}.historyHero p{margin:0;color:#b8aaa1}.historyHero img{height:124px;width:120px;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(0,0,0,.55))}
+.honourPanel{background:linear-gradient(145deg,rgba(29,16,22,.98),rgba(16,16,21,.98))}
+.honourGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px}
+.honourCard{position:relative;overflow:hidden;padding:16px 16px 15px;border-radius:14px;background:linear-gradient(145deg,#17151b,#22141c);border:1px solid rgba(91,56,67,.45)}
+.honourCard::after{content:"";position:absolute;right:-12px;bottom:-20px;width:72px;height:72px;background:url("/assets/bounce-cup.png") center/contain no-repeat;opacity:.05}
+.honourCard span{display:block;font-size:9px;letter-spacing:.12em;font-weight:900;color:#c6aa95}.honourCard strong{display:block;margin-top:7px;font:700 22px Georgia,serif;color:#f1e4d7}.honourCard small{display:block;margin-top:8px;color:#968c86}
+.honourCardLeader{background:linear-gradient(130deg,#261118,#632136 72%,#89445a);border-color:rgba(202,162,118,.32)}
+.archiveControls{display:flex;flex-wrap:wrap;gap:10px}
+.archiveButton,.archiveButtonActive{padding:10px 14px;border-radius:999px;border:1px solid rgba(93,55,66,.48);font-weight:900;cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease}
+.archiveButton{background:#141318;color:#dfd6ce}.archiveButton:hover{transform:translateY(-1px);background:#25151c;border-color:#793149}
+.archiveButtonActive{background:linear-gradient(90deg,#742034,#571629);border-color:#b57f6a;color:#fff1df;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+
+
+
+@media(max-width:900px){
+  .leaderboardShowcase,.leagueStatsBand,.historyStatsBand,.historySpotlight{grid-template-columns:1fr}
+  .historyHero{height:118px;padding:18px 18px}.historyHero h3{font-size:28px}.historyHero img{height:96px;width:92px}
+}
+
 @media(max-width:1180px){
   .dashboardStats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .dashboardMain{grid-template-columns:minmax(0,1.35fr) minmax(300px,.8fr)}
@@ -288,7 +343,7 @@
   .dashboardSide{grid-template-columns:1fr}.panelHeading{align-items:flex-start}.panelHeading .buttonRow{justify-content:flex-end}
   .pickHeroLarge{grid-template-columns:1fr 70px 1fr;gap:7px;padding:16px 8px 10px}.pickHeroLarge strong{font-size:16px}.pickScore b{font-size:18px}
   .pickListRow{grid-template-columns:1fr 62px;gap:6px 9px;padding:10px 2px}.playerCell,.fixtureCell{grid-column:1}.liveCell{grid-column:2;grid-row:1/3}.pickListRow>div:last-child{grid-column:1/-1;font-size:11px}
-  .formLegend{display:none}.formTable{min-width:580px}.leagueHero{height:105px;padding:15px 18px}.leagueHero h3{font-size:27px}.leagueHero img{height:95px;width:88px}
+  .formLegend{display:none}.formTable{min-width:580px}.leagueHero{height:105px;padding:15px 18px}.leagueHero h3{font-size:27px}.leagueHero img{height:95px;width:88px}.historyHero{height:96px;padding:14px 16px}.historyHero h3{font-size:24px}.historyHero p{font-size:10px}.historyHero img{height:78px;width:72px}
 }
 
 /* === v1.4.0 usability, mobile and demo controls === */
@@ -320,11 +375,22 @@
   .pickListRow{padding:9px 0}.quickLinks button{padding:9px}.dashboardMain{gap:12px}.dashboardPrimary,.dashboardSide{gap:12px}
   .formControls{justify-content:flex-start}.formControls .formLegend{display:none}.formTableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .fullLeagueTable.table{overflow:visible}.fullLeagueTable .tableRow{min-width:0!important;width:100%;box-sizing:border-box;grid-template-columns:28px minmax(78px,1fr) repeat(5,31px);gap:2px;padding:9px 4px;font-size:10px}.fullLeagueTable .tableRow strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fullLeagueTable .tableRow span,.fullLeagueTable .tableRow b{text-align:center}.fullLeagueTable .tableRow strong{text-align:left}
-  .leagueHero{height:88px;padding:12px 13px}.leagueHero h3{font-size:23px}.leagueHero p{font-size:10px}.leagueHero img{height:76px;width:68px}
+  .leagueHero{height:88px;padding:12px 13px}.leagueHero h3{font-size:23px}.leagueHero p{font-size:10px}.leagueHero img{height:76px;width:68px}.historyHero{height:88px;padding:12px 13px}.historyHero h3{font-size:23px}.historyHero p{font-size:10px}.historyHero img{height:74px;width:66px}
   .table:not(.fullLeagueTable) .tableRow{min-width:0!important;width:100%;box-sizing:border-box;grid-template-columns:28px minmax(78px,1fr) repeat(5,31px)!important;gap:2px;padding:9px 4px;font-size:10px}.table:not(.fullLeagueTable) .tableRow strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fixtureDetailsNested{margin-left:3px}.fixtureDetailsLeague{margin-left:8px}.fixtureDetails>summary{font-size:17px;padding:12px 2px}.fixtureDetailsNested>summary,.fixtureDetailsLeague>summary{padding-left:3px}
   .fixtureDetails .row,.fixtureDetailsNested .row,.fixtureDetailsLeague .row{grid-template-columns:64px minmax(0,1fr) 48px 48px;gap:5px;font-size:10px}.fixtureDetails .row strong,.fixtureDetailsNested .row strong,.fixtureDetailsLeague .row strong{font-size:11px}
   .demoUserRow{grid-template-columns:1fr}.demoUserRow span{font-size:11px}.demoBadge,.stopEmulating{bottom:8px;max-width:92vw;white-space:nowrap}
-  .aboutTabs{gap:5px}.aboutTabs button{padding:7px 9px;font-size:11px}
+  .aboutTabs{gap:5px}.aboutTabs button{padding:7px 9px;font-size:11px}.archiveControls{gap:8px}.archiveButton,.archiveButtonActive{padding:9px 12px;font-size:11px}.honourGrid{grid-template-columns:1fr}
 }
 .leaguePage{display:block}
+
+
+@media(max-width:650px){
+  .selectionRow{grid-template-columns:1fr!important;gap:7px;padding:12px 0}
+  .selectionRow>strong{font-size:13px}
+  .fixturePickerMenu{box-shadow:0 12px 28px rgba(0,0,0,.35)}
+  .fixturePickerResults{max-height:52vh}
+  .fixturePickerOption{padding:11px 9px}
+  .fixturePickerTrigger{min-height:52px}
+  .savedSelection,.unsavedSelection{justify-self:start}
+}
