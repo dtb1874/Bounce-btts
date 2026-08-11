@@ -394,3 +394,38 @@
   .fixturePickerTrigger{min-height:52px}
   .savedSelection,.unsavedSelection{justify-self:start}
 }
+
+/* === v1.4.4 alerts clarity / mobile cards === */
+.alertsPage{display:grid;gap:14px}
+.providerStatusCard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px;border-radius:14px;background:linear-gradient(145deg,#17151b,#21131a);border:1px solid rgba(113,69,81,.5);box-shadow:0 12px 30px rgba(0,0,0,.16)}
+.providerStatusCard>div{padding:7px 9px;border-left:2px solid rgba(197,173,150,.55)}
+.providerStatusCard span{display:block;color:#9f948d;font-size:9px;letter-spacing:.12em;font-weight:900}
+.providerStatusCard strong{display:block;margin-top:5px;color:#f0dcc8;font:700 16px Georgia,serif}
+.alertToolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.alertTabs{display:flex;gap:7px;flex-wrap:wrap}
+.alertTab,.alertTabActive{border:1px solid #4e303a;border-radius:999px;padding:8px 12px;background:#121217;color:#b8aca4;font-weight:900;cursor:pointer}
+.alertTabActive{background:linear-gradient(90deg,#6b1d33,#4d1725);border-color:#9b5267;color:#fff1df}
+.alertTab b,.alertTabActive b{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:5px;border-radius:999px;background:rgba(255,255,255,.09);font-size:10px}
+.alertList{display:grid;gap:10px}
+.alertCard{overflow:hidden;border-radius:14px;background:linear-gradient(145deg,#141319,#1c1218);border:1px solid rgba(91,56,67,.55);box-shadow:0 10px 25px rgba(0,0,0,.14)}
+.alertCardResolved{opacity:.62}
+.alertCardHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015)}
+.alertCardHeader time{color:#8f8782;font-size:10px;white-space:nowrap}
+.alertSeverity{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:9px;letter-spacing:.09em;font-weight:900}
+.alertWarning{background:#4f3d1b;color:#f0d38d;border:1px solid #705a29}
+.alertCritical{background:#5b2028;color:#ffb0b8;border:1px solid #83323d}
+.alertCardBody{padding:13px}
+.alertCardBody h3{margin:0;color:#f2e5da;font:700 19px Georgia,serif}
+.alertMember{margin:5px 0 0;color:#9d928b;font-size:11px}
+.alertChangeList{display:grid;gap:7px;margin-top:11px}
+.alertChangeList>div{padding:9px 10px;border-radius:9px;background:#0f1014;border-left:3px solid #9b735b;color:#d0c4bb;font-size:12px;line-height:1.35}
+.alertCardActions{display:flex;justify-content:flex-end;gap:8px;padding:10px 13px;border-top:1px solid rgba(255,255,255,.06)}
+.alertEmpty{display:grid;gap:4px;padding:24px;border-radius:14px;text-align:center;background:#141319;border:1px solid rgba(91,56,67,.45)}
+.alertEmpty strong{color:#eedbca;font:700 22px Georgia,serif}.alertEmpty span{color:#928a85;font-size:12px}
+
+@media(max-width:650px){
+  .providerStatusCard{grid-template-columns:1fr;padding:10px;gap:6px}.providerStatusCard>div{padding:6px 9px}.providerStatusCard strong{font-size:14px}
+  .alertToolbar{align-items:stretch}.alertTabs{display:grid;grid-template-columns:1fr 1fr;width:100%}.alertTab,.alertTabActive{width:100%;padding:9px 8px;font-size:10px}.alertToolbar>.button{width:100%}
+  .alertCardHeader{align-items:flex-start;flex-direction:column;gap:6px}.alertCardHeader time{white-space:normal}.alertCardBody h3{font-size:18px}.alertChangeList>div{font-size:11px}
+  .alertCardActions{display:grid;grid-template-columns:1fr}.alertCardActions .button{width:100%;min-height:42px}.alertEmpty{padding:20px 14px}
+}

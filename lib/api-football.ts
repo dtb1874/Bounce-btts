@@ -94,18 +94,36 @@ async function fixtureOdds(providerId: string, betId: string, tracker: Tracker) 
   return { odds: null, bookmaker: null };
 }
 
+function sameInstant(a: unknown, b: unknown) {
+  const left = Date.parse(String(a ?? ""));
+  const right = Date.parse(String(b ?? ""));
+  return Number.isFinite(left) && Number.isFinite(right) && left === right;
+}
+
 async function createAffectedAlerts(admin: ReturnType<typeof createAdminClient>, fixture: any, before: any, after: any) {
   const { data: predictions } = await admin.from("predictions").select("id,member_id,gameweek_id").eq("fixture_id", fixture.id);
   if (!predictions?.length) return 0;
+
   const changes: string[] = [];
-  if (before.kickoff_at !== after.kickoff_at) changes.push(`Kick-off changed from ${before.kickoff_at} to ${after.kickoff_at}`);
-  if (before.status !== after.status) changes.push(`Status changed from ${before.status} to ${after.status}`);
-  if (before.home_team !== after.home_team || before.away_team !== after.away_team) changes.push("Teams changed");
-  if (before.is_eligible && !after.is_eligible) changes.push("Fixture is no longer eligible");
+  const kickoffChanged = !sameInstant(before.kickoff_at, after.kickoff_at);
+  const teamsChanged = before.home_team !== after.home_team || before.away_team !== after.away_team;
+  const enteredAffectingStatus = before.status !== after.status && AFFECTING_STATUSES.has(String(after.status));
+
+  // API-Football can represent the same UK kickoff as either 14:00Z or
+  // 15:00+01:00 during BST. Compare actual instants, not raw strings, so
+  // timezone formatting alone never creates an alert.
+  if (kickoffChanged) changes.push(`Kick-off changed from ${before.kickoff_at} to ${after.kickoff_at}`);
+  if (enteredAffectingStatus) changes.push(`Status changed from ${before.status} to ${after.status}`);
+  if (teamsChanged) changes.push("Teams changed");
+
+  // Do not alert merely because is_eligible becomes false. That naturally
+  // happens when a selected fixture moves from NS to live/finished status.
   if (!changes.length) return 0;
+
+  const selectionInvalidated = kickoffChanged && Boolean(before.is_eligible) && !Boolean(after.is_eligible);
   const alerts = predictions.map((prediction: any) => ({
     alert_type: "fixture_change_affecting_pick",
-    severity: AFFECTING_STATUSES.has(after.status) || !after.is_eligible ? "critical" : "warning",
+    severity: enteredAffectingStatus || selectionInvalidated ? "critical" : "warning",
     title: `Pick affected: ${after.home_team} v ${after.away_team}`,
     message: changes.join(". "), fixture_id: fixture.id, gameweek_id: prediction.gameweek_id,
     prediction_id: prediction.id, member_id: prediction.member_id,

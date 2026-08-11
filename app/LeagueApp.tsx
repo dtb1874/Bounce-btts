@@ -35,7 +35,7 @@ type Props = {
 };
 
 const finishedStatuses = ["FT", "AET", "PEN"];
-const RELEASE_VERSION = "1.4.3.1";
+const RELEASE_VERSION = "1.4.4";
 const RELEASE_DATE = "11 Aug 2026";
 const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
@@ -104,6 +104,19 @@ function fixtureSort(a: Fixture, b: Fixture) {
   return (ar < 0 ? 999 : ar) - (br < 0 ? 999 : br) || competitionDisplayName(a).localeCompare(competitionDisplayName(b)) || a.kickoff_at.localeCompare(b.kickoff_at) || a.home_team.localeCompare(b.home_team);
 }
 function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
+function formatAlertTime(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
+function sameMoment(a: unknown,b: unknown) { const left=Date.parse(String(a??"")); const right=Date.parse(String(b??"")); return Number.isFinite(left)&&Number.isFinite(right)&&left===right; }
+function alertChanges(alert:any) {
+  const before=alert?.details?.before, after=alert?.details?.after;
+  if(!before||!after)return alert?.message?[String(alert.message)]:[];
+  const changes:string[]=[];
+  if(!sameMoment(before.kickoff_at,after.kickoff_at)) changes.push(`Kick-off: ${formatKickoff(String(before.kickoff_at))} → ${formatKickoff(String(after.kickoff_at))}`);
+  const affecting=new Set(["PST","CANC","ABD","SUSP","INT","TBD"]);
+  if(before.status!==after.status&&affecting.has(String(after.status))) changes.push(`Status: ${String(before.status)} → ${String(after.status)}`);
+  if(before.home_team!==after.home_team||before.away_team!==after.away_team) changes.push(`Fixture changed: ${String(before.home_team)} v ${String(before.away_team)} → ${String(after.home_team)} v ${String(after.away_team)}`);
+  return changes;
+}
+function isTimezoneOnlyAlert(alert:any) { return alert?.alert_type==="fixture_change_affecting_pick" && Boolean(alert?.details?.before&&alert?.details?.after) && alertChanges(alert).length===0; }
 function initials(name: string) { return name.split(/\s+/).map(p => p[0] ?? "").join("").slice(0,2).toUpperCase(); }
 function ordinal(value: number) { const mod100 = value % 100; if (mod100 >= 11 && mod100 <= 13) return `${value}th`; const mod10 = value % 10; if (mod10 === 1) return `${value}st`; if (mod10 === 2) return `${value}nd`; if (mod10 === 3) return `${value}rd`; return `${value}th`; }
 async function token() { const { data } = await createClient().auth.getSession(); return data.session?.access_token ?? ""; }
@@ -523,10 +536,10 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
       points:row.points
     }))
   }));
-  const seasons: SeasonHistory[] = [
-    ...legacy,
-    ...seasonHistory.filter((season)=>!legacy.some((item)=>item.label===season.label))
-  ];
+  const archivedDynamic = seasonHistory.filter((season)=>!season.isCurrent&&!legacy.some((item)=>item.label===season.label));
+  const seasons: SeasonHistory[] = [...legacy,...archivedDynamic].sort((a,b)=>b.label.localeCompare(a.label));
+  const reigningChampion = rollOfHonour[rollOfHonour.length-1];
+  const honourRows = [...rollOfHonour].reverse();
   const [id,setId]=useState(seasons[0]?.id??"");
   const selected: SeasonHistory | undefined = seasons.find((season)=>season.id===id)??seasons[0];
   const selectedWinner = selected?.standings[0];
@@ -544,7 +557,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
       <img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/>
     </div>
     <div className={styles.historyStatsBand}>
-      <article><span>MOST RECENT CHAMPION</span><strong>{rollOfHonour[0]?.winner ?? "—"}</strong></article>
+      <article><span>REIGNING CHAMPION</span><strong>{reigningChampion?.winner ?? "—"}</strong></article>
       <article><span>SELECTED SEASON</span><strong>{selected?.label ?? "—"}</strong></article>
       <article><span>ARCHIVED GAMEWEEKS</span><strong>{selected?.gameweeks ?? 0}</strong></article>
     </div>
@@ -553,10 +566,10 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
         <div><span className={styles.eyebrow}>CHAMPIONS</span><h3>Roll of Honour</h3></div>
       </div>
       <div className={styles.honourGrid}>
-        {rollOfHonour.map((row,index)=><article className={`${styles.honourCard} ${index===0?styles.honourCardLeader:""}`} key={row.season}>
+        {honourRows.map((row,index)=><article className={`${styles.honourCard} ${index===0?styles.honourCardLeader:""}`} key={row.season}>
           <span>{row.season}</span>
           <strong>{row.winner}</strong>
-          <small>{index===0?"Reigning archived champion":"Bounce champion"}</small>
+          <small>{index===0?"Reigning champion":"Bounce champion"}</small>
         </article>)}
       </div>
     </div>
@@ -612,7 +625,7 @@ function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
 }
 function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <section><Heading eyebrow="DEMO MODE" title={title}><p>{text}</p></Heading><div className={styles.panel}><div className={styles.demoNotice}>This section is intentionally read-only in Demo Mode.</div></div></section>}
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
-function ReleaseHistory(){const releases=[{version:RELEASE_VERSION,date:RELEASE_DATE,summary:"History/table polish and universal searchable selection picker",changes:["Admin Selections now uses the same searchable fixture picker in browser, iPhone and Android","League History redesigned with archive hero, trophy artwork and richer roll of honour cards","League Table upgraded with leader spotlight cards and stronger table styling","Mobile and desktop polish for archive/table presentation","Mobile Dashboard and league/history table cleanup","League tables retain P, W, S-N, 0-0 and PTS","Form range controls for 6, 12 or 18 gameweeks and shareable form snapshot","Collapsible fixture days, countries and competitions","Search filtering retained across fixture views","Ultimate Admin read-only user emulation","Read-only Demo Mode with Member/Admin views and masked credentials","Release History added to About","Demo Guest backend compatibility and league-isolation safeguards"]},{version:"1.3.x",date:"10 Aug 2026",summary:"Dashboard restoration and scoring repair",changes:["Restored richer Bounce/Hearts dashboard presentation","Repaired Gameweek 1 scoring flow and result update validation","Restored six-week form table and richer league presentation"]}];return <div><h3>Release History</h3>{releases.map((r,i)=><details className={styles.releaseItem} key={r.version} open={i===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}</div>}
+function ReleaseHistory(){const releases=[{version:RELEASE_VERSION,date:RELEASE_DATE,summary:"Alert accuracy, mobile alert redesign and history correction",changes:["BST/UTC-equivalent kickoffs no longer create false alerts","Normal live/finished status progression no longer creates critical pick alerts","Alerts redesigned into readable mobile-first cards with unresolved/resolved views","Ryan correctly shown as reigning 2025/26 champion","History archive now opens on the latest completed season","Admin Selections now uses the same searchable fixture picker in browser, iPhone and Android","League History redesigned with archive hero, trophy artwork and richer roll of honour cards","League Table upgraded with leader spotlight cards and stronger table styling","Mobile and desktop polish for archive/table presentation","Mobile Dashboard and league/history table cleanup","League tables retain P, W, S-N, 0-0 and PTS","Form range controls for 6, 12 or 18 gameweeks and shareable form snapshot","Collapsible fixture days, countries and competitions","Search filtering retained across fixture views","Ultimate Admin read-only user emulation","Read-only Demo Mode with Member/Admin views and masked credentials","Release History added to About","Demo Guest backend compatibility and league-isolation safeguards"]},{version:"1.3.x",date:"10 Aug 2026",summary:"Dashboard restoration and scoring repair",changes:["Restored richer Bounce/Hearts dashboard presentation","Repaired Gameweek 1 scoring flow and result update validation","Restored six-week form table and richer league presentation"]}];return <div><h3>Release History</h3>{releases.map((r,i)=><details className={styles.releaseItem} key={r.version} open={i===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}</div>}
 
 function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":role==="guest"?"Demo Guest":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}
 
@@ -717,4 +730,64 @@ function ResultsAdmin({gameweek,fixtures,predictions,notice,onChanged}:{gameweek
 function GameweekAdmin({gameweek,notice,onChanged}:{gameweek:Gameweek|null;notice:(m:string)=>void;onChanged:()=>void}){const [status,setStatus]=useState(gameweek?.status??"open");const [deadline,setDeadline]=useState(gameweek?new Date(gameweek.locks_at).toISOString().slice(0,16):"");useEffect(()=>{setStatus(gameweek?.status??"open");setDeadline(gameweek?new Date(gameweek.locks_at).toISOString().slice(0,16):"")},[gameweek?.id]);async function save(){if(!gameweek)return;const r=await fetch("/api/admin/gameweek",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:gameweek.id,status,locksAt:new Date(deadline).toISOString()})});const j=await r.json();notice(r.ok?"Gameweek updated":j.error);if(r.ok)onChanged()}return <div><div className={styles.formGrid}><label className={styles.field}>Status <Help text="Open accepts normal member picks; Locked closes them; Complete marks the gameweek finished."/><select value={status} onChange={e=>setStatus(e.target.value as any)}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label><label className={styles.field}>Deadline <Help text="Normal league deadline is Friday at 17:00 UK time unless you deliberately change it."/><input type="datetime-local" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label></div><button className={styles.primary} onClick={save}>Save current gameweek</button></div>}
 function SeasonsAdmin({notice,onChanged}:{notice:(m:string)=>void;onChanged:()=>void}){const [label,setLabel]=useState("");const [gameweeks,setGameweeks]=useState("38");async function create(){if(!label.trim())return;const r=await fetch("/api/admin/seasons",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({label:label.trim(),gameweeks:Number(gameweeks)})});const j=await r.json();notice(r.ok?`Season ${label} created`:j.error);if(r.ok)onChanged()}return <div><div className={styles.formGrid}><label className={styles.field}>Season name <Help text="Use the season label, for example 2027/28. The app header and archive use this value."/><input value={label} onChange={e=>setLabel(e.target.value)} placeholder="2027/28"/></label><label className={styles.field}>Planned gameweeks<input type="number" min="1" max="60" value={gameweeks} onChange={e=>setGameweeks(e.target.value)}/></label></div><button className={styles.primary} onClick={create}>Create New Season</button></div>}
 
-function AlertsPage({notice,onCount}:{notice:(m:string)=>void;onCount:(n:number)=>void}){const [alerts,setAlerts]=useState<any[]>([]);const [runs,setRuns]=useState<any[]>([]);const [loading,setLoading]=useState(true);async function load(){setLoading(true);const auth=await token();const [a,r]=await Promise.all([fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${auth}`}}),fetch("/api/admin/provider-sync",{headers:{authorization:`Bearer ${auth}`}})]);const aj=await a.json();const rj=await r.json();if(a.ok){setAlerts(aj.alerts??[]);onCount((aj.alerts??[]).filter((x:any)=>!x.resolved).length)}else notice(aj.error);if(r.ok)setRuns(rj.runs??[]);setLoading(false)}useEffect(()=>{load()},[]);async function resolve(id:string,resolved=true){const r=await fetch("/api/admin/alerts",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id,resolved})});if(!r.ok)notice((await r.json()).error);return r.ok}async function bulk(rows:any[],label:string){if(!rows.length)return;if(!window.confirm(`${label}? This will affect ${rows.length} alert${rows.length===1?"":"s"}.`))return;let ok=0;for(const a of rows){if(await resolve(a.id,true))ok++}notice(`${ok} alert${ok===1?"":"s"} cleared`);load()}const unresolved=alerts.filter(a=>!a.resolved);return <section><Heading eyebrow="ADMIN NOTIFICATIONS" title="Alerts"><p>Fixture changes and provider update status.</p></Heading><div className={styles.panel}><div className={styles.buttonRow}><button className={styles.button} onClick={()=>bulk(unresolved,"Clear all visible unresolved alerts")}>Clear all alerts</button></div>{runs[0]&&<p className={styles.notice}>Last provider run: {new Date(runs[0].started_at).toLocaleString("en-GB")} · {String(runs[0].status).toUpperCase()} · {runs[0].requests_used} requests</p>}{loading?<div>Loading alerts…</div>:alerts.length?alerts.map(a=><div className={`${styles.alert} ${a.resolved?styles.resolved:""}`} key={a.id}><div><small>{String(a.severity).toUpperCase()} · {new Date(a.created_at).toLocaleString("en-GB")}</small><strong style={{display:"block"}}>{a.title}</strong><p>{a.message}</p></div><div className={styles.buttonRow}><button className={styles.button} onClick={async()=>{if(await resolve(a.id,!a.resolved))load()}}>{a.resolved?"Reopen":"Clear this alert"}</button>{!a.resolved&&<button className={styles.button} onClick={()=>bulk(unresolved.filter(x=>x.title===a.title),`Clear all alerts of type “${a.title}”`)}>Clear this type</button>}</div></div>):<div>No alerts.</div>}</div></section>}
+function AlertsPage({notice,onCount}:{notice:(m:string)=>void;onCount:(n:number)=>void}){
+  const [alerts,setAlerts]=useState<any[]>([]);
+  const [runs,setRuns]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [showResolved,setShowResolved]=useState(false);
+  async function load(){
+    setLoading(true);
+    const auth=await token();
+    const [a,r]=await Promise.all([fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${auth}`}}),fetch("/api/admin/provider-sync",{headers:{authorization:`Bearer ${auth}`}})]);
+    const aj=await a.json(); const rj=await r.json();
+    if(a.ok){const cleaned=(aj.alerts??[]).filter((item:any)=>!isTimezoneOnlyAlert(item));setAlerts(cleaned);onCount(cleaned.filter((item:any)=>!item.resolved).length)}else notice(aj.error);
+    if(r.ok)setRuns(rj.runs??[]);
+    setLoading(false);
+  }
+  useEffect(()=>{load()},[]);
+  async function resolve(id:string,resolved=true){const r=await fetch("/api/admin/alerts",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id,resolved})});if(!r.ok)notice((await r.json()).error);return r.ok}
+  async function bulk(rows:any[],label:string){if(!rows.length)return;if(!window.confirm(`${label}? This will affect ${rows.length} alert${rows.length===1?"":"s"}.`))return;let ok=0;for(const a of rows){if(await resolve(a.id,true))ok++}notice(`${ok} alert${ok===1?"":"s"} cleared`);load()}
+  const unresolved=alerts.filter(a=>!a.resolved);
+  const resolved=alerts.filter(a=>a.resolved);
+  const visible=showResolved?resolved:unresolved;
+  const run=runs[0];
+  return <section className={styles.alertsPage}>
+    <Heading eyebrow="ADMIN NOTIFICATIONS" title="Alerts"><p>Only meaningful fixture changes that may need league-admin attention.</p></Heading>
+    {run&&<div className={styles.providerStatusCard}>
+      <div><span>LAST PROVIDER CHECK</span><strong>{String(run.status).toUpperCase()}</strong></div>
+      <div><span>RUN TIME</span><strong>{formatAlertTime(run.started_at)}</strong></div>
+      <div><span>API REQUESTS</span><strong>{run.requests_used ?? 0}</strong></div>
+    </div>}
+    <div className={styles.alertToolbar}>
+      <div className={styles.alertTabs}>
+        <button className={!showResolved?styles.alertTabActive:styles.alertTab} onClick={()=>setShowResolved(false)}>Needs attention <b>{unresolved.length}</b></button>
+        <button className={showResolved?styles.alertTabActive:styles.alertTab} onClick={()=>setShowResolved(true)}>Resolved <b>{resolved.length}</b></button>
+      </div>
+      {!showResolved&&unresolved.length>0&&<button className={styles.button} onClick={()=>bulk(unresolved,"Clear all current alerts")}>Clear all</button>}
+    </div>
+    <div className={styles.alertList}>
+      {loading?<div className={styles.notice}>Loading alerts…</div>:visible.length?visible.map(a=>{
+        const changes=alertChanges(a);
+        const fixtureName=String(a.title??"").replace(/^Pick affected:\s*/i,"") || `${a.fixtures?.home_team??"Fixture"} v ${a.fixtures?.away_team??""}`;
+        const member=a.profiles?.display_name;
+        const severity=String(a.severity??"warning").toLowerCase();
+        return <article className={`${styles.alertCard} ${a.resolved?styles.alertCardResolved:""}`} key={a.id}>
+          <header className={styles.alertCardHeader}>
+            <span className={`${styles.alertSeverity} ${severity==="critical"?styles.alertCritical:styles.alertWarning}`}>{severity==="critical"?"ACTION NEEDED":"CHECK CHANGE"}</span>
+            <time>{formatAlertTime(a.created_at)}</time>
+          </header>
+          <div className={styles.alertCardBody}>
+            <h3>{fixtureName}</h3>
+            {member&&<p className={styles.alertMember}>Pick belongs to <strong>{member}</strong></p>}
+            <div className={styles.alertChangeList}>{changes.map((change:string,index:number)=><div key={`${a.id}-${index}`}>{change}</div>)}</div>
+          </div>
+          <footer className={styles.alertCardActions}>
+            <button className={styles.button} onClick={async()=>{if(await resolve(a.id,!a.resolved))load()}}>{a.resolved?"Reopen alert":"Mark resolved"}</button>
+            {!a.resolved&&<button className={styles.button} onClick={()=>bulk(unresolved.filter(x=>x.title===a.title),`Clear all alerts for ${fixtureName}`)}>Clear same fixture</button>}
+          </footer>
+        </article>
+      }):<div className={styles.alertEmpty}><strong>{showResolved?"No resolved alerts to show":"All clear"}</strong><span>{showResolved?"Resolved items will appear here.":"There are no fixture changes needing attention."}</span></div>}
+    </div>
+  </section>
+}
+
