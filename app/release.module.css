@@ -357,7 +357,7 @@
 .demoUserRow{display:grid;grid-template-columns:minmax(140px,1.2fr) 1fr 1fr 130px 190px;gap:9px;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,.07)}
 .demoUserRow:first-of-type{border-top:0}
 .fixtureDetails,.fixtureDetailsNested,.fixtureDetailsLeague{border-top:1px solid rgba(255,255,255,.065)}
-.fixtureDetails>summary,.fixtureDetailsNested>summary,.fixtureDetailsLeague>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:900}
+.fixtureDetails>summary,.fixtureDetailsNested>summary,.fixtureDetailsLeague>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:flex-start;gap:10px;font-weight:900}
 .fixtureDetails>summary::-webkit-details-marker,.fixtureDetailsNested>summary::-webkit-details-marker,.fixtureDetailsLeague>summary::-webkit-details-marker{display:none}
 .fixtureDetails>summary{padding:14px 6px;color:#f1ddcb;font:700 19px Georgia,serif}
 .fixtureDetails>summary::before,.fixtureDetailsNested>summary::before,.fixtureDetailsLeague>summary::before{content:"›";display:inline-block;margin-right:8px;transition:transform .15s ease;color:#c69b7d}
