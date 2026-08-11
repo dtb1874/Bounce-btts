@@ -35,8 +35,8 @@ type Props = {
 };
 
 const finishedStatuses = ["FT", "AET", "PEN"];
-const RELEASE_VERSION = "1.4.3";
-const RELEASE_DATE = "10 Aug 2026";
+const RELEASE_VERSION = "1.4.3.1";
+const RELEASE_DATE = "11 Aug 2026";
 const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   { id: "pick", label: "Make My Pick", icon: "⚑" },
@@ -539,7 +539,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
       <div>
         <span>ROLL OF HONOUR · ARCHIVE</span>
         <h3>Bounce Legacy</h3>
-        <p>{seasons.length} season{seasons.length===1?"":"s"} stored · {rollOfHonour.length} champion{rollOfHonour.length===1?"":"s"} crowned</p>
+        <p>{seasons.length} season{seasons.length===1?"":"s"} stored · {rollOfHonour.length} champions crowned</p>
       </div>
       <img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/>
     </div>
