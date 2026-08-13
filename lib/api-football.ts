@@ -27,6 +27,17 @@ function isExcluded(home: string, away: string) {
     || teams.includes("hibernian") || /(^|\s)hibs($|\s)/.test(teams);
 }
 
+const DUPLICATE_TEAM_SUFFIXES = new Set(["city", "town", "united", "wanderers", "rovers", "albion", "athletic", "county"]);
+function canonicalTeam(value: string) {
+  const parts = value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
+  while (parts.length > 1 && DUPLICATE_TEAM_SUFFIXES.has(parts[parts.length - 1])) parts.pop();
+  return parts.join(" ");
+}
+function sameFixtureTeams(left: { home_team?: string; away_team?: string }, right: { home_team?: string; away_team?: string }) {
+  return canonicalTeam(String(left.home_team ?? "")) === canonicalTeam(String(right.home_team ?? ""))
+    && canonicalTeam(String(left.away_team ?? "")) === canonicalTeam(String(right.away_team ?? ""));
+}
+
 function isEligible(item: any) {
   const country = String(item.league?.country ?? "");
   const home = String(item.teams?.home?.name ?? "");
@@ -183,7 +194,13 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           provider_updated_at: item.fixture?.timestamp ? new Date(Number(item.fixture.timestamp) * 1000).toISOString() : null,
           last_synced_at: new Date().toISOString(),
         };
-        const { data: existing } = await admin.from("fixtures").select("*").eq("provider_fixture_id", providerId).maybeSingle();
+        const { data: providerRows } = await admin.from("fixtures").select("*").eq("provider_fixture_id", providerId).limit(1);
+        let existing = providerRows?.[0] ?? null;
+        if (!existing && next.gameweek_id) {
+          const { data: sameKickoffRows } = await admin.from("fixtures").select("*")
+            .eq("gameweek_id", next.gameweek_id).eq("kickoff_at", next.kickoff_at);
+          existing = (sameKickoffRows ?? []).find((row: any) => sameFixtureTeams(row, next)) ?? null;
+        }
         if (existing) {
           summary.alertsCreated += await createAffectedAlerts(admin, existing, existing, next);
           const { error } = await admin.from("fixtures").update(next).eq("id", existing.id);

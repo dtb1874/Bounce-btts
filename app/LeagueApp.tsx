@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ShareTableButton from "./ShareTableButton";
 import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
@@ -35,8 +35,8 @@ type Props = {
 };
 
 const finishedStatuses = ["FT", "AET", "PEN"];
-const RELEASE_VERSION = "1.4.5";
-const RELEASE_DATE = "11 Aug 2026";
+const RELEASE_VERSION = "1.4.6";
+const RELEASE_DATE = "13 Aug 2026";
 const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   { id: "pick", label: "Make My Pick", icon: "⚑" },
@@ -103,6 +103,28 @@ function fixtureSort(a: Fixture, b: Fixture) {
   const ar = competitionPriority.indexOf(competitionDisplayName(a)), br = competitionPriority.indexOf(competitionDisplayName(b));
   return (ar < 0 ? 999 : ar) - (br < 0 ? 999 : br) || competitionDisplayName(a).localeCompare(competitionDisplayName(b)) || a.kickoff_at.localeCompare(b.kickoff_at) || a.home_team.localeCompare(b.home_team);
 }
+const duplicateTeamSuffixes = new Set(["city","town","united","wanderers","rovers","albion","athletic","county"]);
+function canonicalFixtureTeam(value:string){
+  const parts=normaliseText(value).split(" ").filter(Boolean);
+  while(parts.length>1&&duplicateTeamSuffixes.has(parts[parts.length-1]))parts.pop();
+  return parts.join(" ");
+}
+function fixtureIdentityKey(fixture:Fixture){
+  const instant=new Date(fixture.kickoff_at).toISOString().slice(0,16);
+  return `${instant}|${canonicalFixtureTeam(fixture.home_team)}|${canonicalFixtureTeam(fixture.away_team)}`;
+}
+function fixtureRichness(fixture:Fixture,preferredIds?:Set<string>){
+  return (preferredIds?.has(fixture.id)?1000:0)+(fixture.source==="api-football"?40:0)+(fixture.odds_fractional?12:0)+(fixture.home_score!=null&&fixture.away_score!=null?10:0)+(fixture.status!=="NS"?4:0);
+}
+function dedupeFixtures(rows:Fixture[],preferredIds?:Set<string>){
+  const unique=new Map<string,Fixture>();
+  for(const fixture of rows){
+    const key=fixtureIdentityKey(fixture);
+    const existing=unique.get(key);
+    if(!existing||fixtureRichness(fixture,preferredIds)>fixtureRichness(existing,preferredIds))unique.set(key,fixture);
+  }
+  return Array.from(unique.values());
+}
 function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
 function formatAlertTime(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
 function sameMoment(a: unknown,b: unknown) { const left=Date.parse(String(a??"")); const right=Date.parse(String(b??"")); return Number.isFinite(left)&&Number.isFinite(right)&&left===right; }
@@ -156,8 +178,9 @@ export default function LeagueApp(props: Props) {
   const [alertsCount,setAlertsCount] = useState(0);
   const [rouss,setRouss] = useState(false);
   const gameweek = initialGameweeks.find(g => g.id === gameweekId) ?? initialGameweek;
-  const currentFixtures = useMemo(() => fixtures.filter(f => f.gameweek_id === gameweek?.id), [fixtures,gameweek?.id]);
   const currentPredictions = useMemo(() => predictions.filter(p => p.gameweek_id === gameweek?.id), [predictions,gameweek?.id]);
+  const selectedFixtureIds = useMemo(() => new Set(currentPredictions.map(p=>p.fixture_id)), [currentPredictions]);
+  const currentFixtures = useMemo(() => dedupeFixtures(fixtures.filter(f => f.gameweek_id === gameweek?.id),selectedFixtureIds), [fixtures,gameweek?.id,selectedFixtureIds]);
   const isOpen = Boolean(!isReadOnly && gameweek && (isAdmin || (gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at).getTime() <= now) && new Date(gameweek.locks_at).getTime() > now)));
   const selectedPrediction = currentPredictions.find(p => p.member_id === viewerProfile.id);
   const selectedFixture = currentFixtures.find(f => f.id === selectedPrediction?.fixture_id);
@@ -242,7 +265,7 @@ export default function LeagueApp(props: Props) {
       <div className={styles.content}><div className={styles.page}>
         {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen} role={effectiveRole} myId={viewerProfile.id} alertsCount={alertsCount} setView={setView}/>}
         {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>}
-        {view==="fixtures" && <FixturesPage fixtures={allFixtures}/>}
+        {view==="fixtures" && <FixturesPage fixtures={dedupeFixtures(allFixtures)}/>}
         {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee}/>}
         {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>}
         {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>}
@@ -655,7 +678,7 @@ function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
 }
 function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <section><Heading eyebrow="DEMO MODE" title={title}><p>{text}</p></Heading><div className={styles.panel}><div className={styles.demoNotice}>This section is intentionally read-only in Demo Mode.</div></div></section>}
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
-function ReleaseHistory(){const releases=[{version:RELEASE_VERSION,date:RELEASE_DATE,summary:"Consistent collapsible fixture navigation and results grouping",changes:["Country and competition labels now stay beside their chevrons across collapsible fixture views","Results now uses collapsible day, country and competition groups","Selected Results are collapsible with a clear pick count","Same collapsible layout behaviour across browser, iPhone and Android","BST/UTC-equivalent kickoffs no longer create false alerts","Normal live/finished status progression no longer creates critical pick alerts","Alerts redesigned into readable mobile-first cards with unresolved/resolved views","Ryan correctly shown as reigning 2025/26 champion","History archive now opens on the latest completed season","Admin Selections now uses the same searchable fixture picker in browser, iPhone and Android","League History redesigned with archive hero, trophy artwork and richer roll of honour cards","League Table upgraded with leader spotlight cards and stronger table styling","Mobile and desktop polish for archive/table presentation","Mobile Dashboard and league/history table cleanup","League tables retain P, W, S-N, 0-0 and PTS","Form range controls for 6, 12 or 18 gameweeks and shareable form snapshot","Collapsible fixture days, countries and competitions","Search filtering retained across fixture views","Ultimate Admin read-only user emulation","Read-only Demo Mode with Member/Admin views and masked credentials","Release History added to About","Demo Guest backend compatibility and league-isolation safeguards"]},{version:"1.3.x",date:"10 Aug 2026",summary:"Dashboard restoration and scoring repair",changes:["Restored richer Bounce/Hearts dashboard presentation","Repaired Gameweek 1 scoring flow and result update validation","Restored six-week form table and richer league presentation"]}];return <div><h3>Release History</h3>{releases.map((r,i)=><details className={styles.releaseItem} key={r.version} open={i===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}</div>}
+function ReleaseHistory(){const releases=[{version:RELEASE_VERSION,date:RELEASE_DATE,summary:"Fixture integrity, admin stability and member mobile polish",changes:["Fixture lists suppress duplicate real-world matches while preserving selected fixture records","Admin bulk selections no longer disappear during the 45-second live refresh","Member mobile dashboard prioritises Make My Pick, League Table, Recent Form and Everyone’s Picks without removing any features","Maroon and gold presentation is strengthened with subtle Edinburgh / St Giles artwork across key surfaces","Combined accumulator odds use bookmaker-style whole-number x/1 presentation rounded down","Country and competition labels now stay beside their chevrons across collapsible fixture views","Results now uses collapsible day, country and competition groups","Selected Results are collapsible with a clear pick count","Same collapsible layout behaviour across browser, iPhone and Android","BST/UTC-equivalent kickoffs no longer create false alerts","Normal live/finished status progression no longer creates critical pick alerts","Alerts redesigned into readable mobile-first cards with unresolved/resolved views","Ryan correctly shown as reigning 2025/26 champion","History archive now opens on the latest completed season","Admin Selections now uses the same searchable fixture picker in browser, iPhone and Android","League History redesigned with archive hero, trophy artwork and richer roll of honour cards","League Table upgraded with leader spotlight cards and stronger table styling","Mobile and desktop polish for archive/table presentation","Mobile Dashboard and league/history table cleanup","League tables retain P, W, S-N, 0-0 and PTS","Form range controls for 6, 12 or 18 gameweeks and shareable form snapshot","Collapsible fixture days, countries and competitions","Search filtering retained across fixture views","Ultimate Admin read-only user emulation","Read-only Demo Mode with Member/Admin views and masked credentials","Release History added to About","Demo Guest backend compatibility and league-isolation safeguards"]},{version:"1.3.x",date:"10 Aug 2026",summary:"Dashboard restoration and scoring repair",changes:["Restored richer Bounce/Hearts dashboard presentation","Repaired Gameweek 1 scoring flow and result update validation","Restored six-week form table and richer league presentation"]}];return <div><h3>Release History</h3>{releases.map((r,i)=><details className={styles.releaseItem} key={r.version} open={i===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}</div>}
 
 function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":role==="guest"?"Demo Guest":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}
 
@@ -707,7 +730,13 @@ function SelectionsAdmin({gameweek,profiles,fixtures,predictions,adjustments,not
   const orderedFixtures=useMemo(()=>[...fixtures].sort(fixtureSort),[fixtures]);
   const [draft,setDraft]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState(false);
-  useEffect(()=>{setDraft(Object.fromEntries(active.map(p=>[p.id,current.find(x=>x.member_id===p.id)?.fixture_id??""])))},[active,current]);
+  const draftGameweekRef=useRef<string|null>(null);
+  useEffect(()=>{
+    const gwId=gameweek?.id??null;
+    if(draftGameweekRef.current===gwId)return;
+    draftGameweekRef.current=gwId;
+    setDraft(Object.fromEntries(active.map(p=>[p.id,current.find(x=>x.member_id===p.id)?.fixture_id??""])));
+  },[gameweek?.id,active,current]);
   const changed=active.filter(p=>(draft[p.id]??"")!==(current.find(x=>x.member_id===p.id)?.fixture_id??""));
   function takenBy(fixtureId:string,memberId:string){const owner=active.find(other=>other.id!==memberId&&draft[other.id]===fixtureId);return owner?.display_name??null;}
   async function saveAll(){

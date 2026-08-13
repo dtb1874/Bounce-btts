@@ -429,3 +429,43 @@
   .alertCardHeader{align-items:flex-start;flex-direction:column;gap:6px}.alertCardHeader time{white-space:normal}.alertCardBody h3{font-size:18px}.alertChangeList>div{font-size:11px}
   .alertCardActions{display:grid;grid-template-columns:1fr}.alertCardActions .button{width:100%;min-height:42px}.alertEmpty{padding:20px 14px}
 }
+
+
+/* === v1.4.6 member mobile hierarchy / Edinburgh art pass === */
+.title,.eyebrow{color:#d6b58f}
+.panel::after{opacity:.04}
+.dashboardIntro::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:url("/assets/st-giles-round.jpg") 93% 50%/170px auto no-repeat;
+  opacity:.035;mix-blend-mode:screen
+}
+.dashboardIntro{position:relative;overflow:hidden;border-color:rgba(172,119,83,.26)}
+.dashboard .panel,.leaguePage .panel,.historyPage .panel{border-color:rgba(125,67,82,.5)}
+.dashboard .panelHeading h3,.leaguePage h3,.historyPage h3{color:#f0dfcc}
+
+@media(max-width:650px){
+  .dashboard{display:flex;flex-direction:column;gap:11px}
+  .dashboardIntro{order:0}
+  .dashboardStats{order:1}
+  .dashboardMain{display:contents}
+  .dashboardPrimary,.dashboardSide{display:contents}
+  .pickPanel{order:2;border-color:rgba(202,157,105,.52);box-shadow:0 14px 34px rgba(0,0,0,.26),inset 0 0 0 1px rgba(116,32,52,.24)}
+  .tablePreview{order:3}
+  .formPanel{order:4}
+  .dashboardPrimary>.panel:not(.pickPanel){order:5}
+  .dashboardSide>.panel:not(.tablePreview){order:6}
+  .pickPanel .linkButton,.pickPanel .primary{min-height:44px;background:linear-gradient(180deg,#7c263d,#641b31);border-color:#a77763;color:#f6dfbd}
+  .pickPanel .panelHeading{gap:8px;align-items:center}
+  .pickPanel .panelHeading .linkButton{white-space:nowrap}
+  .tablePreview,.formPanel,.dashboardPrimary>.panel:not(.pickPanel){background:linear-gradient(150deg,rgba(23,17,22,.985),rgba(12,13,17,.99))}
+  .tablePreview::before,.formPanel::before{
+    content:"";position:absolute;right:-28px;top:-35px;width:145px;height:145px;
+    background:url("/assets/st-giles-round.jpg") center/contain no-repeat;opacity:.025;pointer-events:none
+  }
+  .dashboardStats{margin-bottom:1px}
+  .quickLinks{grid-template-columns:1fr 1fr}
+  .quickLinks button{min-height:66px}
+  .selectionRow .fixturePicker{width:100%}
+  .selectionRow .unsavedSelection{padding:4px 8px;border-radius:999px;background:rgba(116,32,52,.22);border:1px solid rgba(201,157,116,.24)}
+  .adminTabs{position:sticky;top:0;z-index:20;padding:7px 0;background:linear-gradient(180deg,#101014 75%,rgba(16,16,20,0))}
+}

@@ -33,5 +33,7 @@ export function decimalToFractional(decimal: number, maxDenominator = 100) {
 export function combinedFractional(values: Array<string | null | undefined>) {
   const decimals = values.map(fractionalToDecimal).filter((v): v is number => v !== null);
   if (!decimals.length) return "Odds unavailable";
-  return decimalToFractional(decimals.reduce((total, value) => total * value, 1));
+  const combinedDecimal = decimals.reduce((total, value) => total * value, 1);
+  const wholeFractional = Math.floor(Math.max(0, combinedDecimal - 1));
+  return `${wholeFractional}/1`;
 }
