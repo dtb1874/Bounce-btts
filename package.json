@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "python release-v1.4.7.2/apply_release.py && next build",
+    "build": "python release-v1.4.7.2/apply_release.py && python release-v1.4.7.3/fix_css.py && next build",
     "start": "next start",
     "lint": "next lint"
   },
