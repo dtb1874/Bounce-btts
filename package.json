@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "printf '\\n/* v1.4.7.2 — consistent, prominent sharing actions */\\n.headingActions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}.shareAction{min-height:48px;display:grid;grid-template-columns:28px auto;grid-template-rows:auto auto;column-gap:9px;align-items:center;border:1px solid #a65b70;border-radius:11px;padding:8px 13px;background:linear-gradient(180deg,#8a2d47,#641b31);color:#fff3e5;font-weight:800;box-shadow:0 8px 22px rgba(82,21,38,.3);text-align:left}.shareAction>span{grid-row:1/3;font-size:21px;color:#f0cfaa}.shareAction>strong{font-size:12px}.shareAction>small{font-size:9px;color:#e4cdb8}\\n' >> app/release.module.css && printf '\\n.dataShareButton{min-height:48px;display:grid;grid-template-columns:28px auto;grid-template-rows:auto auto;column-gap:9px;align-items:center;border:1px solid #a65b70;border-radius:11px;padding:8px 13px;background:linear-gradient(180deg,#8a2d47,#641b31);color:#fff3e5;font-weight:800;box-shadow:0 8px 22px rgba(82,21,38,.3);text-align:left}.dataShareButton>span{grid-row:1/3;font-size:21px;color:#f0cfaa}.dataShareButton>strong{font-size:12px}.dataShareButton>small{font-size:9px;color:#e4cdb8}.dataShareButton:disabled{opacity:.55}\\n' >> app/globals.css && python release-v1.4.7.2/apply_release.py && next build",
     "start": "next start",
     "lint": "next lint"
   },
