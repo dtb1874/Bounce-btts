@@ -12,3 +12,5 @@ Compatibility
 - No database migration.
 - No API changes.
 - app/LeagueApp.tsx only.
+
+Verification build included before release to main.
