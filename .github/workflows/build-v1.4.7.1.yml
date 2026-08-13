@@ -1,0 +1,33 @@
+name: Build v1.4.7.1 patch
+
+on:
+  push:
+    branches:
+      - release/v1.4.7.1
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python release-v1.4.7.1/apply_release.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Build compatibility check
+        run: npm run build
+      - name: Commit verified patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/LeagueApp.tsx
+          git commit -m "Build Bounce BTTS v1.4.7.1" || exit 0
+          git push
