@@ -1,4 +1,4 @@
-# Bounce BTTS v1.4.6 release transformer - verified trigger
+# Bounce BTTS v1.4.6 release transformer - compatibility build trigger
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
