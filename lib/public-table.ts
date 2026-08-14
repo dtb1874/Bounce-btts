@@ -182,7 +182,7 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
           adjustments.some((adjustment) => adjustment.member_id === row.id && adjustment.gameweek_id === gameweek.id);
         return hasEntry ? predictionPoints + adjustmentPoints : null;
       });
-      return { id: row.id, name: row.name, values, total: values.reduce((sum, value) => sum + Number(value ?? 0), 0) };
+      return { id: row.id, name: row.name, values, total: values.reduce<number>((sum, value) => sum + Number(value ?? 0), 0) };
     })
     .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
