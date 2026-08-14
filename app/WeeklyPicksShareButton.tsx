@@ -20,17 +20,17 @@ type Props = {
 };
 
 const bettingCompetitionOrder: Array<[RegExp, number]> = [
-  [/premier league/i, 10],
-  [/championship/i, 20],
-  [/league two/i, 30],
-  [/league one/i, 40],
-  [/scottish premiership/i, 50],
-  [/scottish championship/i, 60],
-  [/scottish league one/i, 70],
-  [/scottish league two/i, 80],
-  [/national league north/i, 100],
-  [/national league south/i, 110],
-  [/national league/i, 90],
+  [/\benglish premier league\b/i, 10],
+  [/\benglish championship\b/i, 20],
+  [/\benglish league two\b/i, 30],
+  [/\benglish league one\b/i, 40],
+  [/\bscottish premiership\b/i, 50],
+  [/\bscottish championship\b/i, 60],
+  [/\bscottish league one\b/i, 70],
+  [/\bscottish league two\b/i, 80],
+  [/\bnational league north\b/i, 100],
+  [/\bnational league south\b/i, 110],
+  [/\bnational league\b/i, 90],
 ];
 
 function competitionRank(name:string) {
