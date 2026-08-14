@@ -19,14 +19,47 @@ type Props = {
   disabled?: boolean;
 };
 
+const bettingCompetitionOrder: Array<[RegExp, number]> = [
+  [/premier league/i, 10],
+  [/championship/i, 20],
+  [/league two/i, 30],
+  [/league one/i, 40],
+  [/scottish premiership/i, 50],
+  [/scottish championship/i, 60],
+  [/scottish league one/i, 70],
+  [/scottish league two/i, 80],
+  [/national league north/i, 100],
+  [/national league south/i, 110],
+  [/national league/i, 90],
+];
+
+function competitionRank(name:string) {
+  return bettingCompetitionOrder.find(([pattern])=>pattern.test(name))?.[1] ?? 500;
+}
+
+function sortForBettingPage(picks:WeeklyPick[]) {
+  return [...picks].sort((a,b)=>{
+    const kickoffDiff=new Date(a.kickoffAt).getTime()-new Date(b.kickoffAt).getTime();
+    if(kickoffDiff!==0)return kickoffDiff;
+    const competitionDiff=competitionRank(a.competition)-competitionRank(b.competition);
+    if(competitionDiff!==0)return competitionDiff;
+    const competitionNameDiff=a.competition.localeCompare(b.competition,"en-GB",{sensitivity:"base"});
+    if(competitionNameDiff!==0)return competitionNameDiff;
+    const homeDiff=a.homeTeam.localeCompare(b.homeTeam,"en-GB",{sensitivity:"base"});
+    if(homeDiff!==0)return homeDiff;
+    return a.awayTeam.localeCompare(b.awayTeam,"en-GB",{sensitivity:"base"});
+  });
+}
+
 function roundedRect(ctx: CanvasRenderingContext2D, x:number, y:number, w:number, h:number, r:number) {
   ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
 }
 
 async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks:WeeklyPick[]) {
+  const sortedPicks=sortForBettingPage(picks);
   const width=1200, rowHeight=112, headerHeight=245, footerHeight=145;
-  const height=headerHeight + Math.max(1,picks.length)*rowHeight + footerHeight;
+  const height=headerHeight + Math.max(1,sortedPicks.length)*rowHeight + footerHeight;
   const canvas=document.createElement("canvas"); canvas.width=width; canvas.height=height;
   const ctx=canvas.getContext("2d"); if(!ctx) throw new Error("Unable to create image.");
   const bg=ctx.createLinearGradient(0,0,width,height); bg.addColorStop(0,"#090a0e"); bg.addColorStop(.62,"#171116"); bg.addColorStop(1,"#421524");
@@ -38,7 +71,7 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
   ctx.fillStyle="#f0cfaa"; ctx.font="800 28px Arial,sans-serif"; ctx.fillText("WEEKLY PICKS",905,135);
   ctx.strokeStyle="#6b3442"; ctx.lineWidth=2; ctx.beginPath();ctx.moveTo(70,212);ctx.lineTo(1130,212);ctx.stroke();
 
-  picks.forEach((pick,index)=>{
+  sortedPicks.forEach((pick,index)=>{
     const y=headerHeight+index*rowHeight;
     ctx.fillStyle=index%2?"rgba(255,255,255,.025)":"rgba(112,31,50,.22)"; roundedRect(ctx,58,y+7,1084,rowHeight-14,12);ctx.fill();
     ctx.fillStyle="#eadfd4";ctx.font="800 25px Arial,sans-serif";ctx.fillText(pick.player.slice(0,24),82,y+42);
@@ -50,9 +83,9 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
     ctx.fillStyle="#c5ad96";ctx.font="700 17px Arial,sans-serif";ctx.fillText("BTTS",1010,y+32);
     ctx.fillStyle="#ffe0b9";ctx.font="800 29px Arial,sans-serif";ctx.fillText(pick.odds??"—",1010,y+67);
   });
-  if(!picks.length){ctx.fillStyle="#d2c7bd";ctx.font="600 25px Arial,sans-serif";ctx.fillText("No selections submitted yet.",70,headerHeight+65);}
-  const footerY=headerHeight+Math.max(1,picks.length)*rowHeight;
-  const combined=combinedFractional(picks.map(p=>p.odds));
+  if(!sortedPicks.length){ctx.fillStyle="#d2c7bd";ctx.font="600 25px Arial,sans-serif";ctx.fillText("No selections submitted yet.",70,headerHeight+65);}
+  const footerY=headerHeight+Math.max(1,sortedPicks.length)*rowHeight;
+  const combined=combinedFractional(sortedPicks.map(p=>p.odds));
   ctx.fillStyle="#ead5bd";ctx.font="800 24px Arial,sans-serif";ctx.fillText(`COMBINED ODDS: ${combined}`,70,footerY+52);
   ctx.fillStyle="#908781";ctx.font="500 17px Arial,sans-serif";ctx.fillText("Odds may change after the daily check.",70,footerY+88);
   ctx.fillStyle="#b99f8a";ctx.font="700 18px Arial,sans-serif";ctx.fillText(window.location.host,900,footerY+88);
