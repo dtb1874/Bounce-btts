@@ -1,0 +1,38 @@
+.publicPanel{
+  width:min(980px,calc(100% - 30px));
+  margin:0 auto 22px;
+  padding:22px;
+  border:1px solid #443039;
+  border-radius:14px;
+  background:
+    linear-gradient(145deg,rgba(25,18,23,.97),rgba(12,12,16,.98)),
+    url('/assets/st-giles-heart.jpg') center/cover;
+  box-shadow:0 18px 50px rgba(0,0,0,.32);
+}
+.sectionHeading{display:flex;align-items:end;justify-content:space-between;margin-bottom:16px}
+.sectionHeading span{color:#b99e85;letter-spacing:.15em;font-size:.7rem;font-weight:800}
+.sectionHeading h3{margin:5px 0 0;color:#f4e8db;font:700 1.65rem Georgia,serif}
+.summaryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.summaryGrid article,.factGrid article{padding:13px;border:1px solid rgba(199,175,149,.23);border-radius:11px;background:linear-gradient(145deg,rgba(73,25,39,.58),rgba(20,16,21,.95))}
+.summaryGrid span,.factGrid span,.insightCard div span,.insightCard footer span{display:block;color:#b99f8a;font-size:.58rem;font-weight:900;letter-spacing:.08em}
+.summaryGrid strong,.factGrid strong{display:block;margin-top:5px;color:#f2e4d3;font:700 1.2rem Georgia,serif}
+.summaryGrid small,.factGrid small{display:block;margin-top:4px;color:#9f938c;font-size:.68rem;line-height:1.4}
+.factGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.factGrid article{border-top:2px solid #caa45e}
+.formTable{overflow-x:auto;border:1px solid #3c2c34;border-radius:10px;background:#0f0e12}
+.formRow{display:grid;grid-template-columns:55px minmax(170px,1fr) repeat(6,58px) 66px;min-width:640px;align-items:center;min-height:46px;padding:0 10px;border-bottom:1px solid #2b2429;color:#d8d0ca;font-size:.78rem}
+.formRow:last-child{border-bottom:0}
+.formHeader{min-height:38px;background:#24151c;color:#bfa48c;font-size:.62rem;font-weight:900;letter-spacing:.05em}
+.formRow>span:not(:nth-child(2)),.formRow>b{text-align:center}
+.formRow strong{color:#f1e5d8}
+.formRow b{color:#efcf92;font-size:.92rem}
+.good{color:#9ee0b1;font-weight:900}.ok{color:#efc17d;font-weight:900}.bad{color:#ff9aa8;font-weight:900}
+.insightGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.insightCard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:13px;border:1px solid rgba(112,66,77,.45);border-radius:11px;background:rgba(14,12,16,.86)}
+.insightCard header,.insightCard footer{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.insightCard header strong{color:#f0e2d5;font:700 1rem Georgia,serif}.insightCard header span{color:#d5ad67;font-weight:900}
+.insightCard div b{display:block;margin-top:4px;color:#eee2d5;font-size:.84rem}
+.insightCard footer{padding-top:6px;border-top:1px solid #30262b}.insightCard footer strong{color:#c9ad91;font-size:.72rem;text-align:right}
+.empty{color:#9f9792;text-align:center;padding:20px}
+@media(max-width:900px){.factGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.summaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.publicPanel{padding:12px}.summaryGrid,.factGrid,.insightGrid{grid-template-columns:1fr}.sectionHeading{align-items:flex-start}.formRow{grid-template-columns:42px minmax(145px,1fr) repeat(6,48px) 56px;font-size:.72rem;padding:0 7px}}
