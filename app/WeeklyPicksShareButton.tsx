@@ -22,8 +22,8 @@ type Props = {
 const bettingCompetitionOrder: Array<[RegExp, number]> = [
   [/\benglish premier league\b/i, 10],
   [/\benglish championship\b/i, 20],
-  [/\benglish league two\b/i, 30],
-  [/\benglish league one\b/i, 40],
+  [/\benglish league one\b/i, 30],
+  [/\benglish league two\b/i, 40],
   [/\bscottish premiership\b/i, 50],
   [/\bscottish championship\b/i, 60],
   [/\bscottish league one\b/i, 70],
