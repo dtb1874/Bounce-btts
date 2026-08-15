@@ -58,7 +58,7 @@ s = s.replace(release_needle, release_replacement, 1)
 league.write_text(s)
 
 css = Path('app/globals.css')
-g = css.read_text()
+g = css.read_text().replace('align-items: end','align-items: flex-end')
 marker = '/* v1.4.8 reminder + mobile cleanup */'
 if marker not in g:
     g += r'''
@@ -88,4 +88,4 @@ if marker not in g:
   .panel::after{opacity:.05!important;background-position:center!important}.dashboardIntro::before{opacity:.045!important}
 }
 '''
-    css.write_text(g)
+css.write_text(g)
