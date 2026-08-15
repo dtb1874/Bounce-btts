@@ -23,6 +23,8 @@ type Props = {
   disabled?: boolean;
 };
 
+type PickState = "win" | "scoreNil" | "zeroZero" | "pending";
+
 const bettingCompetitionOrder: Array<[RegExp, number]> = [
   [/\benglish premier league\b/i, 10],
   [/\benglish championship\b/i, 20],
@@ -37,6 +39,7 @@ const bettingCompetitionOrder: Array<[RegExp, number]> = [
   [/\bnational league\b/i, 90],
 ];
 const liveStatuses=new Set(["1H","2H","ET","P","BT","INT"]);
+const finishedStatuses=new Set(["FT","AET","PEN"]);
 
 function competitionRank(name:string) { return bettingCompetitionOrder.find(([pattern])=>pattern.test(name))?.[1] ?? 500; }
 function sortForBettingPage(picks:WeeklyPick[]) {
@@ -48,8 +51,23 @@ function liveLabel(pick:WeeklyPick){
   if(pick.homeScore==null||pick.awayScore==null)return "";
   if(liveStatuses.has(status))return `${pick.homeScore}–${pick.awayScore} · ${pick.elapsed!=null?`${pick.elapsed}′`:status}`;
   if(status==="HT")return `${pick.homeScore}–${pick.awayScore} · HT`;
-  if(["FT","AET","PEN"].includes(status))return `${pick.homeScore}–${pick.awayScore} · ${status}`;
+  if(finishedStatuses.has(status))return `${pick.homeScore}–${pick.awayScore} · ${status}`;
   return "";
+}
+function pickState(pick:WeeklyPick):{text:string;state:PickState}{
+  const status=pick.status??"";
+  const finished=finishedStatuses.has(status);
+  const home=pick.homeScore, away=pick.awayScore;
+  if(home==null||away==null)return {text:"PENDING",state:"pending"};
+  if(home===0&&away===0)return {text:finished?"0-0  -1":"0-0 LIVE",state:"zeroZero"};
+  if(home>0&&away>0)return {text:finished?"WON  +3":"WINNING",state:"win"};
+  return {text:finished?"SCORE-NIL  +1":"SCORE-NIL LIVE",state:"scoreNil"};
+}
+function stateColours(state:PickState){
+  if(state==="win")return {fill:"#1f7a45",stroke:"#67c58a",text:"#f2fff6"};
+  if(state==="scoreNil")return {fill:"#8b5b16",stroke:"#d6a54c",text:"#fff6df"};
+  if(state==="zeroZero")return {fill:"#7c2031",stroke:"#d05c72",text:"#fff1f4"};
+  return {fill:"#41434a",stroke:"#747984",text:"#edf0f5"};
 }
 
 async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks:WeeklyPick[]) {
@@ -70,18 +88,23 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
     const y=headerHeight+index*rowHeight;
     ctx.fillStyle=index%2?"rgba(255,255,255,.025)":"rgba(112,31,50,.22)"; roundedRect(ctx,58,y+7,1084,rowHeight-14,12);ctx.fill();
     ctx.fillStyle="#eadfd4";ctx.font="800 25px Arial,sans-serif";ctx.fillText(pick.player.slice(0,24),82,y+42);
-    ctx.fillStyle="#f4eee8";ctx.font="700 25px Arial,sans-serif";ctx.fillText(`${pick.homeTeam} v ${pick.awayTeam}`.slice(0,48),330,y+42);
+    ctx.fillStyle="#f4eee8";ctx.font="700 25px Arial,sans-serif";ctx.fillText(`${pick.homeTeam} v ${pick.awayTeam}`.slice(0,42),330,y+42);
     const live=liveLabel(pick);
-    ctx.fillStyle=live?"#f0cfaa":"#a9a09a";ctx.font=live?"800 19px Arial,sans-serif":"500 17px Arial,sans-serif";ctx.fillText(live||pick.competition.slice(0,52),330,y+74);
+    ctx.fillStyle=live?"#f0cfaa":"#a9a09a";ctx.font=live?"800 19px Arial,sans-serif":"500 17px Arial,sans-serif";ctx.fillText(live||pick.competition.slice(0,42),330,y+74);
     ctx.fillStyle="#ad9b8d";ctx.font="600 17px Arial,sans-serif";
     const kickoff=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(pick.kickoffAt)); ctx.fillText(kickoff,82,y+74);
+
+    const outcome=pickState(pick), colours=stateColours(outcome.state);
+    ctx.fillStyle=colours.fill;ctx.strokeStyle=colours.stroke;ctx.lineWidth=1.5;roundedRect(ctx,795,y+52,190,31,15);ctx.fill();ctx.stroke();
+    ctx.fillStyle=colours.text;ctx.font="800 14px Arial,sans-serif";ctx.textAlign="center";ctx.fillText(outcome.text,890,y+73);ctx.textAlign="left";
+
     ctx.fillStyle="#c5ad96";ctx.font="700 17px Arial,sans-serif";ctx.fillText("BTTS",1010,y+32);
     ctx.fillStyle="#ffe0b9";ctx.font="800 29px Arial,sans-serif";ctx.fillText(pick.odds??"—",1010,y+67);
   });
   if(!sortedPicks.length){ctx.fillStyle="#d2c7bd";ctx.font="600 25px Arial,sans-serif";ctx.fillText("No selections submitted yet.",70,headerHeight+65);}
   const footerY=headerHeight+Math.max(1,sortedPicks.length)*rowHeight;
   const combined=combinedFractional(sortedPicks.map(p=>p.odds)); ctx.fillStyle="#ead5bd";ctx.font="800 24px Arial,sans-serif";ctx.fillText(`COMBINED ODDS: ${combined}`,70,footerY+52);
-  ctx.fillStyle="#908781";ctx.font="500 17px Arial,sans-serif";ctx.fillText("Live scores reflect the latest in-app refresh.",70,footerY+88);
+  ctx.fillStyle="#908781";ctx.font="500 17px Arial,sans-serif";ctx.fillText("Live score and BTTS status reflect the latest in-app refresh.",70,footerY+88);
   ctx.fillStyle="#b99f8a";ctx.font="700 18px Arial,sans-serif";ctx.fillText(window.location.host,900,footerY+88);
   const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(new Error("Image creation failed.")),"image/jpeg",.94));
   return new File([blob],`bounce-btts-gw${gameweekNumber}-picks.jpg`,{type:"image/jpeg"});
@@ -90,5 +113,5 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
 export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks,disabled=false}:Props){
   const [busy,setBusy]=useState(false);
   async function share(){ if(disabled||busy)return; setBusy(true); try{ const file=await createPicksImage(gameweekNumber,seasonLabel,picks); const data:ShareData={title:`Bounce BTTS GW${gameweekNumber}`,text:`Bounce BTTS League — GW${gameweekNumber}`,files:[file]}; const nav=navigator as Navigator & {canShare?:(data:ShareData)=>boolean}; if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]}))) await navigator.share(data); else {const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);} } finally {setBusy(false);} }
-  return <button className="dashboardPicksShareButton" onClick={share} disabled={disabled||busy} aria-disabled={disabled||busy}><span aria-hidden="true">{disabled?"🔒":"▣"}</span><strong>{busy?"Creating image…":"Share weekly picks"}</strong><small>{disabled?`Locked until GW ${gameweekNumber} opens`:"Share as a formatted image"}</small></button>;
+  return <button className="dashboardPicksShareButton" onClick={share} disabled={disabled||busy} aria-disabled={disabled||busy}><span aria-hidden="true">{disabled?"🔒":"▣"}</span><strong>{busy?"Creating image…":"Share weekly picks"}</strong><small>{disabled?`Locked until GW ${gameweekNumber} opens`:"Share live picks image"}</small></button>;
 }
