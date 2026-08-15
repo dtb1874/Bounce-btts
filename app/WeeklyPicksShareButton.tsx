@@ -10,6 +10,10 @@ type WeeklyPick = {
   competition: string;
   kickoffAt: string;
   odds: string | null;
+  status?: string | null;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  elapsed?: number | null;
 };
 
 type Props = {
@@ -32,28 +36,20 @@ const bettingCompetitionOrder: Array<[RegExp, number]> = [
   [/\bnational league south\b/i, 110],
   [/\bnational league\b/i, 90],
 ];
+const liveStatuses=new Set(["1H","2H","ET","P","BT","INT"]);
 
-function competitionRank(name:string) {
-  return bettingCompetitionOrder.find(([pattern])=>pattern.test(name))?.[1] ?? 500;
-}
-
+function competitionRank(name:string) { return bettingCompetitionOrder.find(([pattern])=>pattern.test(name))?.[1] ?? 500; }
 function sortForBettingPage(picks:WeeklyPick[]) {
-  return [...picks].sort((a,b)=>{
-    const kickoffDiff=new Date(a.kickoffAt).getTime()-new Date(b.kickoffAt).getTime();
-    if(kickoffDiff!==0)return kickoffDiff;
-    const competitionDiff=competitionRank(a.competition)-competitionRank(b.competition);
-    if(competitionDiff!==0)return competitionDiff;
-    const competitionNameDiff=a.competition.localeCompare(b.competition,"en-GB",{sensitivity:"base"});
-    if(competitionNameDiff!==0)return competitionNameDiff;
-    const homeDiff=a.homeTeam.localeCompare(b.homeTeam,"en-GB",{sensitivity:"base"});
-    if(homeDiff!==0)return homeDiff;
-    return a.awayTeam.localeCompare(b.awayTeam,"en-GB",{sensitivity:"base"});
-  });
+  return [...picks].sort((a,b)=>new Date(a.kickoffAt).getTime()-new Date(b.kickoffAt).getTime() || competitionRank(a.competition)-competitionRank(b.competition) || a.competition.localeCompare(b.competition,"en-GB",{sensitivity:"base"}) || a.homeTeam.localeCompare(b.homeTeam,"en-GB",{sensitivity:"base"}) || a.awayTeam.localeCompare(b.awayTeam,"en-GB",{sensitivity:"base"}));
 }
-
-function roundedRect(ctx: CanvasRenderingContext2D, x:number, y:number, w:number, h:number, r:number) {
-  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+function roundedRect(ctx: CanvasRenderingContext2D, x:number, y:number, w:number, h:number, r:number) { ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function liveLabel(pick:WeeklyPick){
+  const status=pick.status??"";
+  if(pick.homeScore==null||pick.awayScore==null)return "";
+  if(liveStatuses.has(status))return `${pick.homeScore}–${pick.awayScore} · ${pick.elapsed!=null?`${pick.elapsed}′`:status}`;
+  if(status==="HT")return `${pick.homeScore}–${pick.awayScore} · HT`;
+  if(["FT","AET","PEN"].includes(status))return `${pick.homeScore}–${pick.awayScore} · ${status}`;
+  return "";
 }
 
 async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks:WeeklyPick[]) {
@@ -62,8 +58,7 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
   const height=headerHeight + Math.max(1,sortedPicks.length)*rowHeight + footerHeight;
   const canvas=document.createElement("canvas"); canvas.width=width; canvas.height=height;
   const ctx=canvas.getContext("2d"); if(!ctx) throw new Error("Unable to create image.");
-  const bg=ctx.createLinearGradient(0,0,width,height); bg.addColorStop(0,"#090a0e"); bg.addColorStop(.62,"#171116"); bg.addColorStop(1,"#421524");
-  ctx.fillStyle=bg; ctx.fillRect(0,0,width,height);
+  const bg=ctx.createLinearGradient(0,0,width,height); bg.addColorStop(0,"#090a0e"); bg.addColorStop(.62,"#171116"); bg.addColorStop(1,"#421524"); ctx.fillStyle=bg; ctx.fillRect(0,0,width,height);
   ctx.fillStyle="rgba(122,34,55,.26)"; ctx.beginPath(); ctx.arc(1070,110,240,0,Math.PI*2); ctx.fill();
   ctx.fillStyle="#eadbc9"; ctx.font="700 70px Georgia,serif"; ctx.fillText("BOUNCE",70,92);
   ctx.fillStyle="#c8af94"; ctx.font="600 27px Georgia,serif"; ctx.fillText("BTTS LEAGUE",74,136);
@@ -75,19 +70,18 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
     const y=headerHeight+index*rowHeight;
     ctx.fillStyle=index%2?"rgba(255,255,255,.025)":"rgba(112,31,50,.22)"; roundedRect(ctx,58,y+7,1084,rowHeight-14,12);ctx.fill();
     ctx.fillStyle="#eadfd4";ctx.font="800 25px Arial,sans-serif";ctx.fillText(pick.player.slice(0,24),82,y+42);
-    ctx.fillStyle="#f4eee8";ctx.font="700 25px Arial,sans-serif";ctx.fillText(`${pick.homeTeam} v ${pick.awayTeam}`.slice(0,50),330,y+42);
-    ctx.fillStyle="#a9a09a";ctx.font="500 17px Arial,sans-serif";ctx.fillText(pick.competition.slice(0,52),330,y+74);
+    ctx.fillStyle="#f4eee8";ctx.font="700 25px Arial,sans-serif";ctx.fillText(`${pick.homeTeam} v ${pick.awayTeam}`.slice(0,48),330,y+42);
+    const live=liveLabel(pick);
+    ctx.fillStyle=live?"#f0cfaa":"#a9a09a";ctx.font=live?"800 19px Arial,sans-serif":"500 17px Arial,sans-serif";ctx.fillText(live||pick.competition.slice(0,52),330,y+74);
     ctx.fillStyle="#ad9b8d";ctx.font="600 17px Arial,sans-serif";
-    const kickoff=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(pick.kickoffAt));
-    ctx.fillText(kickoff,82,y+74);
+    const kickoff=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(pick.kickoffAt)); ctx.fillText(kickoff,82,y+74);
     ctx.fillStyle="#c5ad96";ctx.font="700 17px Arial,sans-serif";ctx.fillText("BTTS",1010,y+32);
     ctx.fillStyle="#ffe0b9";ctx.font="800 29px Arial,sans-serif";ctx.fillText(pick.odds??"—",1010,y+67);
   });
   if(!sortedPicks.length){ctx.fillStyle="#d2c7bd";ctx.font="600 25px Arial,sans-serif";ctx.fillText("No selections submitted yet.",70,headerHeight+65);}
   const footerY=headerHeight+Math.max(1,sortedPicks.length)*rowHeight;
-  const combined=combinedFractional(sortedPicks.map(p=>p.odds));
-  ctx.fillStyle="#ead5bd";ctx.font="800 24px Arial,sans-serif";ctx.fillText(`COMBINED ODDS: ${combined}`,70,footerY+52);
-  ctx.fillStyle="#908781";ctx.font="500 17px Arial,sans-serif";ctx.fillText("Odds may change after the daily check.",70,footerY+88);
+  const combined=combinedFractional(sortedPicks.map(p=>p.odds)); ctx.fillStyle="#ead5bd";ctx.font="800 24px Arial,sans-serif";ctx.fillText(`COMBINED ODDS: ${combined}`,70,footerY+52);
+  ctx.fillStyle="#908781";ctx.font="500 17px Arial,sans-serif";ctx.fillText("Live scores reflect the latest in-app refresh.",70,footerY+88);
   ctx.fillStyle="#b99f8a";ctx.font="700 18px Arial,sans-serif";ctx.fillText(window.location.host,900,footerY+88);
   const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(new Error("Image creation failed.")),"image/jpeg",.94));
   return new File([blob],`bounce-btts-gw${gameweekNumber}-picks.jpg`,{type:"image/jpeg"});
@@ -95,17 +89,6 @@ async function createPicksImage(gameweekNumber:number, seasonLabel:string, picks
 
 export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks,disabled=false}:Props){
   const [busy,setBusy]=useState(false);
-  async function share(){
-    if(disabled||busy)return; setBusy(true);
-    try{
-      const file=await createPicksImage(gameweekNumber,seasonLabel,picks);
-      const data:ShareData={title:`Bounce BTTS GW${gameweekNumber}`,text:`Bounce BTTS League — GW${gameweekNumber}`,files:[file]};
-      const nav=navigator as Navigator & {canShare?:(data:ShareData)=>boolean};
-      if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]}))) await navigator.share(data);
-      else {const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
-    } finally {setBusy(false);}
-  }
-  return <button className="dashboardPicksShareButton" onClick={share} disabled={disabled||busy} aria-disabled={disabled||busy}>
-    <span aria-hidden="true">{disabled?"🔒":"▣"}</span><strong>{busy?"Creating image…":"Share weekly picks"}</strong><small>{disabled?`Locked until GW ${gameweekNumber} opens`:"Share as a formatted image"}</small>
-  </button>;
+  async function share(){ if(disabled||busy)return; setBusy(true); try{ const file=await createPicksImage(gameweekNumber,seasonLabel,picks); const data:ShareData={title:`Bounce BTTS GW${gameweekNumber}`,text:`Bounce BTTS League — GW${gameweekNumber}`,files:[file]}; const nav=navigator as Navigator & {canShare?:(data:ShareData)=>boolean}; if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]}))) await navigator.share(data); else {const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);} } finally {setBusy(false);} }
+  return <button className="dashboardPicksShareButton" onClick={share} disabled={disabled||busy} aria-disabled={disabled||busy}><span aria-hidden="true">{disabled?"🔒":"▣"}</span><strong>{busy?"Creating image…":"Share weekly picks"}</strong><small>{disabled?`Locked until GW ${gameweekNumber} opens`:"Share as a formatted image"}</small></button>;
 }
