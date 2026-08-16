@@ -3,13 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 type Pred={id:string;gameweek_id:string;member_id:string;fixture_id:string;points_awarded:number|null};
-type Fixture={id:string;home_team:string;away_team:string;kickoff_at:string;status:string;live_elapsed:number|null;home_score:number|null;away_score:number|null;odds_fractional:string|null;competition:string;country:string};
+type Fixture={id:string;home_team:string;away_team:string;kickoff_at:string;status:string;home_score:number|null;away_score:number|null;odds_fractional:string|null;competition:string;country:string};
 type Adjustment={gameweek_id:string;member_id:string;points:number;reason:string};
 type PublicProfile={id:string;display_name:string;active:boolean};
 type PublicGameweek={id:string;number:number;status:string;opens_at:string|null;locks_at:string};
 
 const finished=new Set(["FT","AET","PEN"]);
-function statusText(f:Fixture){if(["1H","2H","ET","P","BT","INT"].includes(f.status)&&f.live_elapsed!=null)return `${f.live_elapsed}′`;return f.status;}
+function statusText(f:Fixture){return f.status;}
 function outcome(f:Fixture,p:Pred):[string,string]{if(p.points_awarded===3)return ["BTTS WON +3","good"];if(p.points_awarded===1)return ["SCORE-NIL +1","warn"];if(p.points_awarded===-1)return ["0-0 -1","bad"];if(f.home_score!=null&&f.away_score!=null){if(f.home_score>0&&f.away_score>0)return [finished.has(f.status)?"BTTS WON +3":"BTTS WINNING","good"];if(f.home_score===0&&f.away_score===0)return [finished.has(f.status)?"0-0 -1":"0-0 LIVE","bad"];return [finished.has(f.status)?"SCORE-NIL +1":"SCORE-NIL LIVE","warn"]}return ["PENDING","neutral"];}
 function comp(f:Fixture){const c=f.competition.toLowerCase();if(f.country==="England"&&c.includes("premier"))return "English Premier League";if(f.country==="England"&&c.includes("championship"))return "English Championship";if(f.country==="England"&&c.includes("league one"))return "English League One";if(f.country==="England"&&c.includes("league two"))return "English League Two";return f.competition;}
 
@@ -31,7 +31,7 @@ export default async function PublicTablePage(){
   if(ids.length){const [pr,ad]=await Promise.all([admin.from("predictions").select("id,gameweek_id,member_id,fixture_id,points_awarded").in("gameweek_id",ids),admin.from("score_adjustments").select("gameweek_id,member_id,points,reason").in("gameweek_id",ids)]);predictions=(pr.data??[]) as Pred[];adjustments=(ad.data??[]) as Adjustment[];}
   const currentPreds=predictions.filter(p=>p.gameweek_id===current?.id);
   const fixtureIds=[...new Set(currentPreds.map(p=>p.fixture_id))];let fixtures:Fixture[]=[];
-  if(fixtureIds.length){const fx=await admin.from("fixtures").select("id,home_team,away_team,kickoff_at,status,live_elapsed,home_score,away_score,odds_fractional,competition,country").in("id",fixtureIds);fixtures=(fx.data??[]) as Fixture[];}
+  if(fixtureIds.length){const fx=await admin.from("fixtures").select("id,home_team,away_team,kickoff_at,status,home_score,away_score,odds_fractional,competition,country").in("id",fixtureIds);fixtures=(fx.data??[]) as Fixture[];}
   const rows=profiles.map(profile=>{let played=0,wins=0,scoreNil=0,zeros=0,points=0;for(const p of predictions.filter(x=>x.member_id===profile.id)){if(p.points_awarded==null)continue;played++;points+=p.points_awarded;if(p.points_awarded===3)wins++;if(p.points_awarded===1)scoreNil++;if(p.points_awarded===-1)zeros++;}for(const a of adjustments.filter(x=>x.member_id===profile.id)){const scored=predictions.some(p=>p.member_id===a.member_id&&p.gameweek_id===a.gameweek_id&&p.points_awarded!=null);if(scored&&a.reason.trim().toLowerCase()==="missed selection")continue;if(!scored)played++;points+=a.points;}return{id:profile.id,name:profile.display_name,played,wins,scoreNil,zeros,points};}).sort((a,b)=>b.points-a.points||a.zeros-b.zeros||b.wins-a.wins||a.name.localeCompare(b.name));
   const picks=profiles.map(profile=>{const p=currentPreds.find(x=>x.member_id===profile.id);const f=fixtures.find(x=>x.id===p?.fixture_id);return{profile,p,f};});
   const liveCount=picks.filter(x=>x.f&&["1H","HT","2H","ET","P","BT","INT"].includes(x.f.status)).length;
