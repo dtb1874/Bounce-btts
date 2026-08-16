@@ -3,6 +3,7 @@ import "./tynecastle-watermark.css";
 import "./league-table.css";
 import "./public-v2.css";
 import "./user-heart-watermark.css";
+import "./dashboard-heart.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
