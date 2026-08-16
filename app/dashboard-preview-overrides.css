@@ -1,14 +1,22 @@
-/* v2 preview-only dashboard refinement: more obvious floating GW selector */
+/* v2 preview-only gameweek browser refinement.
+   On mobile the selector is deliberately static: it sits on the bottom-right
+   divider of the BOUNCE skyline header and scrolls away with the page. */
 @media(max-width:650px){
+  main[data-view]{
+    position:relative!important;
+  }
+
   [aria-label="Gameweek selector"]{
+    position:absolute!important;
     right:10px!important;
-    top:46vh!important;
+    top:120px!important;
     bottom:auto!important;
     transform:translateY(-50%)!important;
     grid-template-columns:36px auto 36px!important;
     border-radius:14px!important;
     border-color:rgba(232,195,111,.58)!important;
-    box-shadow:0 14px 38px rgba(0,0,0,.55)!important;
+    box-shadow:0 12px 30px rgba(0,0,0,.5)!important;
+    z-index:55!important;
   }
   [aria-label="Gameweek selector"] > button{
     min-width:36px!important;
