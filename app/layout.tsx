@@ -5,6 +5,7 @@ import "./public-v2.css";
 import "./user-heart-watermark.css";
 import "./dashboard-preview-overrides.css";
 import "./v2-completion.css";
+import V2CompletionEnhancer from "./V2CompletionEnhancer";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         {children}
+        <V2CompletionEnhancer />
         <script dangerouslySetInnerHTML={{ __html: primaryNavScrollFix }} />
       </body>
     </html>
