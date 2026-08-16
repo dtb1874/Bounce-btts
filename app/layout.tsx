@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./tynecastle-watermark.css";
 import "./league-table.css";
+import "./public-v2.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#071120",
+  themeColor: "#12090f",
   width: "device-width",
   initialScale: 1
 };
