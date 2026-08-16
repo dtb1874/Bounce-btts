@@ -50,10 +50,82 @@
     z-index:56!important;
   }
 
-  /* Dashboard hero hierarchy: title first, season/GW as the gold subtitle. */
+  /* Main skyline title: retain BOUNCE, then display the live season as
+     “— BTTS LEAGUE 2026/27 —”. The year comes from the existing dynamic
+     Season label, so future seasons update without a hard-coded year. */
+  .v2Shell .hero{
+    position:relative!important;
+  }
+  .v2Shell .hero h2{
+    position:relative!important;
+    height:16px!important;
+    margin:5px 0 0!important;
+    font-size:0!important;
+    line-height:16px!important;
+    color:transparent!important;
+    overflow:visible!important;
+  }
+  .v2Shell .hero h2::before{
+    content:"— BTTS LEAGUE"!important;
+    display:block!important;
+    color:var(--v2-gold)!important;
+    font-size:13px!important;
+    line-height:16px!important;
+    font-weight:800!important;
+    letter-spacing:.045em!important;
+    white-space:nowrap!important;
+  }
+  .v2Shell .hero .gwCard{
+    display:block!important;
+    position:absolute!important;
+    left:139px!important;
+    top:52px!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:83px!important;
+    height:18px!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    z-index:6!important;
+  }
+  .v2Shell .hero .gwCard > label{
+    display:block!important;
+    width:83px!important;
+    height:18px!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    white-space:nowrap!important;
+    text-indent:-42px!important;
+    color:var(--v2-gold)!important;
+    font-size:13px!important;
+    line-height:16px!important;
+    font-weight:800!important;
+    letter-spacing:.045em!important;
+    text-transform:none!important;
+  }
+  .v2Shell .hero .gwCard > label::after{
+    content:" —"!important;
+  }
+  .v2Shell .hero .gwCard .gwRow,
+  .v2Shell .hero .gwCard > small,
+  .v2Shell .hero .gwCard .demoSwitch{
+    display:none!important;
+  }
+
+  /* Dashboard hero hierarchy: title first, season/GW as the gold subtitle.
+     This card is intentionally about half the former height. */
   .adminDashboardIntro{
-    min-height:132px!important;
-    padding:18px 20px!important;
+    min-height:70px!important;
+    height:auto!important;
+    padding:10px 14px!important;
     display:flex!important;
     align-items:center!important;
     justify-content:flex-start!important;
@@ -68,28 +140,23 @@
   }
   .adminDashboardIntro h2{
     order:1!important;
-    margin:0 0 7px!important;
+    margin:0 0 5px!important;
     max-width:100%!important;
-    font-size:29px!important;
-    line-height:1.02!important;
+    font-size:25px!important;
+    line-height:1!important;
     text-align:left!important;
   }
   .adminDashboardIntro .eyebrow{
     order:2!important;
     margin:0!important;
-    font-size:9px!important;
-    line-height:1.2!important;
+    font-size:8px!important;
+    line-height:1.15!important;
     letter-spacing:.105em!important;
     font-weight:900!important;
     text-align:left!important;
   }
   .adminDashboardIntro p{
-    order:3!important;
-    margin:7px 0 0!important;
-    max-width:92%!important;
-    font-size:10px!important;
-    line-height:1.35!important;
-    text-align:left!important;
+    display:none!important;
   }
 
   /* Everyone at a glance is the section title. Gameweek/live text is its subtitle. */
