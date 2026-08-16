@@ -1,51 +1,80 @@
-/* Dashboard-only visual refinements.
-   The user's Heart of Midlothian pavement photo is used as a faint crop in the skyline only.
-   This deliberately avoids the pseudo-element path used by the retired circular mosaic treatment. */
-main[data-view="dashboard"] section[data-current-view="dashboard"] > header{
-  background-image:
-    linear-gradient(90deg,rgba(61,17,34,.72),rgba(34,14,24,.55),rgba(29,12,20,.66)),
-    var(--bounce-user-heart),
-    url('/assets/edinburgh-skyline.jpg') !important;
-  background-repeat:no-repeat,no-repeat,no-repeat !important;
-  background-size:cover,300px auto,cover !important;
-  background-position:center,right -62px top -70px,center 42% !important;
-  background-blend-mode:normal,screen,normal !important;
+/* Dashboard-only preview refinements.
+   Important: selectors here use stable DOM attributes, not CSS-module class names.
+   The retired circular mosaic remains suppressed everywhere else. */
+
+/* Dashboard skyline heart: use the user's supplied pavement-heart image as a real,
+   independently faded layer. This selector intentionally has greater specificity than
+   the old .v2Shell .hero::after suppression rule. */
+main[data-view="dashboard"] section[data-current-view="dashboard"] > header::after{
+  content:"" !important;
+  display:block !important;
+  position:absolute !important;
+  z-index:1 !important;
+  top:8px !important;
+  right:10px !important;
+  width:138px !important;
+  height:122px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+  background-image:var(--bounce-user-heart) !important;
+  background-repeat:no-repeat !important;
+  background-size:235% auto !important;
+  background-position:53% 66% !important;
+  opacity:.20 !important;
+  filter:saturate(.72) contrast(1.05) sepia(.10) !important;
+  mix-blend-mode:normal !important;
+  -webkit-mask-image:radial-gradient(ellipse at center,#000 46%,rgba(0,0,0,.82) 66%,transparent 91%) !important;
+  mask-image:radial-gradient(ellipse at center,#000 46%,rgba(0,0,0,.82) 66%,transparent 91%) !important;
 }
 
-/* Keep any historical ::after artwork suppressed; the heart now lives in the header background itself. */
-main[data-view="dashboard"] section[data-current-view="dashboard"] > header::after{
-  display:none !important;
-  content:none !important;
+/* Keep the skyline itself unchanged beneath the new heart layer. */
+main[data-view="dashboard"] section[data-current-view="dashboard"] > header{
+  position:relative !important;
+  overflow:hidden !important;
 }
 
 @media(max-width:650px){
-  main[data-view="dashboard"] section[data-current-view="dashboard"] > header{
-    background-size:cover,205px auto,cover !important;
-    background-position:center,right -48px top -50px,center 42% !important;
+  main[data-view="dashboard"] section[data-current-view="dashboard"] > header::after{
+    top:5px !important;
+    right:2px !important;
+    width:108px !important;
+    height:96px !important;
+    background-size:242% auto !important;
+    background-position:53% 66% !important;
+    opacity:.22 !important;
   }
 
-  /* Prominent but unobtrusive: visible in the lower-right of the skyline rather than over the picks. */
-  main[data-view="dashboard"] .floatingGameweek{
-    top:98px !important;
-    bottom:auto !important;
+  /* The floating gameweek browser is a CSS-module element, so target its stable ARIA
+     attribute instead of the unhashed source class name. This places it in the lower-right
+     of the skyline, where it is obvious but clear of the dashboard action buttons. */
+  main[data-view="dashboard"] div[aria-label="Gameweek selector"]{
+    position:fixed !important;
+    top:96px !important;
     right:10px !important;
-    min-width:168px !important;
-    grid-template-columns:36px minmax(96px,1fr) 36px !important;
-    border-radius:14px !important;
-    box-shadow:0 12px 30px rgba(0,0,0,.52) !important;
+    bottom:auto !important;
+    left:auto !important;
+    min-width:174px !important;
+    height:50px !important;
+    grid-template-columns:38px minmax(98px,1fr) 38px !important;
+    border-radius:15px !important;
+    z-index:74 !important;
+    box-shadow:0 12px 30px rgba(0,0,0,.55) !important;
   }
-  main[data-view="dashboard"] .floatingGameweek > button{
-    min-height:46px !important;
-    font-size:22px !important;
+  main[data-view="dashboard"] div[aria-label="Gameweek selector"] > button{
+    min-height:50px !important;
+    font-size:23px !important;
   }
-  main[data-view="dashboard"] .floatingGameweek label{
-    min-height:46px !important;
-    padding:5px 9px !important;
+  main[data-view="dashboard"] div[aria-label="Gameweek selector"] label{
+    min-height:50px !important;
+    padding:5px 10px !important;
   }
-  main[data-view="dashboard"] .floatingGameweek label span{
+  main[data-view="dashboard"] div[aria-label="Gameweek selector"] label span{
     font-size:7px !important;
+    letter-spacing:.13em !important;
   }
-  main[data-view="dashboard"] .floatingGameweek select{
-    font-size:14px !important;
+  main[data-view="dashboard"] div[aria-label="Gameweek selector"] select{
+    font-size:15px !important;
   }
 }
