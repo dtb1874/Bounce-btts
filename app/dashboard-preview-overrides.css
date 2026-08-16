@@ -50,8 +50,8 @@
     z-index:56!important;
   }
 
-  /* Main skyline title. Use stable DOM selectors rather than CSS-module names.
-     The season fragment is positioned on the same baseline as BTTS LEAGUE. */
+  /* Main skyline title. Keep the existing season label for future seasons,
+     but crop only its year and align it precisely to the BTTS LEAGUE baseline. */
   main[data-view] > section > header{
     position:relative!important;
   }
@@ -78,7 +78,7 @@
     display:block!important;
     position:absolute!important;
     left:142px!important;
-    top:63px!important;
+    top:54px!important;
     right:auto!important;
     bottom:auto!important;
     width:92px!important;
@@ -95,14 +95,14 @@
   }
   main[data-view] > section > header > div:nth-child(2) > label{
     display:block!important;
-    width:92px!important;
+    width:145px!important;
     height:18px!important;
     min-height:0!important;
     margin:0!important;
     padding:0!important;
     overflow:visible!important;
     white-space:nowrap!important;
-    text-indent:-45px!important;
+    transform:translateX(-51px)!important;
     color:#e8c36f!important;
     font-size:13px!important;
     line-height:18px!important;
