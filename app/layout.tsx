@@ -4,6 +4,7 @@ import "./league-table.css";
 import "./public-v2.css";
 import "./user-heart-watermark.css";
 import "./dashboard-preview-overrides.css";
+import "./v2-completion.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
