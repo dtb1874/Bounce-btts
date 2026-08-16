@@ -37,8 +37,8 @@ type Props = {
 };
 
 const finishedStatuses = ["FT", "AET", "PEN"];
-const RELEASE_VERSION = "1.4.9.10";
-const RELEASE_DATE = "15 Aug 2026";
+const RELEASE_VERSION = "1.4.9.11";
+const RELEASE_DATE = "16 Aug 2026";
 const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   { id: "pick", label: "Make My Pick", icon: "⚑" },
@@ -727,6 +727,7 @@ function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <sect
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
 function ReleaseHistory(){
   const releases=[
+    {version:"1.4.9.11",date:"16 Aug 2026",summary:"Pre-v2 repository and build cleanup",changes:["Baked the complete v1.4.9.10 application state into the real source files so releases no longer depend on historical patch scripts at build time","Simplified the production build back to the standard Next.js build command","Removed obsolete v1.4.x release patch folders and legacy build workflows from the active codebase while retaining their full history in Git","Removed only byte-for-byte duplicate root files where a canonical copy already exists in app, lib, public or supabase","No league behaviour, scoring rules, live results, selections or user-facing functionality was intentionally changed"]},
     {version:"1.4.9.10",date:"15 Aug 2026",summary:"Kept mobile Recent Form names safely inside the card",changes:["Added a consistent left inset to every mobile Recent Form player row so names no longer touch or cross the card edge","Kept the larger player-name styling while ensuring long names remain contained inside the available left column","Preserved the compact right-aligned six-result block and the 6/12/18-week wrapping behaviour","Desktop Recent Form remains unchanged"]},
     {version:"1.4.9.9",date:"15 Aug 2026",summary:"Refined mobile Recent Form alignment",changes:["Moved the compact six-result form block to the right side of each mobile player row so the layout uses the available card width more naturally","Increased mobile player-name size and weight and aligned every name consistently in a flexible left column","6-week results remain on one row while 12-week and 18-week views continue wrapping into rows of six without horizontal scrolling","Desktop Recent Form remains unchanged"]},
     {version:"1.4.9.8",date:"15 Aug 2026",summary:"Tighter mobile form rows with six-result wrapping",changes:["Recent Form result markers now sit tightly beside each player name instead of stretching across the full mobile card width","The 6-week view stays on one compact row","The 12-week view wraps into two compact rows of six results per player","The 18-week view wraps into three compact rows of six results per player","No horizontal scrolling is required and the desktop form layout is unchanged"]},
