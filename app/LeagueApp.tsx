@@ -204,8 +204,12 @@ export default function LeagueApp(props: Props) {
   function notice(message: string) { setToast(message); window.setTimeout(() => setToast(""), 2500); }
 
   const standings = useMemo<Standing[]>(() => {
+    const cutoff = gameweek?.number ?? Number.MAX_SAFE_INTEGER;
+    const included = new Set(initialGameweeks.filter(g=>g.number<=cutoff).map(g=>g.id));
+    const scopedPredictions = predictions.filter(p=>included.has(p.gameweek_id));
+    const scopedAdjustments = adjustments.filter(a=>included.has(a.gameweek_id));
     const rows = new Map<string, Standing>(profiles.map(p => [p.id,{ id:p.id,name:p.display_name,played:0,wins:0,oneSided:0,zeroZeroCount:0,points:0 }] as [string, Standing]));
-    for (const p of predictions) {
+    for (const p of scopedPredictions) {
       if (p.points_awarded == null) continue;
       const row = rows.get(p.member_id); if (!row) continue;
       row.played += 1; row.points += p.points_awarded;
@@ -213,15 +217,15 @@ export default function LeagueApp(props: Props) {
       if (p.points_awarded === 1) row.oneSided += 1;
       if (p.points_awarded === -1) row.zeroZeroCount += 1;
     }
-    for (const a of adjustments) {
+    for (const a of scopedAdjustments) {
       const row = rows.get(a.member_id); if (!row) continue;
-      const scored = predictions.some(p => p.member_id === a.member_id && p.gameweek_id === a.gameweek_id && p.points_awarded != null);
+      const scored = scopedPredictions.some(p => p.member_id === a.member_id && p.gameweek_id === a.gameweek_id && p.points_awarded != null);
       if (scored && a.reason.trim().toLowerCase() === "missed selection") continue;
       if (!scored) row.played += 1;
       row.points += a.points;
     }
     return Array.from(rows.values()).sort((a,b) => b.points-a.points || a.zeroZeroCount-b.zeroZeroCount || b.wins-a.wins || a.name.localeCompare(b.name));
-  },[profiles,predictions,adjustments]);
+  },[profiles,predictions,adjustments,initialGameweeks,gameweek?.number]);
 
   async function refreshLiveData(silent = true) {
     if (!gameweek?.id) return;
@@ -305,7 +309,7 @@ export default function LeagueApp(props: Props) {
   return <main className={`${styles.shell} ${styles.v2Shell}`} data-view={view}>
     <button className={styles.mobileMenu} onClick={()=>setMobileMenu(true)}>☰</button>
     <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
-      <div className={styles.brand}><img src="/assets/st-giles-heart.jpg" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EDINBURGH · EST 2024</small></div></div><a className={styles.spectatorLink} href="/table" target="_blank" rel="noreferrer">Spectator view ↗</a>
+      <div className={styles.brand}><div className={styles.brandMark}>B</div><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EDINBURGH · EST 2024</small></div></div><button type="button" className={styles.mobileMenuClose} onClick={()=>setMobileMenu(false)}>× Close menu</button><a className={styles.spectatorLink} href="/table" target="_blank" rel="noreferrer">Spectator view ↗</a>
       <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
       <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false)}}></button>
       <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
@@ -319,7 +323,7 @@ export default function LeagueApp(props: Props) {
         {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>}
         {view==="fixtures" && <FixturesPage fixtures={dedupeFixtures(allFixtures)}/>}
         {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee} fixtures={fixtures} predictions={predictions} profiles={profiles} gameweeks={initialGameweeks} adjustments={adjustments}/>}
-        {view==="stats" && <LeagueStats standings={standings} seasonLabel={seasonLabel} fixtures={fixtures} predictions={predictions} profiles={profiles} gameweeks={initialGameweeks} adjustments={adjustments}/>}
+        {view==="stats" && <LeagueStats standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} fixtures={fixtures} predictions={predictions} profiles={profiles} gameweeks={initialGameweeks} adjustments={adjustments}/>}
         {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>}
         {view==="combined" && <CombinedResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} standings={standings} seasonLabel={seasonLabel} entryFee={entryFee}/>}
         {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>}
@@ -329,12 +333,17 @@ export default function LeagueApp(props: Props) {
         {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>}
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE · v{RELEASE_VERSION}</footer>
     </section>
+    {["dashboard","table","stats","results","combined","players"].includes(view) && gameweek && <div className={styles.floatingGameweek} aria-label="Gameweek selector">
+      <button type="button" aria-label="Previous gameweek" disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button>
+      <label><span>VIEWING</span><select aria-label="Choose gameweek" value={gameweek.id} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select></label>
+      <button type="button" aria-label="Next gameweek" disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button>
+    </div>}
     <nav className={styles.mobileDock} aria-label="Primary navigation">
-      <button className={view==="dashboard"?styles.active:""} onClick={()=>setView("dashboard")}><span>⌂</span><small>Home</small></button>
-      <button className={view==="pick"?styles.active:""} onClick={()=>setView("pick")}><span>⚑</span><small>Pick</small></button>
-      <button className={view==="table"?styles.active:""} onClick={()=>setView("table")}><span>☷</span><small>Table</small></button>
-      <button className={view==="stats"?styles.active:""} onClick={()=>setView("stats")}><span>◫</span><small>Stats</small></button>
-      <button onClick={()=>setMobileMenu(true)}><span>☰</span><small>More</small></button>
+      <button className={view==="dashboard"?styles.active:""} onClick={()=>{setView("dashboard");setMobileMenu(false)}}><span>⌂</span><small>Home</small></button>
+      <button className={view==="pick"?styles.active:""} onClick={()=>{setView("pick");setMobileMenu(false)}}><span>⚑</span><small>Pick</small></button>
+      <button className={view==="table"?styles.active:""} onClick={()=>{setView("table");setMobileMenu(false)}}><span>☷</span><small>Table</small></button>
+      <button className={view==="stats"?styles.active:""} onClick={()=>{setView("stats");setMobileMenu(false)}}><span>◫</span><small>Stats</small></button>
+      <button className={mobileMenu?styles.active:""} onClick={()=>setMobileMenu(v=>!v)}><span>☰</span><small>{mobileMenu?"Close":"More"}</small></button>
     </nav>
     {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
     {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
@@ -509,7 +518,7 @@ function Dashboard({
           <div className={styles.pickList}>
             {picks.map(({profile,prediction,fixture})=>{
               const outcome=fixture?outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction?.points_awarded??null):null;
-              return <div className={`${styles.pickListRow} ${isAdmin&&!prediction?"adminMissingPickRow":""}`} key={profile.id}>
+              return <div className={`${styles.pickListRow} v2PickRow ${isAdmin&&!prediction?"adminMissingPickRow":""}`} key={profile.id}>
                 <div className={styles.playerCell}><span className={styles.avatar}>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>
                 <div className={styles.fixtureCell}>{fixture?<><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)} · {fixture.odds_fractional??"—"}</small></>:<span>Awaiting selection</span>}</div>
                 <div className={styles.liveCell}>{fixture?.home_score!=null?<strong>{fixture.home_score}-{fixture.away_score}</strong>:<strong>—</strong>}<small>{fixture?fixtureStatusLabel(fixture):"PENDING"}</small></div>
@@ -638,14 +647,16 @@ function LeagueTable({standings,seasonLabel,gameweek,entryFee,fixtures,predictio
   const facts=[{label:"GOAL MAGNET",value:goalKing?.goals?goalKing.name:"—",detail:goalKing?.goals?`${goalKing.goals} goals in finished picks`:"Waiting for finished picks"},{label:"BTTS KING",value:bttsKing?.wins?bttsKing.name:"—",detail:bttsKing?.wins?`${bttsKing.wins} BTTS wins`:"No BTTS wins yet"},{label:"HOME-WIN HUNTER",value:homeHunter?.home?homeHunter.name:"—",detail:homeHunter?.home?`${homeHunter.home} selected matches ended home wins`:"No trend yet"},{label:"AWAY-WIN HUNTER",value:awayHunter?.away?awayHunter.name:"—",detail:awayHunter?.away?`${awayHunter.away} selected matches ended away wins`:"No trend yet"},{label:"DRAW MAGNET",value:drawMagnet?.draws?drawMagnet.name:"—",detail:drawMagnet?.draws?`${drawMagnet.draws} selected matches ended level`:"No trend yet"}];
   return <section className={styles.leaguePage}><Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={prizePot}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading><div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} ${styles.leagueTableFirst}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""} ${i<3?styles.tableRowTopThree:""}`}><span className={styles.positionCell}>{i===0?"🏆":i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div><SeasonPositionTimeline profiles={profiles} gameweeks={gameweeks} predictions={predictions} adjustments={adjustments}/><div className={styles.tableToStats}><div><span>MORE THAN THE TABLE</span><strong>Explore the season story</strong><small>Strike rates, streaks, odds, leaders and player tendencies now live in their own League Stats section.</small></div><button onClick={()=>window.location.hash="league-stats"}>Open League Stats →</button></div></section>
 }
-function LeagueStats({standings,seasonLabel,fixtures,predictions,profiles,gameweeks,adjustments}:{standings:Standing[];seasonLabel:string;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];gameweeks:Gameweek[];adjustments:ScoreAdjustment[]}){
+function LeagueStats({standings,seasonLabel,gameweek,fixtures,predictions,profiles,gameweeks,adjustments}:{standings:Standing[];seasonLabel:string;gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];gameweeks:Gameweek[];adjustments:ScoreAdjustment[]}){
   const fixtureById=new Map(fixtures.map(f=>[f.id,f]));
   const gameweekById=new Map(gameweeks.map(g=>[g.id,g]));
-  const finished=predictions.map(p=>({p,f:fixtureById.get(p.fixture_id)})).filter((x):x is {p:Prediction;f:Fixture}=>Boolean(x.f&&x.p.points_awarded!=null));
+  const cutoff=gameweek?.number??Number.MAX_SAFE_INTEGER;
+  const scopedPredictions=predictions.filter(p=>(gameweekById.get(p.gameweek_id)?.number??Number.MAX_SAFE_INTEGER)<=cutoff);
+  const finished=scopedPredictions.map(p=>({p,f:fixtureById.get(p.fixture_id)})).filter((x):x is {p:Prediction;f:Fixture}=>Boolean(x.f&&x.p.points_awarded!=null));
   const orderedWeeks=[...gameweeks].sort((a,b)=>a.number-b.number);
   const frac=(value:string|null)=>{if(!value)return 0;const m=value.match(/(\d+)\s*\/\s*(\d+)/);return m?Number(m[1])/Math.max(Number(m[2]),1):0};
   const rows=profiles.map(profile=>{
-    const picks=predictions.filter(p=>p.member_id===profile.id).sort((a,b)=>(gameweekById.get(a.gameweek_id)?.number??999)-(gameweekById.get(b.gameweek_id)?.number??999));
+    const picks=scopedPredictions.filter(p=>p.member_id===profile.id).sort((a,b)=>(gameweekById.get(a.gameweek_id)?.number??999)-(gameweekById.get(b.gameweek_id)?.number??999));
     const scored=picks.filter(p=>p.points_awarded!=null);
     const wins=scored.filter(p=>p.points_awarded===3);
     const scoreNil=scored.filter(p=>p.points_awarded===1).length;
@@ -669,7 +680,6 @@ function LeagueStats({standings,seasonLabel,fixtures,predictions,profiles,gamewe
     <Heading eyebrow={`SEASON ${seasonLabel} · LEAGUE INTELLIGENCE`} title="League Stats"><p>The numbers behind the table — form, efficiency, streaks, odds and player tendencies.</p></Heading>
     <div className={styles.statsHero}>
       <div className={styles.statsHeroCopy}><span>THE SEASON STORY</span><h3>{leader?.name??"—"} currently sets the pace</h3><p>Use the cards below to see who is clinical, who is ambitious and who keeps finding trouble.</p></div>
-      <div className={styles.statsHeroMosaic}><img src="/assets/st-giles-heart.jpg" alt="Heart of Midlothian pavement mosaic"/></div>
     </div>
     <div className={styles.leaderStrip}>
       <article><span>LEAGUE LEADER</span><strong>{leader?.name??"—"}</strong><small>{leader?`${leader.points} pts`:"No scores yet"}</small></article>
@@ -741,6 +751,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
   const reigningChampion = rollOfHonour[rollOfHonour.length-1];
   const honourRows = [...rollOfHonour].reverse();
   const [id,setId]=useState(seasons[0]?.id??"");
+  const [trophyOpen,setTrophyOpen]=useState(false);
   const selected: SeasonHistory | undefined = seasons.find((season)=>season.id===id)??seasons[0];
   const selectedWinner = selected?.standings[0];
 
@@ -754,13 +765,12 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
         <h3>Bounce Legacy</h3>
         <p>{seasons.length} season{seasons.length===1?"":"s"} stored · {rollOfHonour.length} champions crowned</p>
       </div>
-      <img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/>
+      <button type="button" className={styles.historyTrophyButton} aria-label="Expand personalised Bounce trophy" onClick={()=>setTrophyOpen(true)}><img src="/assets/bounce-cup.png" alt="Personalised Bounce trophy"/></button>
     </div>
     <div className={styles.historyStatsBand}>
-      <article><span>REIGNING CHAMPION</span><strong>{reigningChampion?.winner ?? "—"}</strong></article>
-      <article><span>SELECTED SEASON</span><strong>{selected?.label ?? "—"}</strong></article>
-      <article><span>ARCHIVED GAMEWEEKS</span><strong>{selected?.gameweeks ?? 0}</strong></article>
+      <article className={styles.historySummaryCard}><div><span>REIGNING CHAMPION</span><strong>{reigningChampion?.winner ?? "—"}</strong></div><div><span>SELECTED SEASON</span><strong>{selected?.label ?? "—"}</strong></div><div><span>GAMEWEEKS</span><strong>{selected?.gameweeks ?? 0}</strong></div></article>
     </div>
+    {trophyOpen&&<button type="button" className={styles.trophyOverlay} aria-label="Close enlarged trophy" onClick={()=>setTrophyOpen(false)}><img src="/assets/bounce-cup.png" alt="Personalised Bounce trophy enlarged"/><span>Tap to close</span></button>}
     <div className={`${styles.panel} ${styles.honourPanel}`}>
       <div className={styles.panelHeading}>
         <div><span className={styles.eyebrow}>CHAMPIONS</span><h3>Roll of Honour</h3></div>
@@ -827,7 +837,7 @@ function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <sect
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
 function ReleaseHistory(){
   const releases=[
-    {version:"2.0.0",date:"16 Aug 2026",summary:"Complete v2 mobile-first visual rebuild and season storytelling",changes:["Added an animated Season Position Timeline beneath the main League Table, advancing gameweek by gameweek through the season","Historical positions use the same standings rules as the live league: points, fewest 0-0 results, most BTTS wins, then alphabetical order","Added Play, Pause, Restart and a gameweek scrubber so the season race can be replayed or inspected manually","Players can be tapped to highlight their line while fading the rest, with current-position labels moving through the animation","The chart is fully responsive and designed to fit the mobile card width without horizontal scrolling","Refreshed the League Table presentation with subtle Heart of Midlothian pavement-mosaic texture while retaining the maroon and gold Bounce identity","All existing scoring, selections, live results, sharing, admin controls and mobile Dashboard functionality are preserved"]},
+    {version:"2.0.0",date:"16 Aug 2026",summary:"Complete v2 mobile-first visual rebuild and season storytelling",changes:["Added an animated Season Position Timeline beneath the main League Table, advancing gameweek by gameweek through the season","Historical positions use the same standings rules as the live league: points, fewest 0-0 results, most BTTS wins, then alphabetical order","Added Play, Pause, Restart and a gameweek scrubber so the season race can be replayed or inspected manually","Players can be tapped to highlight their line while fading the rest, with current-position labels moving through the animation","The chart is fully responsive and designed to fit the mobile card width without horizontal scrolling","Rebuilt the visual system with restrained Edinburgh heritage imagery and selective full-section Heart of Midlothian street-heart watermarking rather than repeated circular motifs","Gameweek switching now recalculates standings as a true historical snapshot through the selected week","All existing scoring, selections, live results, sharing, admin controls and mobile Dashboard functionality are preserved"]},
     {version:"1.4.9.11",date:"16 Aug 2026",summary:"Pre-v2 repository and build cleanup",changes:["Baked the complete v1.4.9.10 application state into the real source files so releases no longer depend on historical patch scripts at build time","Simplified the production build back to the standard Next.js build command","Removed obsolete v1.4.x release patch folders and legacy build workflows from the active codebase while retaining their full history in Git","Removed only byte-for-byte duplicate root files where a canonical copy already exists in app, lib, public or supabase","No league behaviour, scoring rules, live results, selections or user-facing functionality was intentionally changed"]},
     {version:"1.4.9.10",date:"15 Aug 2026",summary:"Kept mobile Recent Form names safely inside the card",changes:["Added a consistent left inset to every mobile Recent Form player row so names no longer touch or cross the card edge","Kept the larger player-name styling while ensuring long names remain contained inside the available left column","Preserved the compact right-aligned six-result block and the 6/12/18-week wrapping behaviour","Desktop Recent Form remains unchanged"]},
     {version:"1.4.9.9",date:"15 Aug 2026",summary:"Refined mobile Recent Form alignment",changes:["Moved the compact six-result form block to the right side of each mobile player row so the layout uses the available card width more naturally","Increased mobile player-name size and weight and aligned every name consistently in a flexible left column","6-week results remain on one row while 12-week and 18-week views continue wrapping into rows of six without horizontal scrolling","Desktop Recent Form remains unchanged"]},
