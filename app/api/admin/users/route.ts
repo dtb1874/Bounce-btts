@@ -43,8 +43,10 @@ export async function PATCH(request: Request) {
   const { data: existing } = await admin.from("profiles").select("slot_number,username").eq("id", id).single();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (!username || !displayName) return NextResponse.json({ error: "Username and player name are required." }, { status: 400 });
-  if (existing.slot_number === 1 && (username !== "user1" || displayName !== "DTB" || role !== "ultimate_admin" || !active)) {
-    return NextResponse.json({ error: "user1 is permanently reserved for DTB as an active administrator." }, { status: 400 });
+  // Slot 1 remains permanently protected as DTB / Ultimate Admin / active,
+  // but its login username may now be changed by the Ultimate Admin.
+  if (existing.slot_number === 1 && (displayName !== "DTB" || role !== "ultimate_admin" || !active)) {
+    return NextResponse.json({ error: "The DTB Ultimate Admin account must remain active and cannot change role or player name." }, { status: 400 });
   }
   if (password && password.length < 6) return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
 
