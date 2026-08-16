@@ -50,13 +50,13 @@
     z-index:56!important;
   }
 
-  /* Main skyline title: retain BOUNCE, then display the live season as
-     “— BTTS LEAGUE 2026/27 —”. The year comes from the existing dynamic
-     Season label, so future seasons update without a hard-coded year. */
-  .v2Shell .hero{
+  /* Main skyline title. Use stable DOM selectors rather than CSS-module names,
+     which Next.js hashes in the built app. The existing dynamic Season label
+     supplies the year, so this continues to update when the active season changes. */
+  main[data-view] > section > header{
     position:relative!important;
   }
-  .v2Shell .hero h2{
+  main[data-view] > section > header > div:first-child > h2{
     position:relative!important;
     height:16px!important;
     margin:5px 0 0!important;
@@ -65,24 +65,24 @@
     color:transparent!important;
     overflow:visible!important;
   }
-  .v2Shell .hero h2::before{
+  main[data-view] > section > header > div:first-child > h2::before{
     content:"— BTTS LEAGUE"!important;
     display:block!important;
-    color:var(--v2-gold)!important;
+    color:#e8c36f!important;
     font-size:13px!important;
     line-height:16px!important;
     font-weight:800!important;
     letter-spacing:.045em!important;
     white-space:nowrap!important;
   }
-  .v2Shell .hero .gwCard{
+  main[data-view] > section > header > div:nth-child(2){
     display:block!important;
     position:absolute!important;
     left:139px!important;
     top:52px!important;
     right:auto!important;
     bottom:auto!important;
-    width:83px!important;
+    width:88px!important;
     height:18px!important;
     min-width:0!important;
     margin:0!important;
@@ -94,29 +94,28 @@
     box-shadow:none!important;
     z-index:6!important;
   }
-  .v2Shell .hero .gwCard > label{
+  main[data-view] > section > header > div:nth-child(2) > label{
     display:block!important;
-    width:83px!important;
+    width:88px!important;
     height:18px!important;
     min-height:0!important;
     margin:0!important;
     padding:0!important;
-    overflow:hidden!important;
+    overflow:visible!important;
     white-space:nowrap!important;
-    text-indent:-42px!important;
-    color:var(--v2-gold)!important;
+    text-indent:-45px!important;
+    color:#e8c36f!important;
     font-size:13px!important;
     line-height:16px!important;
     font-weight:800!important;
     letter-spacing:.045em!important;
     text-transform:none!important;
   }
-  .v2Shell .hero .gwCard > label::after{
+  main[data-view] > section > header > div:nth-child(2) > label::after{
     content:" —"!important;
   }
-  .v2Shell .hero .gwCard .gwRow,
-  .v2Shell .hero .gwCard > small,
-  .v2Shell .hero .gwCard .demoSwitch{
+  main[data-view] > section > header > div:nth-child(2) > div,
+  main[data-view] > section > header > div:nth-child(2) > small{
     display:none!important;
   }
 
