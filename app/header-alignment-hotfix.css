@@ -1,0 +1,21 @@
+/* v2 mobile header alignment: centre the title stack in the available skyline space. */
+@media (max-width: 650px) {
+  main[data-view] > section > header > div:first-child {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+  }
+
+  main[data-view] > section > header h1,
+  main[data-view] > section > header h2 {
+    width: 100%;
+    max-width: none !important;
+    text-align: center;
+  }
+
+  main[data-view] > section > header p {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center;
+  }
+}
