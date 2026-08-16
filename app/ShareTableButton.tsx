@@ -251,10 +251,8 @@ export default function ShareTableButton({
 
   return (
     <span className={`tableShareControl ${compact ? "compact" : ""} ${className}`.trim()}>
-      <button type="button" onClick={share} disabled={busy}>
-        {busy ? "Creating JPEG…" : compact ? "Share snapshot" : "Share table snapshot"}
-      </button>
-      {message && <small>{message}</small>}
+      <button className="dataShareButton shareCompactWhatsApp" type="button" onClick={share} disabled={busy} aria-label="Share league table to WhatsApp">{busy ? "Creating…" : "Share league table"}</button>
+      {message && <small className="tableShareMessage">{message}</small>}
     </span>
   );
 }
