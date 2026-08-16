@@ -295,7 +295,7 @@ export default function LeagueApp(props: Props) {
   return <main className={styles.shell}>
     <button className={styles.mobileMenu} onClick={()=>setMobileMenu(true)}>☰</button>
     <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
-      <div className={styles.brand}><img src="/assets/hearts-crest.png" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
+      <div className={styles.brand}><img src="/assets/st-giles-heart.jpg" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
       <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
       <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false)}}></button>
       <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
@@ -424,7 +424,7 @@ function Dashboard({
         <p>{isAdmin?"Live league position, selections, results and admin status in one place.":"Your pick, current standing, weekly results and recent form in one place."}</p>
       </div>
       <div className={styles.dashboardArt} aria-hidden="true">
-        <img src="/assets/hearts-crest.png" alt=""/>
+        <img src="/assets/st-giles-heart.jpg" alt=""/>
         <img src="/assets/bounce-cup.png" alt=""/>
       </div>
     </div>
@@ -586,9 +586,10 @@ function SeasonPositionTimeline({profiles,gameweeks,predictions,adjustments}:{pr
   }),[activeWeeks,profiles,predictions,adjustments]);
   const [step,setStep]=useState(0);
   const [playing,setPlaying]=useState(true);
+  const [speed,setSpeed]=useState<1|2>(1);
   const [focus,setFocus]=useState<string|null>(null);
   useEffect(()=>{setStep(0);setPlaying(timeline.length>1)},[timeline.length]);
-  useEffect(()=>{if(!playing||step>=timeline.length-1)return;const t=window.setTimeout(()=>setStep(v=>Math.min(v+1,timeline.length-1)),900);return()=>window.clearTimeout(t)},[playing,step,timeline.length]);
+  useEffect(()=>{if(!playing||step>=timeline.length-1)return;const t=window.setTimeout(()=>setStep(v=>Math.min(v+1,timeline.length-1)),1800/speed);return()=>window.clearTimeout(t)},[playing,step,timeline.length,speed]);
   useEffect(()=>{if(step>=timeline.length-1)setPlaying(false)},[step,timeline.length]);
   if(!timeline.length)return <div className={styles.seasonTimeline}><div className={styles.timelineHeading}><div><span>SEASON POSITION TIMELINE</span><h3>The race through the season</h3></div></div><div className={styles.timelineEmpty}>Position history will appear as soon as the first gameweek is scored.</div></div>;
   const width=920,height=Math.max(350,profiles.length*48+90),left=48,right=150,top=34,bottom=48,plotW=width-left-right,plotH=height-top-bottom;
@@ -599,7 +600,7 @@ function SeasonPositionTimeline({profiles,gameweeks,predictions,adjustments}:{pr
   const current=timeline[step];
   return <div className={styles.seasonTimeline}>
     <div className={styles.timelineHeading}><div><span>SEASON POSITION TIMELINE</span><h3>The race through the season</h3><p>Animated gameweek-by-gameweek using the same league-table tie-break rules.</p></div><div className={styles.timelineNow}><span>VIEWING</span><strong>GW {current.number}</strong></div></div>
-    <div className={styles.timelineControls}><button onClick={()=>setPlaying(v=>!v)} disabled={timeline.length<2}>{playing?'Pause':'Play'}</button><button onClick={()=>{setStep(0);setPlaying(timeline.length>1)}}>Restart</button><input aria-label="Timeline gameweek" type="range" min={0} max={timeline.length-1} value={step} onChange={e=>{setStep(Number(e.target.value));setPlaying(false)}}/><span>GW {current.number}</span></div>
+    <div className={styles.timelineControls}><button onClick={()=>setPlaying(v=>!v)} disabled={timeline.length<2}>{playing?'Pause':'Play'}</button><button onClick={()=>{setStep(0);setPlaying(timeline.length>1)}}>Restart</button><button onClick={()=>setSpeed(v=>v===1?2:1)} aria-pressed={speed===2}>{speed===1?"×2 Speed":"Normal"}</button><input aria-label="Timeline gameweek" type="range" min={0} max={timeline.length-1} value={step} onChange={e=>{setStep(Number(e.target.value));setPlaying(false)}}/><span>GW {current.number}</span></div>
     <div className={styles.timelineChartWrap}><svg className={styles.timelineChart} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`League positions through gameweek ${current.number}`}>
       {profiles.map((_,i)=><g key={`grid-${i}`}><line x1={left} x2={width-right+8} y1={y(i+1)} y2={y(i+1)} className={styles.timelineGrid}/><text x={left-14} y={y(i+1)+5} textAnchor="end" className={styles.timelinePositionLabel}>{i+1}</text></g>)}
       {shown.map((week,i)=><g key={`gw-${week.number}`}><line x1={x(i)} x2={x(i)} y1={top} y2={height-bottom} className={styles.timelineVertical}/><text x={x(i)} y={height-15} textAnchor="middle" className={styles.timelineGwLabel}>GW {week.number}</text></g>)}

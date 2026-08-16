@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <main className="authPage">
       <section className="authCard">
-        <img src="/assets/hearts-crest.png" alt="Heart of Midlothian crest" className="authCrest" />
+        <img src="/assets/st-giles-heart.jpg" alt="Heart of Midlothian pavement mosaic" className="authCrest" />
         <p className="authEyebrow">EST 2024 · SEASON 2026/27</p>
         <h1>BOUNCE</h1>
         <h2>BTTS LEAGUE</h2>
