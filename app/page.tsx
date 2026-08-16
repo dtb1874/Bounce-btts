@@ -80,10 +80,12 @@ export default async function HomePage() {
 
   const seasonGameweeks = (allGameweeks ?? []).filter((gameweek) => gameweek.season_id === currentSeason?.id);
   const nowIso = new Date().toISOString();
+  const openedGameweeks = seasonGameweeks.filter((item) => !item.opens_at || item.opens_at <= nowIso);
   const gameweek =
-    seasonGameweeks.find((item) => item.status === "open" && (!item.opens_at || item.opens_at <= nowIso) && item.locks_at > nowIso) ??
-    seasonGameweeks.find((item) => item.locks_at > nowIso) ??
-    seasonGameweeks[seasonGameweeks.length - 1] ??
+    openedGameweeks.find((item) => item.status === "open" && item.locks_at > nowIso) ??
+    openedGameweeks[openedGameweeks.length - 1] ??
+    seasonGameweeks.find((item) => !item.opens_at || item.opens_at <= nowIso) ??
+    seasonGameweeks[0] ??
     null;
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
   const allGameweekIds = (allGameweeks ?? []).map((item) => item.id);
@@ -154,7 +156,13 @@ export default async function HomePage() {
     const scored = allPredictions.filter((prediction) =>
       leagueMemberIds.has(prediction.member_id) && gameweekIds.has(prediction.gameweek_id) && prediction.points_awarded !== null
     );
-    const seasonAdjustments = allAdjustments.filter((adjustment) => leagueMemberIds.has(adjustment.member_id) && gameweekIds.has(adjustment.gameweek_id));
+    const seasonAdjustments = allAdjustments.filter((adjustment) => {
+      if (!leagueMemberIds.has(adjustment.member_id) || !gameweekIds.has(adjustment.gameweek_id)) return false;
+      const hasScoredPrediction = scored.some((prediction) => prediction.member_id === adjustment.member_id && prediction.gameweek_id === adjustment.gameweek_id);
+      const isMissedSelection = adjustment.reason.trim().toLowerCase() === "missed selection";
+      if (hasScoredPrediction && isMissedSelection) return false;
+      return true;
+    });
     const participantIds = new Set([
       ...scored.map((prediction) => prediction.member_id),
       ...seasonAdjustments.map((adjustment) => adjustment.member_id),
