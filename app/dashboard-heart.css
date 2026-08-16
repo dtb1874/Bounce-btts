@@ -1,0 +1,36 @@
+/* Dashboard-only Heart of Midlothian skyline watermark.
+   Uses the user's supplied pavement photo, cropped via background positioning rather than repeating it elsewhere. */
+main[data-view="dashboard"] section[data-current-view="dashboard"] > header::after{
+  content:"" !important;
+  display:block !important;
+  position:absolute !important;
+  z-index:2 !important;
+  top:8px !important;
+  right:8px !important;
+  width:126px !important;
+  height:112px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+  background-image:var(--bounce-user-heart) !important;
+  background-repeat:no-repeat !important;
+  background-size:235% auto !important;
+  background-position:53% 66% !important;
+  opacity:.115 !important;
+  filter:saturate(.58) contrast(.95) sepia(.08) !important;
+  mix-blend-mode:screen !important;
+  -webkit-mask-image:radial-gradient(ellipse at center, #000 46%, rgba(0,0,0,.78) 62%, transparent 86%) !important;
+  mask-image:radial-gradient(ellipse at center, #000 46%, rgba(0,0,0,.78) 62%, transparent 86%) !important;
+}
+@media(max-width:650px){
+  main[data-view="dashboard"] section[data-current-view="dashboard"] > header::after{
+    top:5px !important;
+    right:3px !important;
+    width:94px !important;
+    height:84px !important;
+    background-size:245% auto !important;
+    background-position:53% 66% !important;
+    opacity:.12 !important;
+  }
+}
