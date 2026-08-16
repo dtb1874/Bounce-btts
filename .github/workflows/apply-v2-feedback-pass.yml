@@ -1,0 +1,21 @@
+name: Apply v2 feedback pass
+on:
+  push:
+    branches: [feature/v2.0]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python scripts/apply_v2_feedback_pass.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/LeagueApp.tsx app/release.module.css app/globals.css app/public-v2.css app/table/page.tsx app/stats/page.tsx
+          git commit -m 'Apply full v2 mobile feedback pass'
+          git push
