@@ -1,0 +1,1 @@
+Do not use data-URI for the dashboard heart; use /assets/bounce-heart-centre.jpg once binary asset is committed.
