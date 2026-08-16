@@ -1,6 +1,6 @@
-/* v2 preview-only gameweek browser refinement.
-   On mobile the selector is deliberately static: it sits on the bottom-right
-   divider of the BOUNCE skyline header and scrolls away with the page. */
+/* v2 preview-only header controls refinement.
+   On mobile the gameweek selector and hamburger menu are deliberately static:
+   both sit on the skyline divider and scroll away with the page. */
 @media(max-width:650px){
   main[data-view]{
     position:relative!important;
@@ -34,5 +34,21 @@
   [aria-label="Gameweek selector"] select{
     font-size:14px!important;
     line-height:1.1!important;
+  }
+
+  /* The hamburger is the first direct button in the app shell. Align its
+     centre to the same skyline divider as the gameweek browser so it never
+     obscures the BOUNCE wordmark. */
+  main[data-view] > button:first-child{
+    position:absolute!important;
+    left:10px!important;
+    top:120px!important;
+    right:auto!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    width:44px!important;
+    height:44px!important;
+    margin:0!important;
+    z-index:56!important;
   }
 }
