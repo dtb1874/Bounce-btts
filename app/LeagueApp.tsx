@@ -10,7 +10,7 @@ import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
 import { outcomeLabel } from "@/lib/scoring";
 import styles from "./release.module.css";
 
-type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "combined" | "history" | "players" | "about" | "alerts" | "admin";
+type View = "dashboard" | "pick" | "fixtures" | "table" | "stats" | "results" | "combined" | "history" | "players" | "about" | "alerts" | "admin";
 type AdminView = "users" | "selections" | "fixtures" | "results" | "gameweek" | "seasons";
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
 
@@ -44,6 +44,7 @@ const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boole
   { id: "pick", label: "Make My Pick", icon: "⚑" },
   { id: "fixtures", label: "Fixtures", icon: "▦" },
   { id: "table", label: "League Table", icon: "☷" },
+  { id: "stats", label: "League Stats", icon: "◫" },
   { id: "results", label: "Results", icon: "✦" },
   { id: "history", label: "League History", icon: "◷" },
   { id: "players", label: "Players", icon: "◉" },
@@ -51,6 +52,9 @@ const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boole
   { id: "alerts", label: "Alerts", icon: "!", adminOnly: true },
   { id: "admin", label: "Admin", icon: "⚙", adminOnly: true },
 ];
+
+const viewHashes: Record<View,string> = {dashboard:"dashboard",pick:"make-my-pick",fixtures:"fixtures",table:"league-table",stats:"league-stats",results:"results",combined:"combined-results",history:"league-history",players:"players",about:"about",alerts:"alerts",admin:"admin"};
+const hashViews = Object.fromEntries(Object.entries(viewHashes).map(([k,v])=>[v,k])) as Record<string,View>;
 
 const competitionPriority = [
   "English Premier League", "English Championship", "English League One", "English League Two", "England — Carabao Cup",
@@ -168,7 +172,11 @@ export default function LeagueApp(props: Props) {
   const effectiveRole: Role = isDemo ? (demoPerspective === "admin" ? "ultimate_admin" : "member") : viewerProfile.role;
   const isAdmin = effectiveRole === "admin" || effectiveRole === "ultimate_admin";
   const isReadOnly = isDemo || Boolean(emulatedProfileId);
-  const [view,setView] = useState<View>("dashboard");
+  const [view,setView] = useState<View>(()=>{
+    if(typeof window==="undefined")return "dashboard";
+    const slug=window.location.hash.replace(/^#/,"");
+    return hashViews[slug]??"dashboard";
+  });
   const [adminView,setAdminView] = useState<AdminView>(effectiveRole === "ultimate_admin" ? "users" : "selections");
   const [gameweekId,setGameweekId] = useState(initialGameweek?.id ?? initialGameweeks[0]?.id ?? "");
   const [fixtures,setFixtures] = useState(initialFixtures);
@@ -262,6 +270,8 @@ export default function LeagueApp(props: Props) {
   },[gameweek?.id,currentPredictions.length,currentFixtures,selectedFixtureIds,now]);
 
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()),30000); return () => clearInterval(t); },[]);
+  useEffect(()=>{ if(typeof window!=="undefined") window.history.replaceState(null,"",`${window.location.pathname}${window.location.search}#${viewHashes[view]}`); },[view]);
+  useEffect(()=>{ const onHash=()=>{const next=hashViews[window.location.hash.replace(/^#/,"")];if(next)setView(next)};window.addEventListener("hashchange",onHash);return()=>window.removeEventListener("hashchange",onHash)},[]);
   useEffect(() => { if (!gameweek?.id) return; const t = window.setInterval(() => refreshLiveData(true),45000); return () => clearInterval(t); },[gameweek?.id]);
   useEffect(() => {
     if(!livePollActive)return;
@@ -292,16 +302,16 @@ export default function LeagueApp(props: Props) {
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/login"; }
   if (!initialProfile.active) return <main className={styles.shell}><div className={styles.panel}><h2>Account inactive</h2><button className={styles.primary} onClick={signOut}>Sign out</button></div></main>;
 
-  return <main className={styles.shell}>
+  return <main className={`${styles.shell} ${styles.v2Shell}`} data-view={view}>
     <button className={styles.mobileMenu} onClick={()=>setMobileMenu(true)}>☰</button>
     <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
-      <div className={styles.brand}><img src="/assets/st-giles-heart.jpg" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
+      <div className={styles.brand}><img src="/assets/st-giles-heart.jpg" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EDINBURGH · EST 2024</small></div></div><a className={styles.spectatorLink} href="/table" target="_blank" rel="noreferrer">Spectator view ↗</a>
       <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
       <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false)}}></button>
       <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
     </aside>
     {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>}
-    <section className={styles.main}>
+    <section className={styles.main} data-current-view={view}>
       {emulatedProfileId&&<div className={styles.notice} style={{margin:"10px 14px 0",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderColor:"rgba(240,207,170,.55)",background:"rgba(116,32,52,.92)"}}><span><strong>EMULATION ACTIVE</strong><br/><small>Viewing as {emulatedProfile?.display_name??"another user"} · read-only</small></span><button className={styles.primary} type="button" onClick={()=>{setEmulatedProfileId(null);setView("admin");setAdminView("users");setMobileMenu(false)}}>Exit emulation</button></div>}
       <header className={styles.hero}><div><h1>BOUNCE</h1><h2>— BTTS LEAGUE —</h2><p>EDINBURGH · HEART OF MIDLOTHIAN · EST 2024</p></div><div className={styles.gwCard}><label>Season {seasonLabel}</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small>{isDemo&&<div className={styles.demoSwitch}><button className={demoPerspective==="member"?styles.active:""} onClick={()=>{setDemoPerspective("member");setView("dashboard")}}>Member View</button><button className={demoPerspective==="admin"?styles.active:""} onClick={()=>{setDemoPerspective("admin");setView("dashboard")}}>Admin View</button></div>}</div></header>
       <div className={styles.content}><div className={styles.page}>
@@ -309,6 +319,7 @@ export default function LeagueApp(props: Props) {
         {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>}
         {view==="fixtures" && <FixturesPage fixtures={dedupeFixtures(allFixtures)}/>}
         {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee} fixtures={fixtures} predictions={predictions} profiles={profiles} gameweeks={initialGameweeks} adjustments={adjustments}/>}
+        {view==="stats" && <LeagueStats standings={standings} seasonLabel={seasonLabel} fixtures={fixtures} predictions={predictions} profiles={profiles} gameweeks={initialGameweeks} adjustments={adjustments}/>}
         {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>}
         {view==="combined" && <CombinedResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} standings={standings} seasonLabel={seasonLabel} entryFee={entryFee}/>}
         {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>}
@@ -318,6 +329,13 @@ export default function LeagueApp(props: Props) {
         {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>}
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE · v{RELEASE_VERSION}</footer>
     </section>
+    <nav className={styles.mobileDock} aria-label="Primary navigation">
+      <button className={view==="dashboard"?styles.active:""} onClick={()=>setView("dashboard")}><span>⌂</span><small>Home</small></button>
+      <button className={view==="pick"?styles.active:""} onClick={()=>setView("pick")}><span>⚑</span><small>Pick</small></button>
+      <button className={view==="table"?styles.active:""} onClick={()=>setView("table")}><span>☷</span><small>Table</small></button>
+      <button className={view==="stats"?styles.active:""} onClick={()=>setView("stats")}><span>◫</span><small>Stats</small></button>
+      <button onClick={()=>setMobileMenu(true)}><span>☰</span><small>More</small></button>
+    </nav>
     {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
     {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
     {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
@@ -618,8 +636,52 @@ function LeagueTable({standings,seasonLabel,gameweek,entryFee,fixtures,predictio
   const insights=standings.map(row=>{const done=completed.filter(x=>x.prediction.member_id===row.id);const picks=selected.filter(x=>x.prediction.member_id===row.id);const goals=done.reduce((sum,x)=>sum+Number(x.fixture.home_score??0)+Number(x.fixture.away_score??0),0);const home=done.filter(x=>(x.fixture.home_score??0)>(x.fixture.away_score??0)).length;const away=done.filter(x=>(x.fixture.away_score??0)>(x.fixture.home_score??0)).length;const draws=done.filter(x=>(x.fixture.home_score??0)===(x.fixture.away_score??0)).length;const comps=new Map<string,number>();picks.forEach(x=>{const c=competitionDisplayName(x.fixture);comps.set(c,(comps.get(c)??0)+1)});const favourite=[...comps.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]?.[0]??"—";return {...row,goals,average:done.length?goals/done.length:0,home,away,draws,favourite}});
   const goalKing=[...insights].sort((a,b)=>b.goals-a.goals||b.wins-a.wins)[0];const homeHunter=[...insights].sort((a,b)=>b.home-a.home)[0];const awayHunter=[...insights].sort((a,b)=>b.away-a.away)[0];const drawMagnet=[...insights].sort((a,b)=>b.draws-a.draws)[0];const bttsKing=[...insights].sort((a,b)=>b.wins-a.wins||b.points-a.points)[0];const leagueGoals=completed.reduce((sum,x)=>sum+Number(x.fixture.home_score??0)+Number(x.fixture.away_score??0),0);
   const facts=[{label:"GOAL MAGNET",value:goalKing?.goals?goalKing.name:"—",detail:goalKing?.goals?`${goalKing.goals} goals in finished picks`:"Waiting for finished picks"},{label:"BTTS KING",value:bttsKing?.wins?bttsKing.name:"—",detail:bttsKing?.wins?`${bttsKing.wins} BTTS wins`:"No BTTS wins yet"},{label:"HOME-WIN HUNTER",value:homeHunter?.home?homeHunter.name:"—",detail:homeHunter?.home?`${homeHunter.home} selected matches ended home wins`:"No trend yet"},{label:"AWAY-WIN HUNTER",value:awayHunter?.away?awayHunter.name:"—",detail:awayHunter?.away?`${awayHunter.away} selected matches ended away wins`:"No trend yet"},{label:"DRAW MAGNET",value:drawMagnet?.draws?drawMagnet.name:"—",detail:drawMagnet?.draws?`${drawMagnet.draws} selected matches ended level`:"No trend yet"}];
-  return <section className={styles.leaguePage}><Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={prizePot}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading><div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} ${styles.leagueTableFirst}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""} ${i<3?styles.tableRowTopThree:""}`}><span className={styles.positionCell}>{i===0?"🏆":i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div><SeasonPositionTimeline profiles={profiles} gameweeks={gameweeks} predictions={predictions} adjustments={adjustments}/><div className={styles.leagueStatsBand}><article><span>LEAGUE LEADER</span><strong>{standings[0]?.name??"—"}</strong><small>{standings[0]?`${standings[0].points} pts`:"No scores yet"}</small></article><article><span>SEASON POT</span><strong>£{prizePot.toFixed(0)}</strong><small>{standings.length} active players</small></article><article><span>GOALS IN PICKS</span><strong>{leagueGoals}</strong><small>Finished selected fixtures</small></article><article><span>FINISHED PICKS</span><strong>{completed.length}</strong><small>{predictions.length} selections recorded</small></article></div><div className={styles.seasonFacts}>{facts.map(f=><article key={f.label}><span>{f.label}</span><strong>{f.value}</strong><small>{f.detail}</small></article>)}</div><div className={`${styles.panel} ${styles.playerInsightPanel}`}><div className={styles.panelHeading}><div><div className={styles.title}>PLAYER TENDENCIES</div><h3>Season selection stats</h3></div></div><div className={styles.playerInsightGrid}>{insights.map(r=><article key={r.id} className={styles.playerInsightCard}><header><strong>{r.name}</strong><span>{r.points} pts</span></header><div><span>TOTAL GOALS</span><b>{r.goals}</b></div><div><span>AVG GOALS / PICK</span><b>{r.average?r.average.toFixed(1):"—"}</b></div><div><span>RESULT SPLIT</span><b>{r.home}H · {r.draws}D · {r.away}A</b></div><footer><span>Most picked competition</span><strong>{r.favourite}</strong></footer></article>)}</div></div></section>
+  return <section className={styles.leaguePage}><Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={prizePot}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading><div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} ${styles.leagueTableFirst}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""} ${i<3?styles.tableRowTopThree:""}`}><span className={styles.positionCell}>{i===0?"🏆":i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div><SeasonPositionTimeline profiles={profiles} gameweeks={gameweeks} predictions={predictions} adjustments={adjustments}/><div className={styles.tableToStats}><div><span>MORE THAN THE TABLE</span><strong>Explore the season story</strong><small>Strike rates, streaks, odds, leaders and player tendencies now live in their own League Stats section.</small></div><button onClick={()=>window.location.hash="league-stats"}>Open League Stats →</button></div></section>
 }
+function LeagueStats({standings,seasonLabel,fixtures,predictions,profiles,gameweeks,adjustments}:{standings:Standing[];seasonLabel:string;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];gameweeks:Gameweek[];adjustments:ScoreAdjustment[]}){
+  const fixtureById=new Map(fixtures.map(f=>[f.id,f]));
+  const gameweekById=new Map(gameweeks.map(g=>[g.id,g]));
+  const finished=predictions.map(p=>({p,f:fixtureById.get(p.fixture_id)})).filter((x):x is {p:Prediction;f:Fixture}=>Boolean(x.f&&x.p.points_awarded!=null));
+  const orderedWeeks=[...gameweeks].sort((a,b)=>a.number-b.number);
+  const frac=(value:string|null)=>{if(!value)return 0;const m=value.match(/(\d+)\s*\/\s*(\d+)/);return m?Number(m[1])/Math.max(Number(m[2]),1):0};
+  const rows=profiles.map(profile=>{
+    const picks=predictions.filter(p=>p.member_id===profile.id).sort((a,b)=>(gameweekById.get(a.gameweek_id)?.number??999)-(gameweekById.get(b.gameweek_id)?.number??999));
+    const scored=picks.filter(p=>p.points_awarded!=null);
+    const wins=scored.filter(p=>p.points_awarded===3);
+    const scoreNil=scored.filter(p=>p.points_awarded===1).length;
+    const zeroZero=scored.filter(p=>p.points_awarded===-1).length;
+    let current=0,best=0;
+    for(const gw of orderedWeeks){const p=scored.find(x=>x.gameweek_id===gw.id);if(p?.points_awarded===3){current++;best=Math.max(best,current)}else if(p?.points_awarded!=null)current=0;}
+    let tail=0;for(let i=orderedWeeks.length-1;i>=0;i--){const p=scored.find(x=>x.gameweek_id===orderedWeeks[i].id);if(!p)continue;if(p.points_awarded===3)tail++;else break;}
+    const winFixtures=wins.map(p=>fixtureById.get(p.fixture_id)).filter(Boolean) as Fixture[];
+    const biggest=[...winFixtures].sort((a,b)=>frac(b.odds_fractional)-frac(a.odds_fractional))[0];
+    const comps=new Map<string,{picks:number,wins:number}>();picks.forEach(p=>{const f=fixtureById.get(p.fixture_id);if(!f)return;const k=competitionDisplayName(f);const e=comps.get(k)??{picks:0,wins:0};e.picks++;if(p.points_awarded===3)e.wins++;comps.set(k,e)});
+    const favourite=[...comps.entries()].sort((a,b)=>b[1].picks-a[1].picks)[0]?.[0]??"—";
+    const bestLeague=[...comps.entries()].filter(([,v])=>v.picks>0).sort((a,b)=>(b[1].wins/b[1].picks)-(a[1].wins/a[1].picks)||b[1].wins-a[1].wins)[0]?.[0]??"—";
+    const standing=standings.find(x=>x.id===profile.id);
+    return {id:profile.id,name:profile.display_name,points:standing?.points??0,played:standing?.played??scored.length,wins:wins.length,scoreNil,zeroZero,strike:scored.length?wins.length/scored.length*100:0,ppg:scored.length?(standing?.points??0)/scored.length:0,currentStreak:tail,bestStreak:best,biggest:biggest?.odds_fractional??"—",favourite,bestLeague};
+  }).sort((a,b)=>b.points-a.points||b.strike-a.strike||a.name.localeCompare(b.name));
+  const bestForm=[...rows].sort((a,b)=>b.currentStreak-a.currentStreak||b.strike-a.strike)[0];
+  const bestStrike=[...rows].filter(r=>r.played>0).sort((a,b)=>b.strike-a.strike||b.wins-a.wins)[0];
+  const biggest=[...rows].sort((a,b)=>frac(b.biggest)-frac(a.biggest))[0];
+  const leader=rows[0];
+  return <section className={styles.statsPage}>
+    <Heading eyebrow={`SEASON ${seasonLabel} · LEAGUE INTELLIGENCE`} title="League Stats"><p>The numbers behind the table — form, efficiency, streaks, odds and player tendencies.</p></Heading>
+    <div className={styles.statsHero}>
+      <div className={styles.statsHeroCopy}><span>THE SEASON STORY</span><h3>{leader?.name??"—"} currently sets the pace</h3><p>Use the cards below to see who is clinical, who is ambitious and who keeps finding trouble.</p></div>
+      <div className={styles.statsHeroMosaic}><img src="/assets/st-giles-heart.jpg" alt="Heart of Midlothian pavement mosaic"/></div>
+    </div>
+    <div className={styles.leaderStrip}>
+      <article><span>LEAGUE LEADER</span><strong>{leader?.name??"—"}</strong><small>{leader?`${leader.points} pts`:"No scores yet"}</small></article>
+      <article><span>BEST CURRENT FORM</span><strong>{bestForm?.currentStreak?bestForm.name:"—"}</strong><small>{bestForm?.currentStreak?`${bestForm.currentStreak} straight BTTS wins`:"No active streak"}</small></article>
+      <article><span>HIGHEST STRIKE RATE</span><strong>{bestStrike?.name??"—"}</strong><small>{bestStrike?`${bestStrike.strike.toFixed(0)}% BTTS`:"No scored picks"}</small></article>
+      <article><span>BIGGEST WINNER</span><strong>{biggest?.biggest!=="—"?biggest?.name:"—"}</strong><small>{biggest?.biggest!=="—"?`BTTS ${biggest?.biggest}`:"Waiting for a priced winner"}</small></article>
+    </div>
+    <div className={styles.statLeaderboard}><div className={styles.statLeaderboardHead}><span>PLAYER</span><span>SR%</span><span>PPG</span><span>STREAK</span><span>BEST</span></div>{rows.map((r,i)=><div className={styles.statLeaderboardRow} key={r.id}><span><b>{i+1}</b><strong>{r.name}</strong></span><span>{r.strike.toFixed(0)}%</span><span>{r.ppg.toFixed(1)}</span><span>{r.currentStreak?r.currentStreak:"—"}</span><span>{r.biggest}</span></div>)}</div>
+    <div className={styles.playerStatGrid}>{rows.map(r=><article key={r.id} className={styles.playerStatCard}><header><div><span>PLAYER PROFILE</span><h3>{r.name}</h3></div><strong>{r.points} pts</strong></header><div className={styles.playerStatMetrics}><div><span>BTTS STRIKE</span><b>{r.strike.toFixed(0)}%</b></div><div><span>POINTS / PICK</span><b>{r.ppg.toFixed(1)}</b></div><div><span>+3 WINS</span><b>{r.wins}</b></div><div><span>SCORE-NIL</span><b>{r.scoreNil}</b></div><div><span>0-0</span><b>{r.zeroZero}</b></div><div><span>BEST STREAK</span><b>{r.bestStreak||"—"}</b></div></div><footer><p><span>BIGGEST WINNER</span><strong>{r.biggest}</strong></p><p><span>MOST PICKED</span><strong>{r.favourite}</strong></p><p><span>BEST LEAGUE</span><strong>{r.bestLeague}</strong></p></footer></article>)}</div>
+  </section>
+}
+
 function CombinedResultsPage({gameweek,fixtures,predictions,profiles,standings,seasonLabel,entryFee}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];standings:Standing[];seasonLabel:string;entryFee:number}){
   const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter((x):x is {prediction:Prediction;fixture:Fixture;profile:Profile}=>Boolean(x.fixture&&x.profile));
   return <section className="combinedResultsPage"><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Combined Results"><p>Selected fixtures and the current league table together.</p></Heading><div className={`${styles.panel} combinedResultsFixtures`}><div className={styles.title}>SELECTED FIXTURES</div>{selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile.display_name}</strong><span>{fixture.home_team} v {fixture.away_team}</span><b className={styles.score}>{fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`}</b><span>{fixtureStatusLabel(fixture)}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}{!selected.length&&<div className={styles.notice}>No selected fixtures yet.</div>}</div><div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} combinedResultsTable`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""} ${i<3?styles.tableRowTopThree:""}`}><span className={styles.positionCell}>{i===0?"🏆":i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div><div className="combinedResultsMeta">Season {seasonLabel} · Prize pot £{(standings.length*entryFee).toFixed(0)}</div></section>
@@ -765,7 +827,7 @@ function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <sect
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
 function ReleaseHistory(){
   const releases=[
-    {version:"2.0.0",date:"16 Aug 2026",summary:"Season Position Timeline and v2 league-table experience",changes:["Added an animated Season Position Timeline beneath the main League Table, advancing gameweek by gameweek through the season","Historical positions use the same standings rules as the live league: points, fewest 0-0 results, most BTTS wins, then alphabetical order","Added Play, Pause, Restart and a gameweek scrubber so the season race can be replayed or inspected manually","Players can be tapped to highlight their line while fading the rest, with current-position labels moving through the animation","The chart is fully responsive and designed to fit the mobile card width without horizontal scrolling","Refreshed the League Table presentation with subtle Heart of Midlothian pavement-mosaic texture while retaining the maroon and gold Bounce identity","All existing scoring, selections, live results, sharing, admin controls and mobile Dashboard functionality are preserved"]},
+    {version:"2.0.0",date:"16 Aug 2026",summary:"Complete v2 mobile-first visual rebuild and season storytelling",changes:["Added an animated Season Position Timeline beneath the main League Table, advancing gameweek by gameweek through the season","Historical positions use the same standings rules as the live league: points, fewest 0-0 results, most BTTS wins, then alphabetical order","Added Play, Pause, Restart and a gameweek scrubber so the season race can be replayed or inspected manually","Players can be tapped to highlight their line while fading the rest, with current-position labels moving through the animation","The chart is fully responsive and designed to fit the mobile card width without horizontal scrolling","Refreshed the League Table presentation with subtle Heart of Midlothian pavement-mosaic texture while retaining the maroon and gold Bounce identity","All existing scoring, selections, live results, sharing, admin controls and mobile Dashboard functionality are preserved"]},
     {version:"1.4.9.11",date:"16 Aug 2026",summary:"Pre-v2 repository and build cleanup",changes:["Baked the complete v1.4.9.10 application state into the real source files so releases no longer depend on historical patch scripts at build time","Simplified the production build back to the standard Next.js build command","Removed obsolete v1.4.x release patch folders and legacy build workflows from the active codebase while retaining their full history in Git","Removed only byte-for-byte duplicate root files where a canonical copy already exists in app, lib, public or supabase","No league behaviour, scoring rules, live results, selections or user-facing functionality was intentionally changed"]},
     {version:"1.4.9.10",date:"15 Aug 2026",summary:"Kept mobile Recent Form names safely inside the card",changes:["Added a consistent left inset to every mobile Recent Form player row so names no longer touch or cross the card edge","Kept the larger player-name styling while ensuring long names remain contained inside the available left column","Preserved the compact right-aligned six-result block and the 6/12/18-week wrapping behaviour","Desktop Recent Form remains unchanged"]},
     {version:"1.4.9.9",date:"15 Aug 2026",summary:"Refined mobile Recent Form alignment",changes:["Moved the compact six-result form block to the right side of each mobile player row so the layout uses the available card width more naturally","Increased mobile player-name size and weight and aligned every name consistently in a flexible left column","6-week results remain on one row while 12-week and 18-week views continue wrapping into rows of six without horizontal scrolling","Desktop Recent Form remains unchanged"]},
