@@ -1,0 +1,45 @@
+/* Mobile navigation hotfix: allow the full drawer to scroll above the fixed bottom dock,
+   while keeping navigation rows slightly tighter and clearer for every role. */
+@media (max-width:650px){
+  main[data-view] > aside{
+    height:100dvh!important;
+    max-height:100dvh!important;
+    box-sizing:border-box!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom))!important;
+    scrollbar-width:thin;
+  }
+
+  main[data-view] > aside nav{
+    gap:2px!important;
+  }
+
+  main[data-view] > aside nav button{
+    padding:8px 10px!important;
+    min-height:40px!important;
+    color:#eadfd7!important;
+    font-weight:850!important;
+    line-height:1.12!important;
+    text-shadow:0 1px 10px rgba(0,0,0,.42);
+  }
+
+  main[data-view] > aside nav button:hover,
+  main[data-view] > aside nav button[aria-current="page"],
+  main[data-view] > aside nav button[class*="active"]{
+    color:#fff5e9!important;
+  }
+
+  main[data-view] > aside a,
+  main[data-view] > aside > button{
+    font-weight:850!important;
+  }
+
+  main[data-view] > aside [class*="spectatorLink"],
+  main[data-view] > aside [class*="mobileMenuClose"]{
+    padding-top:7px!important;
+    padding-bottom:7px!important;
+  }
+}
