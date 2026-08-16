@@ -5,6 +5,7 @@ import "./public-v2.css";
 import "./user-heart-watermark.css";
 import "./dashboard-preview-overrides.css";
 import "./v2-completion.css";
+import "./header-alignment-hotfix.css";
 import V2CompletionEnhancer from "./V2CompletionEnhancer";
 import type { Metadata, Viewport } from "next";
 
