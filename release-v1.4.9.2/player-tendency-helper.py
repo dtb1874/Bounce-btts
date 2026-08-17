@@ -6,7 +6,7 @@ league_path = Path("app/LeagueApp.tsx")
 public = public_path.read_text()
 league = league_path.read_text()
 
-helper = '<p className="playerTendencyHint">Tap a player to expand stats</p>'
+helper = '<p style={{margin:"-4px 0 10px",fontSize:"11px",color:"#8f8a86",letterSpacing:".02em"}}>Tap a player to expand stats</p>'
 
 public_anchor = '<div className={styles.sectionHeading}><div><span>SEASON SELECTION PROFILE</span><h3>Player Tendencies</h3></div></div>'
 public_replacement = public_anchor + helper
