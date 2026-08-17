@@ -85,7 +85,5 @@ export default function DataShareButton(props: Props){
       else {const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
     } finally {setBusy(false);}
   }
-  return <button type="button" className={`dataShareButton ${props.compact?"compact":""}`} onClick={share} disabled={busy}>
-    <span aria-hidden="true">▣</span><strong>{busy?"Creating image…":props.label}</strong><small>Share as a formatted image</small>
-  </button>;
+  return <button type="button" className={`dataShareButton shareCompactWhatsApp ${props.compact?"compact":""}`} onClick={share} disabled={busy} aria-label={`${props.label} to WhatsApp`}>{busy?"Creating…":"Share to WhatsApp"}</button>;
 }
