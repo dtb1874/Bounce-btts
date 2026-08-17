@@ -2,9 +2,13 @@ from pathlib import Path
 
 league_path = Path("app/LeagueApp.tsx")
 page_path = Path("app/page.tsx")
+login_path = Path("app/login/page.tsx")
+public_table_path = Path("app/PublicLeagueTable.tsx")
 
 league = league_path.read_text()
 page = page_path.read_text()
+login = login_path.read_text()
+public_table = public_table_path.read_text()
 
 old_type = 'type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string; season_id: string | null };'
 new_type = 'type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string; season_id: string | null; selection_rule_mode?: "exact_time" | "any_kickoff"; selection_weekday?: number; selection_time?: string };'
@@ -75,6 +79,15 @@ if new_query not in page:
         raise SystemExit("Gameweek query anchor not found")
     page = page.replace(old_query, new_query, 1)
 
+# Crest asset hotfix: use a versioned URL so existing iOS/browser caches cannot keep the legacy crest.
+old_crest = "/assets/hearts-crest.png"
+new_crest = "/assets/hearts-crest.png?v=gold-crest-20260817-1945"
+league = league.replace(old_crest, new_crest)
+login = login.replace(old_crest, new_crest)
+public_table = public_table.replace(old_crest, new_crest)
+
 league_path.write_text(league)
 page_path.write_text(page)
-print("Applied v1.4.9.2 gameweek admin cards")
+login_path.write_text(login)
+public_table_path.write_text(public_table)
+print("Applied v1.4.9.2 gameweek admin cards + crest cache-bust hotfix")
