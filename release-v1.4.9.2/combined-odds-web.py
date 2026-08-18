@@ -8,20 +8,17 @@ globals = globals_path.read_text()
 helper_anchor = 'function initials(name: string) { return name.split(/\\s+/).map(p => p[0] ?? "").join("").slice(0,2).toUpperCase(); }'
 helper_code = '''function combinedFractionalOddsFromStrings(values:Array<string|null|undefined>){
   if(!values.length)return null;
-  const gcdNumber=(a:number,b:number)=>{a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){const t=b;b=a%b;a=t}return a||1};
-  let decimalNumerator=1,decimalDenominator=1;
+  let combinedDecimal=1;
   for(const value of values){
-    const match=value?.trim().match(/^(\\d+)\\s*\\/\\s*(\\d+)$/);
+    const match=value?.trim().match(/^(\\d+(?:\\.\\d+)?)\\s*\\/\\s*(\\d+(?:\\.\\d+)?)$/);
     if(!match)return null;
     const numerator=Number(match[1]),denominator=Number(match[2]);
-    if(!Number.isSafeInteger(numerator)||!Number.isSafeInteger(denominator)||denominator<=0)return null;
-    decimalNumerator*=numerator+denominator;decimalDenominator*=denominator;
-    const common=gcdNumber(decimalNumerator,decimalDenominator);decimalNumerator/=common;decimalDenominator/=common;
-    if(!Number.isSafeInteger(decimalNumerator)||!Number.isSafeInteger(decimalDenominator))return null;
+    if(!Number.isFinite(numerator)||!Number.isFinite(denominator)||denominator<=0)return null;
+    combinedDecimal*=1+numerator/denominator;
   }
-  let numerator=decimalNumerator-decimalDenominator,denominator=decimalDenominator;
-  const common=gcdNumber(numerator,denominator);numerator/=common;denominator/=common;
-  return `${numerator}/${denominator}`;
+  const fractionalTotal=combinedDecimal-1;
+  if(!Number.isFinite(fractionalTotal)||fractionalTotal<0)return null;
+  return `${fractionalTotal.toFixed(2)}/1`;
 }
 '''
 if 'function combinedFractionalOddsFromStrings' not in league:
@@ -34,7 +31,7 @@ if weekly_marker not in league:
     raise SystemExit("Weekly picks panel not found")
 head, tail = league.split(weekly_marker, 1)
 insert_anchor = '            </div>\n          </div>\n          <div className={styles.pickList}>'
-odds_strip = '            </div>\n          </div>\n          <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong><small>lowest fractional terms</small></div>\n          <div className={styles.pickList}>'
+odds_strip = '            </div>\n          </div>\n          <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong><small>combined price</small></div>\n          <div className={styles.pickList}>'
 if 'weeklyCombinedOddsStrip' not in tail:
     if insert_anchor not in tail:
         raise SystemExit("Weekly picks action-row closing anchor not found")
