@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "python release-v1.4.9.2/apply_patch.py && python release-v1.4.9.2/player-tendency-helper.py && python release-v1.4.9.2/combined-odds-web.py && python release-v1.4.9.2/odds-refresh-fix.py && python release-v1.4.9.2/admin-odds-checker.py && next build",
+    "build": "python release-v1.4.9.2/apply_patch.py && python release-v1.4.9.2/player-tendency-helper.py && python release-v1.4.9.2/combined-odds-web.py && python release-v1.4.9.2/odds-refresh-fix.py && python release-v1.4.9.2/admin-odds-checker.py && python release-v1.4.9.2/history-gameweek-archive.py && next build",
     "start": "next start",
     "lint": "next lint"
   },
