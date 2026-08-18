@@ -47,7 +47,7 @@ if css_marker not in globals:
 .weeklyCombinedOddsStrip strong{color:#e8c77c;font-size:16px;letter-spacing:.02em;text-transform:none}
 .weeklyCombinedOddsStrip small{color:#84776d;font-size:8px;letter-spacing:.03em;text-transform:none}
 @media(max-width:650px){
-  .weeklyCombinedOddsStrip{justify-content:flex-start;font-size:7.5px;gap:5px;margin-top:7px;padding-top:6px}
+  .weeklyCombinedOddsStrip{justify-content:flex-end;font-size:7.5px;gap:5px;margin-top:7px;padding-top:6px;text-align:right}
   .weeklyCombinedOddsStrip strong{font-size:13px}
   .weeklyCombinedOddsStrip small{font-size:7px}
 }
