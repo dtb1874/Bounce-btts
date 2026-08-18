@@ -31,35 +31,25 @@ function sorted(picks:FixtureSharePick[]){return [...picks].sort((a,b)=>new Date
 function scoreLabel(pick:FixtureSharePick){const status=pick.status??"";if(pick.homeScore==null||pick.awayScore==null)return "";if(liveStatuses.has(status))return `${pick.homeScore}–${pick.awayScore} · ${pick.elapsed!=null?`${pick.elapsed}′`:status}`;if(status==="HT")return `${pick.homeScore}–${pick.awayScore} · HT`;if(finishedStatuses.has(status))return `${pick.homeScore}–${pick.awayScore} · ${status}`;return `${pick.homeScore}–${pick.awayScore}`}
 function pickState(pick:FixtureSharePick):{text:string;state:PickState}{const finished=finishedStatuses.has(pick.status??"");const home=pick.homeScore,away=pick.awayScore;if(home==null||away==null)return {text:"PENDING",state:"pending"};if(home===0&&away===0)return {text:finished?"0-0  -1":"0-0 LIVE",state:"zeroZero"};if(home>0&&away>0)return {text:finished?"WON  +3":"WINNING",state:"win"};return {text:finished?"SCORE-NIL  +1":"SCORE-NIL LIVE",state:"scoreNil"}}
 function colours(state:PickState){if(state==="win")return {fill:"#1f7a45",stroke:"#67c58a",text:"#f2fff6"};if(state==="scoreNil")return {fill:"#8b5b16",stroke:"#d6a54c",text:"#fff6df"};if(state==="zeroZero")return {fill:"#7c2031",stroke:"#d05c72",text:"#fff1f4"};return {fill:"#41434a",stroke:"#747984",text:"#edf0f5"}}
-function gcd(a:number,b:number){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){const t=b;b=a%b;a=t}return a||1}
-function decimalToFraction(value:number,maxDenominator=10000){
-  if(!Number.isFinite(value)||value<0)return null;
-  let bestNumerator=Math.round(value),bestDenominator=1,bestError=Math.abs(value-bestNumerator);
-  for(let denominator=1;denominator<=maxDenominator;denominator++){
-    const numerator=Math.round(value*denominator);
-    const error=Math.abs(value-numerator/denominator);
-    if(error<bestError){bestNumerator=numerator;bestDenominator=denominator;bestError=error;if(error<1e-10)break}
-  }
-  const common=gcd(bestNumerator,bestDenominator);
-  return `${bestNumerator/common}/${bestDenominator/common}`;
-}
 function combinedFractionalOdds(picks:FixtureSharePick[]){
   if(!picks.length)return null;
   let combinedDecimal=1;
   for(const pick of picks){
-    const match=pick.odds?.trim().match(/^(\d+)\s*\/\s*(\d+)$/);
+    const match=pick.odds?.trim().match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
     if(!match)return null;
     const numerator=Number(match[1]),denominator=Number(match[2]);
     if(!Number.isFinite(numerator)||!Number.isFinite(denominator)||denominator<=0)return null;
     combinedDecimal*=1+numerator/denominator;
   }
-  return decimalToFraction(combinedDecimal-1);
+  const fractionalTotal=combinedDecimal-1;
+  if(!Number.isFinite(fractionalTotal)||fractionalTotal<0)return null;
+  return `${fractionalTotal.toFixed(2)}/1`;
 }
 function drawCombinedOddsFooter(ctx:CanvasRenderingContext2D,picks:FixtureSharePick[],y:number){
   const odds=combinedFractionalOdds(picks);
   ctx.fillStyle="#d8b76f";
   ctx.font="700 16px Arial,sans-serif";
-  ctx.fillText(odds?`Combined BTTS odds: ${odds} · shown in lowest fractional terms`:"Combined BTTS odds unavailable · one or more selections has no fractional price",70,y);
+  ctx.fillText(odds?`Combined BTTS odds: ${odds} · combined price`:"Combined BTTS odds unavailable · one or more selections has no fractional price",70,y);
 }
 
 function drawHeader(ctx:CanvasRenderingContext2D,width:number,seasonLabel:string,gameweekNumber:number,title:string){const bg=ctx.createLinearGradient(0,0,width,700);bg.addColorStop(0,"#090a0e");bg.addColorStop(.62,"#171116");bg.addColorStop(1,"#421524");ctx.fillStyle=bg;ctx.fillRect(0,0,width,700);ctx.fillStyle="rgba(122,34,55,.26)";ctx.beginPath();ctx.arc(1070,110,240,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eadbc9";ctx.font="700 70px Georgia,serif";ctx.fillText("BOUNCE",70,92);ctx.fillStyle="#c8af94";ctx.font="600 27px Georgia,serif";ctx.fillText("BTTS LEAGUE",74,136);ctx.fillStyle="#a9917f";ctx.font="700 19px Arial,sans-serif";ctx.fillText(`SEASON ${seasonLabel}  •  GAMEWEEK ${gameweekNumber}`,74,181);ctx.fillStyle="#f0cfaa";ctx.font="800 27px Arial,sans-serif";ctx.textAlign="right";ctx.fillText(title,1130,135);ctx.textAlign="left";ctx.strokeStyle="#6b3442";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(70,212);ctx.lineTo(1130,212);ctx.stroke()}
