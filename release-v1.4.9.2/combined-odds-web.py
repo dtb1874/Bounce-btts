@@ -31,7 +31,7 @@ if weekly_marker not in league:
     raise SystemExit("Weekly picks panel not found")
 head, tail = league.split(weekly_marker, 1)
 insert_anchor = '            </div>\n          </div>\n          <div className={styles.pickList}>'
-odds_strip = '            </div>\n          </div>\n          <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong><small>combined price</small></div>\n          <div className={styles.pickList}>'
+odds_strip = '            </div>\n          </div>\n          <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong></div>\n          <div className={styles.pickList}>'
 if 'weeklyCombinedOddsStrip' not in tail:
     if insert_anchor not in tail:
         raise SystemExit("Weekly picks action-row closing anchor not found")
@@ -45,11 +45,9 @@ if css_marker not in globals:
 /* combined-odds-web-20260818 */
 .weeklyCombinedOddsStrip{display:flex;align-items:baseline;justify-content:flex-end;gap:7px;margin:8px 0 4px;padding-top:7px;border-top:1px solid rgba(216,183,111,.16);white-space:nowrap;color:#bda58e;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
 .weeklyCombinedOddsStrip strong{color:#e8c77c;font-size:16px;letter-spacing:.02em;text-transform:none}
-.weeklyCombinedOddsStrip small{color:#84776d;font-size:8px;letter-spacing:.03em;text-transform:none}
 @media(max-width:650px){
   .weeklyCombinedOddsStrip{justify-content:flex-end;font-size:7.5px;gap:5px;margin-top:7px;padding-top:6px;text-align:right}
   .weeklyCombinedOddsStrip strong{font-size:13px}
-  .weeklyCombinedOddsStrip small{font-size:7px}
 }
 '''
 
