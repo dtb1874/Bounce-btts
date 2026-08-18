@@ -51,6 +51,44 @@ if new_fixture_odds not in text:
         raise SystemExit("fixtureOdds anchor not found")
     text = text.replace(old_fixture_odds, new_fixture_odds, 1)
 
+old_candidates = '''      let candidatesQuery = admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
+        .not("provider_fixture_id", "is", null).eq("is_eligible", true).in("status", ["NS", "TBD"]);
+      candidatesQuery = requestedIds.size
+        ? candidatesQuery.in("gameweek_id", targetWeeks.map((week: any) => week.id))
+        : candidatesQuery.gte("kickoff_at", new Date(now).toISOString()).lte("kickoff_at", new Date(upper).toISOString());
+      const { data: candidates } = await candidatesQuery.order("kickoff_at").limit(60);
+      for (const fixture of candidates ?? []) {'''
+
+new_candidates = '''      const targetWeekIds = targetWeeks.map((week: any) => week.id);
+      const { data: selectedPredictions } = targetWeekIds.length
+        ? await admin.from("predictions").select("fixture_id").in("gameweek_id", targetWeekIds).not("fixture_id", "is", null)
+        : { data: [] as any[] };
+      const selectedFixtureIds = [...new Set((selectedPredictions ?? []).map((row: any) => String(row.fixture_id)).filter(Boolean))];
+      const { data: selectedCandidates } = selectedFixtureIds.length
+        ? await admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
+            .in("id", selectedFixtureIds).not("provider_fixture_id", "is", null).in("status", ["NS", "TBD"])
+        : { data: [] as any[] };
+
+      let candidatesQuery = admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
+        .not("provider_fixture_id", "is", null).eq("is_eligible", true).in("status", ["NS", "TBD"]);
+      candidatesQuery = requestedIds.size
+        ? candidatesQuery.in("gameweek_id", targetWeekIds)
+        : candidatesQuery.gte("kickoff_at", new Date(now).toISOString()).lte("kickoff_at", new Date(upper).toISOString());
+      const { data: generalCandidates } = await candidatesQuery.order("kickoff_at").limit(60);
+      const seenCandidateIds = new Set<string>();
+      const candidates = [...(selectedCandidates ?? []), ...(generalCandidates ?? [])].filter((fixture: any) => {
+        const id = String(fixture.id);
+        if (seenCandidateIds.has(id)) return false;
+        seenCandidateIds.add(id);
+        return true;
+      });
+      for (const fixture of candidates) {'''
+
+if new_candidates not in text:
+    if old_candidates not in text:
+        raise SystemExit("odds candidate priority anchor not found")
+    text = text.replace(old_candidates, new_candidates, 1)
+
 old_update = '''          const result = await fixtureOdds(providerId, betId, tracker);
           const { error: oddsError } = await admin.from("fixtures").update({
             odds_fractional: result.odds,
@@ -74,4 +112,4 @@ if new_update not in text:
     text = text.replace(old_update, new_update, 1)
 
 path.write_text(text)
-print("Applied resilient paginated odds refresh and preserve-known-price fix")
+print("Applied resilient paginated odds refresh, preserve-known-price, and selected-fixture priority fix")
