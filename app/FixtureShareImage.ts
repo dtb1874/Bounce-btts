@@ -49,7 +49,7 @@ function drawCombinedOddsFooter(ctx:CanvasRenderingContext2D,picks:FixtureShareP
   const odds=combinedFractionalOdds(picks);
   ctx.fillStyle="#d8b76f";
   ctx.font="700 16px Arial,sans-serif";
-  ctx.fillText(odds?`Combined BTTS odds: ${odds} · combined price`:"Combined BTTS odds unavailable · one or more selections has no fractional price",70,y);
+  ctx.fillText(odds?`Combined BTTS odds: ${odds}`:"Combined BTTS odds unavailable · one or more selections has no fractional price",70,y);
 }
 
 function drawHeader(ctx:CanvasRenderingContext2D,width:number,seasonLabel:string,gameweekNumber:number,title:string){const bg=ctx.createLinearGradient(0,0,width,700);bg.addColorStop(0,"#090a0e");bg.addColorStop(.62,"#171116");bg.addColorStop(1,"#421524");ctx.fillStyle=bg;ctx.fillRect(0,0,width,700);ctx.fillStyle="rgba(122,34,55,.26)";ctx.beginPath();ctx.arc(1070,110,240,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eadbc9";ctx.font="700 70px Georgia,serif";ctx.fillText("BOUNCE",70,92);ctx.fillStyle="#c8af94";ctx.font="600 27px Georgia,serif";ctx.fillText("BTTS LEAGUE",74,136);ctx.fillStyle="#a9917f";ctx.font="700 19px Arial,sans-serif";ctx.fillText(`SEASON ${seasonLabel}  •  GAMEWEEK ${gameweekNumber}`,74,181);ctx.fillStyle="#f0cfaa";ctx.font="800 27px Arial,sans-serif";ctx.textAlign="right";ctx.fillText(title,1130,135);ctx.textAlign="left";ctx.strokeStyle="#6b3442";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(70,212);ctx.lineTo(1130,212);ctx.stroke()}
