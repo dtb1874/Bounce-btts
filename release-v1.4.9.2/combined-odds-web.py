@@ -29,28 +29,33 @@ if 'function combinedFractionalOddsFromStrings' not in league:
         raise SystemExit("Combined odds helper anchor not found")
     league = league.replace(helper_anchor, helper_code + helper_anchor, 1)
 
-old_heading = '<div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>'
-new_heading = '<div className="weeklyPicksHeading"><div><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div><div className="weeklyCombinedOdds"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong></div></div>'
-if new_heading not in league:
-    if old_heading not in league:
-        raise SystemExit("Weekly picks combined odds heading anchor not found")
-    league = league.replace(old_heading, new_heading, 1)
+weekly_marker = '<article id="weekly-picks"'
+if weekly_marker not in league:
+    raise SystemExit("Weekly picks panel not found")
+head, tail = league.split(weekly_marker, 1)
+insert_anchor = '            </div>\n          </div>\n          <div className={styles.pickList}>'
+odds_strip = '            </div>\n          </div>\n          <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong><small>lowest fractional terms</small></div>\n          <div className={styles.pickList}>'
+if 'weeklyCombinedOddsStrip' not in tail:
+    if insert_anchor not in tail:
+        raise SystemExit("Weekly picks action-row closing anchor not found")
+    tail = tail.replace(insert_anchor, odds_strip, 1)
+league = head + weekly_marker + tail
 
 css_marker = '/* combined-odds-web-20260818 */'
 if css_marker not in globals:
     globals += '''
 
 /* combined-odds-web-20260818 */
-.weeklyPicksHeading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;width:100%}
-.weeklyCombinedOdds{display:flex;align-items:baseline;gap:7px;white-space:nowrap;color:#bda58e;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
-.weeklyCombinedOdds strong{color:#e8c77c;font-size:15px;letter-spacing:.02em;text-transform:none}
+.weeklyCombinedOddsStrip{display:flex;align-items:baseline;justify-content:flex-end;gap:7px;margin:8px 0 4px;padding-top:7px;border-top:1px solid rgba(216,183,111,.16);white-space:nowrap;color:#bda58e;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+.weeklyCombinedOddsStrip strong{color:#e8c77c;font-size:16px;letter-spacing:.02em;text-transform:none}
+.weeklyCombinedOddsStrip small{color:#84776d;font-size:8px;letter-spacing:.03em;text-transform:none}
 @media(max-width:650px){
-  .weeklyPicksHeading{align-items:flex-end;gap:8px}
-  .weeklyCombinedOdds{font-size:7px;gap:4px}
-  .weeklyCombinedOdds strong{font-size:12px}
+  .weeklyCombinedOddsStrip{justify-content:flex-start;font-size:7.5px;gap:5px;margin-top:7px;padding-top:6px}
+  .weeklyCombinedOddsStrip strong{font-size:13px}
+  .weeklyCombinedOddsStrip small{font-size:7px}
 }
 '''
 
 league_path.write_text(league)
 globals_path.write_text(globals)
-print("Applied website combined BTTS odds")
+print("Applied website combined BTTS odds below dashboard actions")
