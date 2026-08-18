@@ -11,14 +11,25 @@ state_insert = '''  const selectedWinner = selected?.standings[0];
   const [historicArchiveOpen,setHistoricArchiveOpen]=useState(false);
   const [openHistoricWeek,setOpenHistoricWeek]=useState<number|null>(null);
   const [historicFormPlayer,setHistoricFormPlayer]=useState("combined");
-  const [historicFormRange,setHistoricFormRange]=useState<6|12|18>(6);
-  useEffect(()=>{setHistoricArchiveOpen(false);setOpenHistoricWeek(null);setHistoricFormPlayer("combined")},[id]);
+  const [historicFromWeek,setHistoricFromWeek]=useState(1);
+  const [historicToWeek,setHistoricToWeek]=useState(1);
+  useEffect(()=>{
+    const weeks=selectedHistorical?.weeks??1;
+    setHistoricArchiveOpen(false);
+    setOpenHistoricWeek(null);
+    setHistoricFormPlayer("combined");
+    setHistoricFromWeek(Math.max(1,weeks-5));
+    setHistoricToWeek(weeks);
+  },[id,selectedHistorical?.weeks]);
   const historicalWeeks = selectedHistorical ? Array.from({length:selectedHistorical.weeks},(_,index)=>{
     const rows=selectedHistorical.weekly.map((player)=>({name:player.name,code:player.weeklyResultCodes[index],points:player.weeklyAwardedPoints[index]})).filter((row)=>row.code!=null);
     return {number:index+1,rows,wins:rows.filter((row)=>row.code===1).length,scoreNil:rows.filter((row)=>row.code===0).length,losses:rows.filter((row)=>row.code===-1).length};
   }) : [];
   const historicFormNames=selectedHistorical?.weekly.map((player)=>player.name)??[];
-  const historicFormRows=(selectedHistorical?.weekly??[]).map((player)=>({name:player.name,results:player.weeklyResultCodes.map((code,index)=>({week:index+1,code,points:player.weeklyAwardedPoints[index]})).filter((row)=>row.code!=null).slice(-historicFormRange)}));
+  const historicFormRows=(selectedHistorical?.weekly??[]).map((player)=>({
+    name:player.name,
+    results:player.weeklyResultCodes.map((code,index)=>({week:index+1,code,points:player.weeklyAwardedPoints[index]})).filter((row)=>row.code!=null&&row.week>=historicFromWeek&&row.week<=historicToWeek)
+  }));
   const visibleHistoricFormRows=historicFormPlayer==="combined"?historicFormRows:historicFormRows.filter((player)=>player.name===historicFormPlayer);
 '''
 if 'const historicalWeeks = selectedHistorical' not in league:
@@ -42,12 +53,17 @@ archive_insert = archive_anchor + '''    {selectedHistorical&&<div className={`h
       </button>
       {historicArchiveOpen&&<div className="historicGwArchiveBody">
         <section className="historicFormViewer">
-          <div className="historicFormViewerHead"><div><span>RECENT FORM</span><h4>Quick result lookup</h4></div><small>Player or combined view</small></div>
+          <div className="historicFormViewerHead"><div><span>FORM RANGE</span><h4>Quick result lookup</h4></div><small>Choose players and exact gameweeks</small></div>
           <div className="historicFormPlayerButtons">
             <button type="button" className={historicFormPlayer==="combined"?"historicFormPlayerActive":""} onClick={()=>setHistoricFormPlayer("combined")}>Combined</button>
             {historicFormNames.map((name)=><button type="button" key={name} className={historicFormPlayer===name?"historicFormPlayerActive":""} onClick={()=>setHistoricFormPlayer(name)}>{name}</button>)}
           </div>
-          <div className="historicFormRangeRow"><span>Show last</span><div className="historicFormRanges" aria-label="Historical form range">{([6,12,18] as const).map((range)=><button type="button" key={range} className={historicFormRange===range?"historicFormRangeActive":""} onClick={()=>setHistoricFormRange(range)}>{range}</button>)}</div></div>
+          <div className="historicFormRangeSelectors">
+            <label><span>From GW</span><select value={historicFromWeek} onChange={e=>{const next=Number(e.target.value);setHistoricFromWeek(next);if(next>historicToWeek)setHistoricToWeek(next)}}>{Array.from({length:selectedHistorical.weeks},(_,index)=>index+1).map((week)=><option key={`from-${week}`} value={week}>GW {week}</option>)}</select></label>
+            <span className="historicFormRangeArrow">→</span>
+            <label><span>To GW</span><select value={historicToWeek} onChange={e=>{const next=Number(e.target.value);setHistoricToWeek(next);if(next<historicFromWeek)setHistoricFromWeek(next)}}>{Array.from({length:selectedHistorical.weeks},(_,index)=>index+1).map((week)=><option key={`to-${week}`} value={week}>GW {week}</option>)}</select></label>
+            <strong>{historicToWeek-historicFromWeek+1} week{historicToWeek-historicFromWeek===0?"":"s"}</strong>
+          </div>
           <div className={`historicFormRows ${historicFormPlayer==="combined"?"historicFormRowsCombined":""}`}>
             {visibleHistoricFormRows.map((player)=><div className="historicFormPlayerRow" key={player.name}>
               <strong>{player.name}</strong>
@@ -111,15 +127,16 @@ if css_marker not in globals:
 .historicFormPlayerButtons{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
 .historicFormPlayerButtons button{border:1px solid rgba(216,183,111,.18);border-radius:999px;background:transparent;color:#ad9d90;padding:7px 10px;font-size:10px;font-weight:800;cursor:pointer}
 .historicFormPlayerButtons button.historicFormPlayerActive{background:rgba(113,31,49,.48);border-color:rgba(216,183,111,.48);color:#efd08b}
-.historicFormRangeRow{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:10px;color:#8f8278;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.historicFormRanges{display:flex;gap:5px}
-.historicFormRanges button{min-width:38px;border:1px solid rgba(216,183,111,.18);border-radius:8px;background:transparent;color:#ad9d90;padding:7px;font-size:10px;font-weight:800;cursor:pointer}
-.historicFormRanges button.historicFormRangeActive{background:rgba(113,31,49,.38);border-color:rgba(216,183,111,.42);color:#efd08b}
+.historicFormRangeSelectors{display:flex;align-items:end;justify-content:flex-end;gap:8px;margin:2px 0 12px}
+.historicFormRangeSelectors label{display:grid;gap:4px;color:#8f8278;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.historicFormRangeSelectors select{border:1px solid rgba(216,183,111,.22);border-radius:8px;background:#171116;color:#eee2d6;padding:7px 9px;font-size:10px;font-weight:700}
+.historicFormRangeSelectors>strong{align-self:center;color:#b5a79a;font-size:9px;font-weight:700;white-space:nowrap}
+.historicFormRangeArrow{align-self:center;color:#d8b76f;font-size:15px;padding-top:12px}
 .historicFormRows{display:grid;gap:8px}
-.historicFormPlayerRow{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.045)}
+.historicFormPlayerRow{display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.045)}
 .historicFormPlayerRow:first-child{border-top:0}
 .historicFormPlayerRow>strong{color:#e6d9cc;font-size:11px}
-.historicFormStrip{display:flex;justify-content:flex-end;gap:7px;overflow-x:auto;padding:2px 0}
+.historicFormStrip{display:flex;justify-content:flex-start;gap:7px;overflow-x:auto;padding:3px 0 6px;scrollbar-width:thin}
 .historicFormResult{flex:0 0 58px;display:grid;gap:4px;justify-items:center}
 .historicFormResult small{color:#8d8177;font-size:8px;font-weight:700}
 .historicFormResult>span{width:46px;padding:4px 2px;border-radius:999px;text-align:center;font-size:7px;font-weight:900;letter-spacing:.03em}
@@ -155,15 +172,16 @@ if css_marker not in globals:
   .historicFormViewerHead small{font-size:8px;text-align:right}
   .historicFormPlayerButtons{gap:4px;margin-bottom:9px}
   .historicFormPlayerButtons button{padding:6px 8px;font-size:9px}
-  .historicFormRangeRow{margin-bottom:7px}
-  .historicFormRanges{gap:3px}
-  .historicFormRanges button{min-width:32px;padding:6px 5px;font-size:9px}
-  .historicFormPlayerRow{grid-template-columns:72px 1fr;gap:5px;padding:7px 0}
+  .historicFormRangeSelectors{justify-content:flex-start;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .historicFormRangeSelectors select{padding:6px 7px;font-size:9px}
+  .historicFormRangeSelectors>strong{margin-left:auto;font-size:8px}
+  .historicFormRangeArrow{font-size:13px;padding-top:10px}
+  .historicFormPlayerRow{grid-template-columns:72px minmax(0,1fr);gap:5px;padding:7px 0}
   .historicFormPlayerRow>strong{font-size:9px;line-height:1.15}
-  .historicFormStrip{justify-content:flex-start;gap:3px;overflow:visible;flex-wrap:wrap}
-  .historicFormResult{flex:0 0 calc((100% - 15px)/6);min-width:38px;gap:3px}
+  .historicFormStrip{gap:4px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:7px}
+  .historicFormResult{flex:0 0 48px;gap:3px}
   .historicFormResult small{font-size:7px}
-  .historicFormResult>span{width:34px;font-size:6px;padding:3px 1px}
+  .historicFormResult>span{width:38px;font-size:6px;padding:3px 1px}
   .historicFormResult>b{font-size:9px}
   .historicGwArchiveHeading{align-items:flex-start;padding:12px 12px 9px}
   .historicGwArchiveHeading h3{font-size:15px}
@@ -182,4 +200,4 @@ if css_marker not in globals:
 
 league_path.write_text(league)
 globals_path.write_text(globals)
-print("Applied historical player buttons, combined form view and collapsible archive")
+print("Applied historical player/combined view with selectable inclusive gameweek range")
