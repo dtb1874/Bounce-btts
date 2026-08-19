@@ -116,7 +116,6 @@ if global_marker not in globals_css:
 
 /* mobile-dashboard-polish-global-20260819-v2 */
 @media(max-width:650px){
-  /* Force the intended mobile hero even when legacy global rules are restored from build cache. */
   .dashboardBrandHero.dashboardBrandHero{
     min-height:184px!important;
     height:184px!important;
@@ -179,7 +178,6 @@ if global_marker not in globals_css:
     text-align:center!important;
   }
 
-  /* Menu and GW selector sit on the same lower utility line, clear of the brand lockup. */
   main .mobileDashboardMenu{
     width:48px!important;
     height:48px!important;
@@ -193,22 +191,40 @@ if global_marker not in globals_css:
   .dashboardBrandHero .dashboardGwCompact{
     position:absolute!important;
     right:9px!important;
-    top:116px!important;
-    width:104px!important;
-    min-width:104px!important;
-    min-height:46px!important;
-    padding:5px 6px!important;
+    top:132px!important;
+    width:92px!important;
+    min-width:92px!important;
+    min-height:40px!important;
+    padding:3px 4px!important;
     margin:0!important;
     transform:none!important;
+    border-radius:9px!important;
     z-index:94!important;
   }
-  .dashboardBrandHero .dashboardGwCompact label{font-size:7.5px!important}
+  .dashboardBrandHero .dashboardGwCompact label{
+    font-size:6.8px!important;
+    line-height:1!important;
+    letter-spacing:.08em!important;
+  }
   .dashboardBrandHero .dashboardGwCompact small{display:none!important}
-  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{margin-top:2px!important;gap:4px!important}
-  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select,
-  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{padding:5px!important}
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{
+    margin-top:2px!important;
+    gap:3px!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select{
+    min-width:0!important;
+    padding:3px 2px!important;
+    min-height:25px!important;
+    font-size:9px!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{
+    width:24px!important;
+    min-width:24px!important;
+    padding:3px!important;
+    min-height:25px!important;
+    font-size:10px!important;
+  }
 
-  /* Short League Control Centre card with centred title and trophy projecting at right. */
   .mobileControlCentre.adminDashboardIntro{
     position:relative!important;
     min-height:54px!important;
@@ -258,7 +274,6 @@ if global_marker not in globals_css:
     object-fit:contain!important;
   }
 
-  /* Status strip first, shortcuts second. */
   .adminDashboardStats{margin-top:8px!important;margin-bottom:7px!important}
   .mobileDashboardActions{margin-top:0!important}
 
@@ -275,4 +290,4 @@ if global_marker not in globals_css:
 league_path.write_text(league)
 release_css_path.write_text(release_css)
 globals_path.write_text(globals_css)
-print("Applied forced mobile Dashboard polish with explicit global hooks")
+print("Applied forced mobile Dashboard polish with slimmer lower GW picker")
