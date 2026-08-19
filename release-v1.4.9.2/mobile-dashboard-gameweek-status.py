@@ -29,7 +29,7 @@ new_status = '''  const statusText = !gameweek ? "No gameweek selected" :
     const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
     const minute=part("minute"), hour=part("hour"), period=part("dayPeriod").toLowerCase();
     const clock=minute==="00"?`${hour}${period}`:`${hour}:${minute}${period}`;
-    return `GW ${timingTarget.gameweek.number} ${timingTarget.mode} ${part("weekday")} ${clock} ${part("day")}/${part("month")}`;
+    return {primary:`GW ${timingTarget.gameweek.number} ${timingTarget.mode}`, secondary:`${part("weekday")} ${clock} ${part("day")}/${part("month")}`};
   })() : null;
 '''
 if old_status not in league:
@@ -38,7 +38,7 @@ league = league.replace(old_status, new_status, 1)
 
 anchor = '''            <div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">'''
-insert = '''            <div className="weeklyPicksHeading"><div className="weeklyPicksTitleRow"><h3>Everyone at a glance</h3>{timingText&&<span className={`${styles.title} dashboardGameweekTiming`} aria-live="polite">{timingText}</span>}</div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
+insert = '''            <div className="weeklyPicksHeading"><div className="weeklyPicksTitleRow"><h3>Everyone at a glance</h3>{timingText&&<span className={`${styles.title} dashboardGameweekTiming`} aria-live="polite"><span>{timingText.primary}</span><span>{timingText.secondary}</span></span>}</div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">'''
 if anchor not in league:
     raise SystemExit("Weekly picks heading/action anchor not found")
@@ -51,18 +51,26 @@ if marker not in globals_css:
 /* dashboard-dynamic-gameweek-status-20260819 */
 .weeklyPicksTitleRow{
   display:flex;
-  align-items:baseline;
+  align-items:flex-start;
   justify-content:space-between;
   gap:14px;
   width:100%;
 }
 .dashboardGameweekTiming{
   flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
   color:#e6c36f!important;
   font-weight:900!important;
   text-align:right;
   white-space:nowrap;
   text-transform:none!important;
+}
+.dashboardGameweekTiming>span{
+  display:block;
+  width:100%;
+  text-align:right;
 }
 @media(max-width:650px){
   .weeklyPicksPanel .weeklyPicksTitleRow{
@@ -73,16 +81,19 @@ if marker not in globals_css:
   }
   .weeklyPicksPanel .dashboardGameweekTiming{
     flex:0 0 auto!important;
-    padding:0!important;
+    padding:1px 0 0!important;
     margin:0!important;
     min-height:0!important;
-    line-height:1!important;
+    line-height:1.12!important;
     letter-spacing:.055em!important;
     white-space:nowrap!important;
+  }
+  .weeklyPicksPanel .dashboardGameweekTiming>span+span{
+    margin-top:2px!important;
   }
 }
 '''
 
 league_path.write_text(league)
 globals_path.write_text(globals_css)
-print("Aligned compact dynamic GW timing to the selected gameweek opens/locks values")
+print("Split selected GW timing into compact right-aligned lines")
