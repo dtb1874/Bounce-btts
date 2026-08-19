@@ -4,8 +4,8 @@ import re
 league_path = Path("app/LeagueApp.tsx")
 league = league_path.read_text()
 
-league = re.sub(r'const RELEASE_VERSION = "[^"]+";', 'const RELEASE_VERSION = "1.6.0";', league, count=1)
-league = re.sub(r'const RELEASE_DATE = "[^"]+";', 'const RELEASE_DATE = "18 Aug 2026";', league, count=1)
+league = re.sub(r'const RELEASE_VERSION = "[^"]+";', 'const RELEASE_VERSION = "1.6.1";', league, count=1)
+league = re.sub(r'const RELEASE_DATE = "[^"]+";', 'const RELEASE_DATE = "19 Aug 2026";', league, count=1)
 
 start = league.find('function ReleaseHistory(){')
 end = league.find('\nfunction Instructions(', start)
@@ -13,14 +13,21 @@ if start < 0 or end < 0:
     raise SystemExit("ReleaseHistory function anchor not found")
 
 replacement = r'''function ReleaseHistory(){
-  const latest={version:"1.6.0",date:"18 Aug 2026",summary:"Repeated-team tendencies for Player and League Stats",changes:[
-    "Added Most Picked Team to each Player Stats card, counting a team whenever it appears in that player's selected fixture",
-    "A player team is only named after at least two selections involve the same team; before that the card shows No repeat team yet",
-    "Joint most-picked teams are all shown alphabetically when a player has an equal highest repeat count",
-    "Added the same Most Picked Team record to League Stats using every current-season league selection, with joint-team handling and the same two-selection minimum",
-    "Kept the statistic presentation-only: no new database logging, tracking or stored analytics were introduced"
+  const latest={version:"1.6.1",date:"19 Aug 2026",summary:"Faster authenticated startup with on-demand secondary data",changes:[
+    "Parallelised independent Supabase reads during authenticated startup to reduce avoidable sequential waiting",
+    "Stopped reconstructing archived League History on every normal page load; dynamic archived history is now requested when League History is first opened",
+    "Limited initial prediction and score-adjustment reads to the current season instead of every stored gameweek",
+    "Moved the broad two-week Fixtures browser dataset behind an authenticated on-demand request when Fixtures is opened",
+    "Preserved scoring, current-season league data, historical scoring behaviour and existing member/admin functionality unchanged"
   ]};
   const previous=[
+    {version:"1.6.0",date:"18 Aug 2026",summary:"Repeated-team tendencies for Player and League Stats",changes:[
+      "Added Most Picked Team to each Player Stats card, counting a team whenever it appears in that player's selected fixture",
+      "A player team is only named after at least two selections involve the same team; before that the card shows No repeat team yet",
+      "Joint most-picked teams are all shown alphabetically when a player has an equal highest repeat count",
+      "Added the same Most Picked Team record to League Stats using every current-season league selection, with joint-team handling and the same two-selection minimum",
+      "Kept the statistic presentation-only: no new database logging, tracking or stored analytics were introduced"
+    ]},
     {version:"1.5.0",date:"18 Aug 2026",summary:"Statistics, history, admin and release-process consolidation",changes:[
       "Expanded League Stats and Player Stats with strike rate, points per pick, streaks and current-season odds records while retaining the existing season facts",
       "Added joint-holder handling so tied league records show every qualifying player with pluralised labels where appropriate",
@@ -84,4 +91,4 @@ replacement = r'''function ReleaseHistory(){
 
 league = league[:start] + replacement + league[end:]
 league_path.write_text(league)
-print("Applied v1.6.0 release version and structured release history")
+print("Applied v1.6.1 release version and structured release history")
