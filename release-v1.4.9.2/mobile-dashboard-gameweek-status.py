@@ -19,8 +19,14 @@ new_status = '''  const statusText = !gameweek ? "No gameweek selected" :
   const upcomingGameweek = [...gameweeks]
     .filter(g => Boolean(g.opens_at) && new Date(g.opens_at as string).getTime() > dashboardNow)
     .sort((a,b) => new Date(a.opens_at as string).getTime() - new Date(b.opens_at as string).getTime())[0] ?? null;
-  const timingTarget = isOpen && gameweek ? {gameweek, mode:"LOCKS" as const, value:gameweek.locks_at} : upcomingGameweek?.opens_at ? {gameweek:upcomingGameweek, mode:"OPENS" as const, value:upcomingGameweek.opens_at} : null;
-  const timingText = timingTarget ? `GW ${timingTarget.gameweek.number} ${timingTarget.mode} · ${new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(timingTarget.value)).replace(",","").replace(","," ·").toUpperCase()}` : null;
+  const timingTarget = isOpen && gameweek ? {gameweek, mode:"Locks" as const, value:gameweek.locks_at} : upcomingGameweek?.opens_at ? {gameweek:upcomingGameweek, mode:"Opens" as const, value:upcomingGameweek.opens_at} : null;
+  const timingText = timingTarget ? (()=>{
+    const parts = new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"2-digit",hour:"numeric",minute:"2-digit",hour12:true}).formatToParts(new Date(timingTarget.value));
+    const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+    const minute=part("minute"), hour=part("hour"), period=part("dayPeriod").toLowerCase();
+    const clock=minute==="00"?`${hour}${period}`:`${hour}:${minute}${period}`;
+    return `GW ${timingTarget.gameweek.number} ${timingTarget.mode} ${part("weekday")} ${clock} ${part("day")}/${part("month")}`;
+  })() : null;
 '''
 if old_status not in league:
     raise SystemExit("Dashboard status anchor not found")
@@ -28,8 +34,7 @@ league = league.replace(old_status, new_status, 1)
 
 anchor = '''            <div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">'''
-insert = '''            <div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
-            {timingText&&<div className="dashboardGameweekTiming" aria-live="polite">{timingText}</div>}
+insert = '''            <div className="weeklyPicksHeading"><div className="weeklyPicksTitleRow"><h3>Everyone at a glance</h3>{timingText&&<span className={`${styles.title} dashboardGameweekTiming`} aria-live="polite">{timingText}</span>}</div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">'''
 if anchor not in league:
     raise SystemExit("Weekly picks heading/action anchor not found")
@@ -40,32 +45,40 @@ if marker not in globals_css:
     globals_css += r'''
 
 /* dashboard-dynamic-gameweek-status-20260819 */
-.dashboardGameweekTiming{
+.weeklyPicksTitleRow{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:34px;
-  padding:6px 12px 4px;
-  color:#e6c36f;
-  font-size:12px;
-  font-weight:900;
-  letter-spacing:.085em;
-  text-align:center;
-  text-transform:uppercase;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:14px;
+  width:100%;
+}
+.dashboardGameweekTiming{
+  flex:0 0 auto;
+  color:#e6c36f!important;
+  font-weight:900!important;
+  text-align:right;
+  white-space:nowrap;
+  text-transform:none!important;
 }
 @media(max-width:650px){
+  .weeklyPicksPanel .weeklyPicksTitleRow{
+    gap:8px!important;
+  }
+  .weeklyPicksPanel .weeklyPicksTitleRow h3{
+    min-width:0!important;
+  }
   .weeklyPicksPanel .dashboardGameweekTiming{
-    width:100%!important;
-    min-height:38px!important;
-    padding:8px 8px 4px!important;
-    font-size:11px!important;
-    line-height:1.1!important;
-    letter-spacing:.07em!important;
-    box-sizing:border-box!important;
+    flex:0 0 auto!important;
+    padding:0!important;
+    margin:0!important;
+    min-height:0!important;
+    line-height:1!important;
+    letter-spacing:.055em!important;
+    white-space:nowrap!important;
   }
 }
 '''
 
 league_path.write_text(league)
 globals_path.write_text(globals_css)
-print("Moved dynamic dashboard GW locks/opens status into Everyone at a glance header")
+print("Aligned compact dynamic GW timing beside Everyone at a glance heading")
