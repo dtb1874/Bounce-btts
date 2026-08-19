@@ -36,9 +36,10 @@ new_first_reads = '''  // Initial render only needs current-season data. Histori
   const profiles = profilesResponse.data;
 
   const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
-  const { data: seasonGameweeks } = currentSeason?.id
+  const gameweeksResponse = currentSeason?.id
     ? await supabase.from("gameweeks").select("id,number,status,opens_at,locks_at,season_id").eq("season_id", currentSeason.id).order("number", { ascending: true })
-    : { data: [] };'''
+    : { data: [] };
+  const seasonGameweeks = gameweeksResponse.data ?? [];'''
 if old_first_reads not in page:
     raise SystemExit("Stage 2 initial-read anchor not found")
 page = page.replace(old_first_reads, new_first_reads, 1)
