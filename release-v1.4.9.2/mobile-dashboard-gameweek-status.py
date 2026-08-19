@@ -26,10 +26,13 @@ if old_status not in league:
     raise SystemExit("Dashboard status anchor not found")
 league = league.replace(old_status, new_status, 1)
 
-anchor = '    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">'
-insert = '    {timingText&&<div className="dashboardGameweekTiming" aria-live="polite">{timingText}</div>}\n\n' + anchor
+anchor = '''            <div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
+            <div className="dashboardActionGrid">'''
+insert = '''            <div className="weeklyPicksHeading"><h3>Everyone at a glance</h3><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
+            {timingText&&<div className="dashboardGameweekTiming" aria-live="polite">{timingText}</div>}
+            <div className="dashboardActionGrid">'''
 if anchor not in league:
-    raise SystemExit("Dashboard actions anchor not found")
+    raise SystemExit("Weekly picks heading/action anchor not found")
 league = league.replace(anchor, insert, 1)
 
 marker = "/* dashboard-dynamic-gameweek-status-20260819 */"
@@ -51,16 +54,18 @@ if marker not in globals_css:
   text-transform:uppercase;
 }
 @media(max-width:650px){
-  .dashboardGameweekTiming{
-    min-height:42px!important;
-    padding:10px 8px 6px!important;
+  .weeklyPicksPanel .dashboardGameweekTiming{
+    width:100%!important;
+    min-height:38px!important;
+    padding:8px 8px 4px!important;
     font-size:11px!important;
     line-height:1.1!important;
     letter-spacing:.07em!important;
+    box-sizing:border-box!important;
   }
 }
 '''
 
 league_path.write_text(league)
 globals_path.write_text(globals_css)
-print("Added dynamic dashboard GW locks/opens status line")
+print("Moved dynamic dashboard GW locks/opens status into Everyone at a glance header")
