@@ -2,12 +2,15 @@ from pathlib import Path
 
 path = Path("app/globals.css")
 css = path.read_text()
-marker = "/* mobile-dashboard-eyebrow-centre-20260819-v2 */"
+marker = "/* mobile-dashboard-eyebrow-centre-20260819-v3 */"
 if marker not in css:
     css += r'''
 
-/* mobile-dashboard-eyebrow-centre-20260819-v2 */
+/* mobile-dashboard-eyebrow-centre-20260819-v3 */
 @media(max-width:650px){
+  .dashboardBrandHero .dashboardBrandLockup{
+    top:18px!important;
+  }
   .dashboardBrandHero .dashboardBrandEyebrow{
     width:max-content!important;
     max-width:none!important;
@@ -15,17 +18,14 @@ if marker not in css:
     margin-right:auto!important;
     align-self:center!important;
     text-align:center!important;
-    position:relative!important;
-    top:4px!important;
+    position:static!important;
     transform:none!important;
-    font-size:8.6px!important;
-    line-height:1!important;
-    letter-spacing:.095em!important;
-    color:#d9b86a!important;
+    font-size:8.5px!important;
     font-weight:700!important;
-    text-shadow:0 1px 8px rgba(217,184,106,.16)!important;
+    color:#d6b36a!important;
+    letter-spacing:.10em!important;
   }
 }
 '''
 path.write_text(css)
-print("Lowered and strengthened mobile season line with a warmer Hearts-style gold")
+print("Lowered the complete mobile brand lockup while preserving internal alignment and Hearts-gold season line")
