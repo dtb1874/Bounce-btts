@@ -16,10 +16,14 @@ new_status = '''  const statusText = !gameweek ? "No gameweek selected" :
     isOpen ? "Selections open" : "Selections closed";
 
   const dashboardNow = Date.now();
-  const upcomingGameweek = [...gameweeks]
-    .filter(g => Boolean(g.opens_at) && new Date(g.opens_at as string).getTime() > dashboardNow)
-    .sort((a,b) => new Date(a.opens_at as string).getTime() - new Date(b.opens_at as string).getTime())[0] ?? null;
-  const timingTarget = isOpen && gameweek ? {gameweek, mode:"Locks" as const, value:gameweek.locks_at} : upcomingGameweek?.opens_at ? {gameweek:upcomingGameweek, mode:"Opens" as const, value:upcomingGameweek.opens_at} : null;
+  const selectedOpensAt = gameweek?.opens_at ? new Date(gameweek.opens_at).getTime() : null;
+  const selectedLocksAt = gameweek?.locks_at ? new Date(gameweek.locks_at).getTime() : null;
+  const timingTarget = !gameweek ? null :
+    selectedOpensAt!==null && dashboardNow < selectedOpensAt
+      ? {gameweek, mode:"Opens" as const, value:gameweek.opens_at as string}
+      : selectedLocksAt!==null && dashboardNow < selectedLocksAt
+        ? {gameweek, mode:"Locks" as const, value:gameweek.locks_at}
+        : null;
   const timingText = timingTarget ? (()=>{
     const parts = new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"2-digit",hour:"numeric",minute:"2-digit",hour12:true}).formatToParts(new Date(timingTarget.value));
     const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
@@ -81,4 +85,4 @@ if marker not in globals_css:
 
 league_path.write_text(league)
 globals_path.write_text(globals_css)
-print("Aligned compact dynamic GW timing beside Everyone at a glance heading")
+print("Aligned compact dynamic GW timing to the selected gameweek opens/locks values")
