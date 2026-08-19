@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 league_path = Path("app/LeagueApp.tsx")
 release_css_path = Path("app/release.module.css")
@@ -8,6 +7,24 @@ globals_path = Path("app/globals.css")
 league = league_path.read_text()
 release_css = release_css_path.read_text()
 globals_css = globals_path.read_text()
+
+# Give the mobile dashboard controls explicit global hooks so the preview does not
+# depend on CSS-module ordering/specificity from the older dashboard patch chain.
+league = league.replace(
+    '<button className={styles.mobileMenu} onClick={()=>setMobileMenu(true)}>☰</button>',
+    '<button className={`${styles.mobileMenu} mobileDashboardMenu`} onClick={()=>setMobileMenu(true)}>☰</button>',
+    1,
+)
+league = league.replace(
+    '<div className={`${styles.dashboardIntro} adminDashboardIntro`}>',
+    '<div className={`${styles.dashboardIntro} adminDashboardIntro mobileControlCentre`}>',
+    1,
+)
+league = league.replace(
+    '<div className={styles.dashboardArt} aria-hidden="true">',
+    '<div className={`${styles.dashboardArt} mobileControlTrophy`} aria-hidden="true">',
+    1,
+)
 
 # Robustly place the compact status strip before the four shortcut buttons.
 actions_start = league.find('\n    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">')
@@ -33,26 +50,16 @@ new_eyebrow = '<p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLa
 if old_eyebrow in league:
     league = league.replace(old_eyebrow, new_eyebrow, 1)
 
-module_marker = "/* mobile-dashboard-polish-20260819 */"
+# Keep the module-level rules for the actual CSS-module classes, but the global
+# block below is the authoritative mobile layout and deliberately has stronger
+# selectors than the older dashboard-cleanup patch.
+module_marker = "/* mobile-dashboard-polish-20260819-v2 */"
 if module_marker not in release_css:
     release_css += r'''
 
-/* mobile-dashboard-polish-20260819 */
+/* mobile-dashboard-polish-20260819-v2 */
 @media(max-width:650px){
-  /* Menu sits independently low on the left side of the branded hero. */
-  .mobileMenu{
-    width:48px!important;
-    height:48px!important;
-    top:118px!important;
-    left:10px!important;
-    border-radius:12px!important;
-    font-size:22px!important;
-    line-height:1!important;
-    z-index:95!important;
-  }
-
-  /* Short, centred League Control Centre banner. */
-  .dashboardIntro{
+  .dashboardIntro.mobileControlCentre{
     position:relative!important;
     min-height:54px!important;
     height:54px!important;
@@ -62,7 +69,7 @@ if module_marker not in release_css:
     align-items:center!important;
     justify-content:center!important;
   }
-  .dashboardIntro>div:first-child{
+  .dashboardIntro.mobileControlCentre>div:first-child{
     position:absolute!important;
     left:50%!important;
     top:50%!important;
@@ -71,18 +78,16 @@ if module_marker not in release_css:
     min-width:0!important;
     text-align:center!important;
   }
-  .dashboardIntro .eyebrow,
-  .dashboardIntro p{display:none!important}
-  .dashboardIntro h2{
+  .dashboardIntro.mobileControlCentre .eyebrow,
+  .dashboardIntro.mobileControlCentre p{display:none!important}
+  .dashboardIntro.mobileControlCentre h2{
     margin:0!important;
     text-align:center!important;
     font-size:20px!important;
     line-height:1!important;
     white-space:nowrap!important;
   }
-
-  /* Trophy stays on the right and can project outside the short banner. */
-  .dashboardArt{
+  .dashboardArt.mobileControlTrophy{
     position:absolute!important;
     right:-2px!important;
     left:auto!important;
@@ -95,8 +100,8 @@ if module_marker not in release_css:
     overflow:visible!important;
     pointer-events:none!important;
   }
-  .dashboardArt img:first-child{display:none!important}
-  .dashboardArt img:last-child{
+  .dashboardArt.mobileControlTrophy img:first-child{display:none!important}
+  .dashboardArt.mobileControlTrophy img:last-child{
     display:block!important;
     width:70px!important;
     height:82px!important;
@@ -105,22 +110,25 @@ if module_marker not in release_css:
 }
 '''
 
-global_marker = "/* mobile-dashboard-polish-global-20260819 */"
+global_marker = "/* mobile-dashboard-polish-global-20260819-v2 */"
 if global_marker not in globals_css:
     globals_css += r'''
 
-/* mobile-dashboard-polish-global-20260819 */
+/* mobile-dashboard-polish-global-20260819-v2 */
 @media(max-width:650px){
-  /* Branded mobile hero with a fully centred identity stack. */
-  .dashboardBrandHero{
+  /* Force the intended mobile hero even when legacy global rules are restored from build cache. */
+  .dashboardBrandHero.dashboardBrandHero{
     min-height:184px!important;
     height:184px!important;
     padding:0!important;
     display:block!important;
     position:relative!important;
     overflow:visible!important;
+    grid-template-columns:none!important;
+    gap:0!important;
+    align-items:initial!important;
   }
-  .dashboardBrandLockup{
+  .dashboardBrandHero .dashboardBrandLockup{
     position:absolute!important;
     left:50%!important;
     top:8px!important;
@@ -134,17 +142,17 @@ if global_marker not in globals_css:
     gap:0!important;
     text-align:center!important;
   }
-  .dashboardBrandCrest{
+  .dashboardBrandHero .dashboardBrandCrest{
     width:55px!important;
     height:57px!important;
     flex:0 0 57px!important;
     margin:0 auto 5px!important;
   }
-  .dashboardBrandLockup>div{
+  .dashboardBrandHero .dashboardBrandLockup>div{
     width:100%!important;
     text-align:center!important;
   }
-  .dashboardBrandEyebrow{
+  .dashboardBrandHero .dashboardBrandEyebrow{
     display:block!important;
     width:100%!important;
     margin:0 0 6px!important;
@@ -154,7 +162,7 @@ if global_marker not in globals_css:
     white-space:nowrap!important;
     text-align:center!important;
   }
-  .dashboardBrandLockup h1{
+  .dashboardBrandHero .dashboardBrandLockup h1{
     margin:0!important;
     font-size:34px!important;
     line-height:.9!important;
@@ -162,7 +170,7 @@ if global_marker not in globals_css:
     white-space:nowrap!important;
     text-align:center!important;
   }
-  .dashboardBrandLockup h2{
+  .dashboardBrandHero .dashboardBrandLockup h2{
     margin:7px 0 0!important;
     font-size:11px!important;
     line-height:1!important;
@@ -171,8 +179,18 @@ if global_marker not in globals_css:
     text-align:center!important;
   }
 
-  /* GW selector lowered opposite the menu and reduced slightly to protect the identity stack. */
-  .dashboardGwCompact{
+  /* Menu and GW selector sit on the same lower utility line, clear of the brand lockup. */
+  main .mobileDashboardMenu{
+    width:48px!important;
+    height:48px!important;
+    top:118px!important;
+    left:10px!important;
+    border-radius:12px!important;
+    font-size:22px!important;
+    line-height:1!important;
+    z-index:95!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact{
     position:absolute!important;
     right:9px!important;
     top:116px!important;
@@ -180,19 +198,70 @@ if global_marker not in globals_css:
     min-width:104px!important;
     min-height:46px!important;
     padding:5px 6px!important;
+    margin:0!important;
+    transform:none!important;
     z-index:94!important;
   }
-  .dashboardGwCompact label{font-size:7.5px!important}
-  .dashboardGwCompact small{display:none!important}
-  .dashboardGwCompact .gwRow{margin-top:2px!important;gap:4px!important}
-  .dashboardGwCompact .gwRow select,
-  .dashboardGwCompact .gwRow button{padding:5px!important}
+  .dashboardBrandHero .dashboardGwCompact label{font-size:7.5px!important}
+  .dashboardBrandHero .dashboardGwCompact small{display:none!important}
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{margin-top:2px!important;gap:4px!important}
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select,
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{padding:5px!important}
 
-  /* The source order is status strip first, shortcuts second. */
+  /* Short League Control Centre card with centred title and trophy projecting at right. */
+  .mobileControlCentre.adminDashboardIntro{
+    position:relative!important;
+    min-height:54px!important;
+    height:54px!important;
+    padding:0 12px!important;
+    overflow:visible!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  .mobileControlCentre.adminDashboardIntro>div:first-child{
+    position:absolute!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-50%,-50%)!important;
+    width:calc(100% - 88px)!important;
+    min-width:0!important;
+    text-align:center!important;
+  }
+  .mobileControlCentre.adminDashboardIntro [class*="eyebrow"],
+  .mobileControlCentre.adminDashboardIntro p{display:none!important}
+  .mobileControlCentre.adminDashboardIntro h2{
+    margin:0!important;
+    text-align:center!important;
+    font-size:20px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  .mobileControlCentre .mobileControlTrophy{
+    position:absolute!important;
+    right:-2px!important;
+    left:auto!important;
+    top:50%!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    width:70px!important;
+    height:82px!important;
+    opacity:1!important;
+    overflow:visible!important;
+    pointer-events:none!important;
+  }
+  .mobileControlCentre .mobileControlTrophy img:first-child{display:none!important}
+  .mobileControlCentre .mobileControlTrophy img:last-child{
+    display:block!important;
+    width:70px!important;
+    height:82px!important;
+    object-fit:contain!important;
+  }
+
+  /* Status strip first, shortcuts second. */
   .adminDashboardStats{margin-top:8px!important;margin-bottom:7px!important}
   .mobileDashboardActions{margin-top:0!important}
 
-  /* Left aligned; only slightly larger than before. */
   .weeklyPicksHeading{text-align:left!important}
   .weeklyPicksHeading h3{
     text-align:left!important;
@@ -206,4 +275,4 @@ if global_marker not in globals_css:
 league_path.write_text(league)
 release_css_path.write_text(release_css)
 globals_path.write_text(globals_css)
-print("Applied refined mobile Dashboard alignment, controls and hierarchy")
+print("Applied forced mobile Dashboard polish with explicit global hooks")
