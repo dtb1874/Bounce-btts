@@ -8,7 +8,7 @@ This file is the canonical handover for the live Bounce BTTS League project. Fut
 
 - Live app: `https://bounce-btts.vercel.app`
 - GitHub repo: `dtb1874/Bounce-btts`
-- Current release: **v1.6.1**
+- Current release: **v1.6.2**
 - Hosting: Vercel
 - Data/auth: Supabase
 - Fixture/results provider: API-Football Pro
@@ -36,6 +36,7 @@ Use these names consistently in future work.
 - Protect the stability of the live league first.
 - Retain existing member/admin features unless explicitly agreed otherwise.
 - Mobile views should be clean, compact and easy to navigate without removing capability.
+- Avoid horizontal scrolling for core mobile tables where a readable fitted layout is practical.
 - Visual identity: maroon/gold with subtle Edinburgh/St Giles/Hearts-inspired artwork.
 - If a requested change is likely to introduce fragility, maintenance burden, data risk, confusing UX, security concerns, scoring inconsistency or deployment risk, raise that **before** implementing it and recommend a safer option where possible.
 - V2 is shelved for the foreseeable future. Do not revive it unless explicitly requested.
@@ -63,6 +64,14 @@ Use these names consistently in future work.
 - The broad two-week general Fixtures dataset is loaded only when Fixtures is first opened in the current session, via authenticated `/api/fixture-browser`.
 - Core current-season data used across Dashboard, tables, player stats and admin workflows remains part of the initial authenticated load to avoid unnecessary complexity and behavioural risk.
 - Public League View caching and moving missed-pick processing away from ordinary page rendering remain deferred until there is a clear need and a low-risk design.
+
+## Current League History mobile behaviour
+
+- The History page remains within the iPhone viewport at normal zoom.
+- Archived standings remain presented as a recognisable seven-column league table rather than a card conversion.
+- On small mobile widths the History table columns, spacing and typography are compressed so the full table fits without horizontal scrolling.
+- History/archive containers are width-contained so wide historical content cannot force the full page beyond the viewport.
+- Desktop History presentation and historical data/scoring behaviour are unchanged by the mobile fix.
 
 ## Current statistics behaviour
 
@@ -130,6 +139,10 @@ A production update is not complete until this sequence is finished:
 
 ## Current release
 
+### v1.6.2 — 19 Aug 2026
+
+Corrected League History on mobile so it stays within the iPhone viewport at normal zoom. The archived standings remain a conventional league table, with compact mobile-specific sizing that keeps all seven columns visible without horizontal scrolling. No scoring or historical data behaviour changed.
+
 ### v1.6.1 — 19 Aug 2026
 
 Performance release for the Authenticated App. Independent startup reads are parallelised; archived League History and the broad general Fixtures dataset are now fetched on demand when those sections are opened; current-season scoring and user-facing behaviour remain unchanged.
@@ -149,6 +162,8 @@ Older 1.4.x patch-heavy history remains available in the in-app Release History 
 - The production build still relies on a chain of Python patch scripts that transform source before `next build`.
 - This is consciously retained during the live season for stability, but it creates patch-order/anchor drift risk.
 - The v1.6.1 performance patches intentionally run before the older legacy patch chain because they transform source anchors required by later patches.
+- The v1.6.2 History mobile layout patch runs after historical archive/scoring patches so its final responsive CSS is not overwritten.
+- The v1.6.2 release finaliser runs after the existing release-process script to preserve the tested build/release chain while adding the patch release metadata.
 - When adding a new patch script, explicitly add it to the production build chain and verify its log output in Vercel.
 - Do not casually refactor the patch architecture during the live season unless the risk/reward is clearly justified.
 - Known harmless CSS warning: autoprefixer warning in `PublicLeagueTable.module.css` about `end` vs `flex-end`; builds compile successfully.
@@ -160,7 +175,6 @@ Older 1.4.x patch-heavy history remains available in the in-app Release History 
 - Moving missed-pick penalty processing away from ordinary authenticated page rendering.
 - Cross-season/all-time advanced analytics where historical fixture/odds data is incomplete.
 - V2 rebuild.
-- League History mobile layout cleanup is tracked separately from the v1.6.1 performance release.
 
 ## Historical data caution
 
