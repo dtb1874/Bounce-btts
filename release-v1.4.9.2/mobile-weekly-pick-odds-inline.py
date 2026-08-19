@@ -5,13 +5,15 @@ globals_path = Path("app/globals.css")
 league = league_path.read_text()
 globals_css = globals_path.read_text()
 
-# In Everyone at a glance, keep the fractional BTTS price beside the fixture name.
-# The market is always BTTS here, so the extra label is unnecessary.
+# Everyone at a glance is already transformed by the dashboard cleanup into a
+# compact three-line fixture block: competition, fixture, then BTTS odds.
+# Collapse that to two lines by keeping competition and putting the raw
+# fractional BTTS price directly beside the fixture name.
 old_variants = [
-    '<div className={styles.fixtureCell}>{fixture?<><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)} · {formatFixtureOddsDisplay(fixture.odds_fractional)??"—"}</small></>:<span>Awaiting selection</span>}</div>',
-    '<div className={styles.fixtureCell}>{fixture?<><strong>{fixture.home_team} v {fixture.away_team}</strong><small>{competitionDisplayName(fixture)} · {fixture.odds_fractional??"—"}</small></>:<span>Awaiting selection</span>}</div>',
+    '<div className={`${styles.fixtureCell} dashboardSnapshotFixture`}>{fixture?<><small className="dashboardCompetition">{competitionDisplayName(fixture)}</small><strong>{fixture.home_team} v {fixture.away_team}</strong><small>BTTS {formatFixtureOddsDisplay(fixture.odds_fractional)??"—"}</small></>:<span>Awaiting selection</span>}</div>',
+    '<div className={`${styles.fixtureCell} dashboardSnapshotFixture`}>{fixture?<><small className="dashboardCompetition">{competitionDisplayName(fixture)}</small><strong>{fixture.home_team} v {fixture.away_team}</strong><small>BTTS {fixture.odds_fractional??"—"}</small></>:<span>Awaiting selection</span>}</div>',
 ]
-new_markup = '<div className={`${styles.fixtureCell} weeklyFixtureCell`}>{fixture?<><div className="weeklyFixtureLine"><strong>{fixture.home_team} v {fixture.away_team}</strong><b className="weeklyFixtureOdds">{fixture.odds_fractional??"—"}</b></div><small className="weeklyFixtureCompetition">{competitionDisplayName(fixture)}</small></>:<span>Awaiting selection</span>}</div>'
+new_markup = '<div className={`${styles.fixtureCell} dashboardSnapshotFixture weeklyFixtureCell`}>{fixture?<><small className="dashboardCompetition weeklyFixtureCompetition">{competitionDisplayName(fixture)}</small><div className="weeklyFixtureLine"><strong>{fixture.home_team} v {fixture.away_team}</strong><b className="weeklyFixtureOdds">{fixture.odds_fractional??"—"}</b></div></>:<span>Awaiting selection</span>}</div>'
 
 replaced = False
 for old in old_variants:
@@ -20,28 +22,32 @@ for old in old_variants:
         replaced = True
         break
 if not replaced:
-    raise SystemExit("Weekly player-card fixture markup anchor not found")
+    raise SystemExit("Weekly compact snapshot fixture markup anchor not found")
 
-marker = "/* mobile-weekly-pick-odds-inline-20260819 */"
+marker = "/* mobile-weekly-pick-odds-inline-20260819-v2 */"
 if marker not in globals_css:
     globals_css += r'''
 
-/* mobile-weekly-pick-odds-inline-20260819 */
+/* mobile-weekly-pick-odds-inline-20260819-v2 */
 .weeklyFixtureLine{
   display:flex;
   align-items:baseline;
   gap:7px;
   min-width:0;
+  width:100%;
 }
-.weeklyFixtureLine>strong{
+.dashboardSnapshotFixture .weeklyFixtureLine>strong{
+  order:0!important;
   min-width:0;
+  flex:1 1 auto;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 .weeklyFixtureOdds{
+  order:1!important;
   flex:0 0 auto;
-  color:#e8c77c;
+  color:#e8c77c!important;
   font-size:11px;
   font-weight:900;
   letter-spacing:.01em;
@@ -53,23 +59,24 @@ if marker not in globals_css:
   white-space:nowrap;
 }
 @media(max-width:650px){
-  .weeklyPicksPanel [class*="pickListRow"]{
-    padding:6px 0!important;
-    gap:3px 8px!important;
+  .weeklyPicksPanel .dashboardSnapshotRow{
+    min-height:48px!important;
+    padding:4px 0!important;
+    gap:4px 8px!important;
   }
   .weeklyPicksPanel .weeklyFixtureLine{gap:5px!important}
   .weeklyPicksPanel .weeklyFixtureOdds{
-    font-size:10.5px!important;
+    font-size:10px!important;
     line-height:1!important;
   }
   .weeklyPicksPanel .weeklyFixtureCompetition{
-    margin-top:1px!important;
-    font-size:8.5px!important;
-    line-height:1.05!important;
+    margin:0!important;
+    font-size:7.5px!important;
+    line-height:1!important;
   }
 }
 '''
 
 league_path.write_text(league)
 globals_path.write_text(globals_css)
-print("Placed weekly BTTS fractional odds beside fixture and tightened mobile player cards")
+print("Placed weekly raw fractional odds beside fixture and reduced snapshot card height")
