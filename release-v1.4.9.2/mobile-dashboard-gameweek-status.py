@@ -7,14 +7,14 @@ globals_css = globals_path.read_text()
 
 # Pass the parent's live clock into Dashboard so the status line can switch
 # automatically between LOCKS and OPENS without a page refresh.
-old_call = 'alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing}/>'
-new_call = 'alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing} now={now}/>'
+old_call = 'liveRefreshing={liveRefreshing}/>'
+new_call = 'liveRefreshing={liveRefreshing} now={now}/>'
 if old_call not in league:
     raise SystemExit("Dashboard invocation anchor not found")
 league = league.replace(old_call, new_call, 1)
 
-old_args = 'gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing\n}:{'
-new_args = 'gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing,now\n}:{'
+old_args = 'setView,onLiveRefresh,liveRefreshing\n}:{'
+new_args = 'setView,onLiveRefresh,liveRefreshing,now\n}:{'
 if old_args not in league:
     raise SystemExit("Dashboard argument anchor not found")
 league = league.replace(old_args, new_args, 1)
