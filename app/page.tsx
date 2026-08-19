@@ -61,23 +61,22 @@ export default async function HomePage() {
   // Make any overdue no-pick penalties visible as soon as the site is opened.
   await applyMissedPickPenalties(admin).catch(() => 0);
 
-  const { data: settings } = await supabase.from("league_settings").select("*").eq("id", true).maybeSingle();
-  const { data: seasons } = await supabase
-    .from("seasons")
-    .select("id,label,is_current,starts_at,ends_at")
-    .order("starts_at", { ascending: false });
+  // These reads do not depend on each other, so wait for them together rather than serially.
+  const [settingsResponse, seasonsResponse, membershipsResponse, gameweeksResponse, profilesResponse] = await Promise.all([
+    supabase.from("league_settings").select("*").eq("id", true).maybeSingle(),
+    supabase.from("seasons").select("id,label,is_current,starts_at,ends_at").order("starts_at", { ascending: false }),
+    supabase.from("season_memberships").select("season_id,profile_id,active,display_name_snapshot"),
+    supabase.from("gameweeks").select("id,number,status,opens_at,locks_at,season_id").order("number", { ascending: true }),
+    supabase.from("profiles").select("id,username,display_name,role,active,slot_number").eq("approved", true).order("slot_number"),
+  ]);
+
+  const settings = settingsResponse.data;
+  const seasons = seasonsResponse.data;
+  const seasonMemberships = membershipsResponse.data;
+  const allGameweeks = gameweeksResponse.data;
+  const profiles = profilesResponse.data;
 
   const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
-
-  const { data: seasonMemberships } = await supabase
-    .from("season_memberships")
-    .select("season_id,profile_id,active,display_name_snapshot");
-
-  const { data: allGameweeks } = await supabase
-    .from("gameweeks")
-    .select("id,number,status,opens_at,locks_at,season_id")
-    .order("number", { ascending: true });
-
   const seasonGameweeks = (allGameweeks ?? []).filter((gameweek) => gameweek.season_id === currentSeason?.id);
   const nowIso = new Date().toISOString();
   const openedGameweeks = seasonGameweeks.filter((item) => !item.opens_at || item.opens_at <= nowIso);
@@ -90,24 +89,6 @@ export default async function HomePage() {
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
   const allGameweekIds = (allGameweeks ?? []).map((item) => item.id);
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id,username,display_name,role,active,slot_number")
-    .eq("approved", true)
-    .order("slot_number");
-
-  let fixtures: any[] = [];
-  if (currentGameweekIds.length) {
-    const response = await supabase
-      .from("fixtures")
-      .select("*")
-      .in("gameweek_id", currentGameweekIds)
-      .order("kickoff_at")
-      .order("competition")
-      .order("home_team");
-    fixtures = response.data ?? [];
-  }
-
   // The general Fixtures page is deliberately broader than Make My Pick.
   // Load every fixture stored for the current calendar week and the following week,
   // regardless of gameweek, eligibility, kick-off day/time, or club exclusions.
@@ -118,7 +99,17 @@ export default async function HomePage() {
   const followingWeekEnd = new Date(currentWeekStart);
   followingWeekEnd.setUTCDate(followingWeekEnd.getUTCDate() + 14);
 
-  const allFixtureResponse = await supabase
+  const currentFixturesPromise = currentGameweekIds.length
+    ? supabase
+        .from("fixtures")
+        .select("*")
+        .in("gameweek_id", currentGameweekIds)
+        .order("kickoff_at")
+        .order("competition")
+        .order("home_team")
+    : Promise.resolve({ data: [] as any[] });
+
+  const allFixturesPromise = supabase
     .from("fixtures")
     .select("*")
     .gte("kickoff_at", currentWeekStart.toISOString())
@@ -126,24 +117,32 @@ export default async function HomePage() {
     .order("kickoff_at")
     .order("competition")
     .order("home_team");
-  const allFixtures = allFixtureResponse.data ?? [];
 
-  let allPredictions: PredictionRow[] = [];
-  let allAdjustments: ScoreAdjustmentRow[] = [];
-  if (allGameweekIds.length) {
-    const [predictionResponse, adjustmentResponse] = await Promise.all([
-      supabase
+  const predictionsPromise = allGameweekIds.length
+    ? supabase
         .from("predictions")
         .select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at")
-        .in("gameweek_id", allGameweekIds),
-      supabase
+        .in("gameweek_id", allGameweekIds)
+    : Promise.resolve({ data: [] as PredictionRow[] });
+
+  const adjustmentsPromise = allGameweekIds.length
+    ? supabase
         .from("score_adjustments")
         .select("id,gameweek_id,member_id,points,reason,source,created_at,updated_at")
-        .in("gameweek_id", allGameweekIds),
-    ]);
-    allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
-    allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
-  }
+        .in("gameweek_id", allGameweekIds)
+    : Promise.resolve({ data: [] as ScoreAdjustmentRow[] });
+
+  const [currentFixturesResponse, allFixtureResponse, predictionResponse, adjustmentResponse] = await Promise.all([
+    currentFixturesPromise,
+    allFixturesPromise,
+    predictionsPromise,
+    adjustmentsPromise,
+  ]);
+
+  const fixtures = currentFixturesResponse.data ?? [];
+  const allFixtures = allFixtureResponse.data ?? [];
+  const allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
+  const allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
 
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
   const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));

@@ -1,6 +1,6 @@
 # Bounce BTTS League — Canonical Project Status
 
-_Last updated: 18 Aug 2026_
+_Last updated: 19 Aug 2026_
 
 This file is the canonical handover for the live Bounce BTTS League project. Future chats should read this first and treat the latest confirmed production state as the source of truth. Superseded debugging detail, failed builds and abandoned experiments are intentionally excluded.
 
@@ -8,7 +8,7 @@ This file is the canonical handover for the live Bounce BTTS League project. Fut
 
 - Live app: `https://bounce-btts.vercel.app`
 - GitHub repo: `dtb1874/Bounce-btts`
-- Current release: **v1.6.0**
+- Current release: **v1.6.1**
 - Hosting: Vercel
 - Data/auth: Supabase
 - Fixture/results provider: API-Football Pro
@@ -54,6 +54,15 @@ Use these names consistently in future work.
 - Admin-only Rousset Easter-egg press counter.
 - Logout returns users to the Public League View.
 - Odds display, combined odds and admin odds refresh/check tooling.
+
+## Current loading/performance behaviour
+
+- Independent authenticated startup reads are parallelised where they do not depend on one another.
+- Initial prediction and score-adjustment reads are restricted to the current season.
+- Dynamic archived League History data is loaded only when League History is first opened in the current session, via authenticated `/api/history`.
+- The broad two-week general Fixtures dataset is loaded only when Fixtures is first opened in the current session, via authenticated `/api/fixture-browser`.
+- Core current-season data used across Dashboard, tables, player stats and admin workflows remains part of the initial authenticated load to avoid unnecessary complexity and behavioural risk.
+- Public League View caching and moving missed-pick processing away from ordinary page rendering remain deferred until there is a clear need and a low-risk design.
 
 ## Current statistics behaviour
 
@@ -102,7 +111,7 @@ Where a league statistic has multiple equal leaders, display all joint holders a
 
 Use Semantic Versioning from v1.5.0 onward:
 
-- **PATCH** `x.y.z → x.y.(z+1)` for bug fixes, tidy-ups, redirects, wording and small behavioural corrections.
+- **PATCH** `x.y.z → x.y.(z+1)` for bug fixes, tidy-ups, redirects, wording and small behavioural/performance corrections.
 - **MINOR** `x.y.z → x.(y+1).0` for genuinely new user/admin-facing capability.
 - **MAJOR** `x.y.z → (x+1).0.0` for a substantial rebuild or breaking architectural/product change.
 
@@ -121,6 +130,10 @@ A production update is not complete until this sequence is finished:
 
 ## Current release
 
+### v1.6.1 — 19 Aug 2026
+
+Performance release for the Authenticated App. Independent startup reads are parallelised; archived League History and the broad general Fixtures dataset are now fetched on demand when those sections are opened; current-season scoring and user-facing behaviour remain unchanged.
+
 ### v1.6.0 — 18 Aug 2026
 
 Added Most Picked Team statistics for both players and the league, visible in both the Authenticated App and Public League View. Repeat-team trends require at least two appearances, with joint leaders supported.
@@ -135,6 +148,7 @@ Older 1.4.x patch-heavy history remains available in the in-app Release History 
 
 - The production build still relies on a chain of Python patch scripts that transform source before `next build`.
 - This is consciously retained during the live season for stability, but it creates patch-order/anchor drift risk.
+- The v1.6.1 performance patches intentionally run before the older legacy patch chain because they transform source anchors required by later patches.
 - When adding a new patch script, explicitly add it to the production build chain and verify its log output in Vercel.
 - Do not casually refactor the patch architecture during the live season unless the risk/reward is clearly justified.
 - Known harmless CSS warning: autoprefixer warning in `PublicLeagueTable.module.css` about `end` vs `flex-end`; builds compile successfully.
@@ -142,8 +156,11 @@ Older 1.4.x patch-heavy history remains available in the in-app Release History 
 ## Deferred / intentionally not implemented
 
 - Conventional behavioural analytics package.
+- Public League View caching/revalidation optimisation.
+- Moving missed-pick penalty processing away from ordinary authenticated page rendering.
 - Cross-season/all-time advanced analytics where historical fixture/odds data is incomplete.
 - V2 rebuild.
+- League History mobile layout cleanup is tracked separately from the v1.6.1 performance release.
 
 ## Historical data caution
 
