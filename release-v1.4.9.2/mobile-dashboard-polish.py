@@ -9,18 +9,17 @@ league = league_path.read_text()
 release_css = release_css_path.read_text()
 globals_css = globals_path.read_text()
 
-# Swap the compact dashboard hierarchy so the status strip appears before the
-# four primary shortcut buttons. Keep all controls and behaviour intact.
-actions_pattern = re.compile(
-    r'(\n    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">.*?</div>)\n\n'
-    r'(    <div className=\{`\$\{styles\.dashboardStats\} adminDashboardStats`\}>.*?</div>)\n\n'
-    r'(    <div className=\{`\$\{styles\.dashboardMain\} mobileDashboardMain`\}>)',
-    re.S,
-)
-if actions_pattern.search(league):
-    league = actions_pattern.sub(r'\n\2\n\n\1\n\n\3', league, count=1)
-elif league.find('adminDashboardStats') > league.find('mobileDashboardActions'):
-    raise SystemExit("Dashboard row-order anchor not found")
+# Robustly place the compact status strip before the four shortcut buttons.
+actions_start = league.find('\n    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">')
+stats_start = league.find('\n    <div className={`${styles.dashboardStats} adminDashboardStats`}>')
+main_start = league.find('\n    <div className={`${styles.dashboardMain} mobileDashboardMain`}>')
+if actions_start >= 0 and stats_start >= 0 and main_start > max(actions_start, stats_start):
+    if actions_start < stats_start:
+        actions_block = league[actions_start:stats_start]
+        stats_block = league[stats_start:main_start]
+        league = league[:actions_start] + stats_block + actions_block + league[main_start:]
+elif stats_start < 0 or actions_start < 0:
+    raise SystemExit("Dashboard row-order anchors not found")
 
 # Keep Everyone at a glance left aligned and only give it a modest size lift.
 old_heading = '<div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div><h3>Everyone at a glance</h3></div>'
@@ -28,8 +27,7 @@ new_heading = '<div className="weeklyPicksHeading"><div className={styles.title}
 if old_heading in league:
     league = league.replace(old_heading, new_heading, 1)
 
-# Add the active GW to the centred mobile identity eyebrow. The generated hero
-# already has the crest/Bounce lockup and GW selector from the earlier patch.
+# Add the active GW to the centred mobile identity eyebrow.
 old_eyebrow = '<p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel}</p>'
 new_eyebrow = '<p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel} · GW {gameweek?.number??"—"}</p>'
 if old_eyebrow in league:
@@ -41,11 +39,11 @@ if module_marker not in release_css:
 
 /* mobile-dashboard-polish-20260819 */
 @media(max-width:650px){
-  /* Menu sits independently on the left side of the branded hero. */
+  /* Menu sits independently low on the left side of the branded hero. */
   .mobileMenu{
     width:48px!important;
     height:48px!important;
-    top:70px!important;
+    top:118px!important;
     left:10px!important;
     border-radius:12px!important;
     font-size:22px!important;
@@ -53,19 +51,23 @@ if module_marker not in release_css:
     z-index:95!important;
   }
 
-  /* League Control Centre: shorter banner, title only, centred. */
+  /* Short, centred League Control Centre banner. */
   .dashboardIntro{
     position:relative!important;
     min-height:54px!important;
     height:54px!important;
-    padding:0 74px 0 18px!important;
+    padding:0 12px!important;
     overflow:visible!important;
     display:flex!important;
     align-items:center!important;
     justify-content:center!important;
   }
   .dashboardIntro>div:first-child{
-    width:100%!important;
+    position:absolute!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-50%,-50%)!important;
+    width:calc(100% - 88px)!important;
     min-width:0!important;
     text-align:center!important;
   }
@@ -74,20 +76,20 @@ if module_marker not in release_css:
   .dashboardIntro h2{
     margin:0!important;
     text-align:center!important;
-    font-size:21px!important;
+    font-size:20px!important;
     line-height:1!important;
     white-space:nowrap!important;
   }
 
-  /* Trophy remains on the right and may project outside the banner bounds. */
+  /* Trophy stays on the right and can project outside the short banner. */
   .dashboardArt{
     position:absolute!important;
-    right:4px!important;
+    right:-2px!important;
     left:auto!important;
     top:50%!important;
     bottom:auto!important;
     transform:translateY(-50%)!important;
-    width:72px!important;
+    width:70px!important;
     height:82px!important;
     opacity:1!important;
     overflow:visible!important;
@@ -96,7 +98,7 @@ if module_marker not in release_css:
   .dashboardArt img:first-child{display:none!important}
   .dashboardArt img:last-child{
     display:block!important;
-    width:72px!important;
+    width:70px!important;
     height:82px!important;
     object-fit:contain!important;
   }
@@ -109,10 +111,10 @@ if global_marker not in globals_css:
 
 /* mobile-dashboard-polish-global-20260819 */
 @media(max-width:650px){
-  /* Branded mobile hero: crest centred above the identity text. */
+  /* Branded mobile hero with a fully centred identity stack. */
   .dashboardBrandHero{
-    min-height:164px!important;
-    height:164px!important;
+    min-height:184px!important;
+    height:184px!important;
     padding:0!important;
     display:block!important;
     position:relative!important;
@@ -123,7 +125,7 @@ if global_marker not in globals_css:
     left:50%!important;
     top:8px!important;
     transform:translateX(-50%)!important;
-    width:72%!important;
+    width:74%!important;
     max-width:300px!important;
     display:flex!important;
     flex-direction:column!important;
@@ -136,7 +138,7 @@ if global_marker not in globals_css:
     width:55px!important;
     height:57px!important;
     flex:0 0 57px!important;
-    margin:0 auto 3px!important;
+    margin:0 auto 5px!important;
   }
   .dashboardBrandLockup>div{
     width:100%!important;
@@ -144,10 +146,11 @@ if global_marker not in globals_css:
   }
   .dashboardBrandEyebrow{
     display:block!important;
-    margin:0 0 5px!important;
+    width:100%!important;
+    margin:0 0 6px!important;
     font-size:7.5px!important;
     line-height:1!important;
-    letter-spacing:.11em!important;
+    letter-spacing:.09em!important;
     white-space:nowrap!important;
     text-align:center!important;
   }
@@ -168,24 +171,24 @@ if global_marker not in globals_css:
     text-align:center!important;
   }
 
-  /* GW selector sits independently on the right, opposite the menu. */
+  /* GW selector lowered opposite the menu and reduced slightly to protect the identity stack. */
   .dashboardGwCompact{
     position:absolute!important;
     right:9px!important;
-    top:70px!important;
-    width:112px!important;
-    min-width:112px!important;
-    min-height:48px!important;
-    padding:6px 7px!important;
+    top:116px!important;
+    width:104px!important;
+    min-width:104px!important;
+    min-height:46px!important;
+    padding:5px 6px!important;
     z-index:94!important;
   }
-  .dashboardGwCompact label{font-size:8px!important}
-  .dashboardGwCompact small{
-    display:none!important;
-  }
-  .dashboardGwCompact .gwRow{margin-top:3px!important}
+  .dashboardGwCompact label{font-size:7.5px!important}
+  .dashboardGwCompact small{display:none!important}
+  .dashboardGwCompact .gwRow{margin-top:2px!important;gap:4px!important}
+  .dashboardGwCompact .gwRow select,
+  .dashboardGwCompact .gwRow button{padding:5px!important}
 
-  /* Status strip first, shortcuts second. */
+  /* The source order is status strip first, shortcuts second. */
   .adminDashboardStats{margin-top:8px!important;margin-bottom:7px!important}
   .mobileDashboardActions{margin-top:0!important}
 
@@ -203,4 +206,4 @@ if global_marker not in globals_css:
 league_path.write_text(league)
 release_css_path.write_text(release_css)
 globals_path.write_text(globals_css)
-print("Applied refined mobile Dashboard hero, control-centre and hierarchy polish")
+print("Applied refined mobile Dashboard alignment, controls and hierarchy")
