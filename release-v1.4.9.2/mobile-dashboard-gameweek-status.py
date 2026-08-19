@@ -5,26 +5,8 @@ globals_path = Path("app/globals.css")
 league = league_path.read_text()
 globals_css = globals_path.read_text()
 
-# Pass the parent's live clock into Dashboard so the status line can switch
-# automatically between LOCKS and OPENS without a page refresh.
-old_call = 'liveRefreshing={liveRefreshing}/>'
-new_call = 'liveRefreshing={liveRefreshing} now={now}/>'
-if old_call not in league:
-    raise SystemExit("Dashboard invocation anchor not found")
-league = league.replace(old_call, new_call, 1)
-
-old_args = 'setView,onLiveRefresh,liveRefreshing\n}:{'
-new_args = 'setView,onLiveRefresh,liveRefreshing,now\n}:{'
-if old_args not in league:
-    raise SystemExit("Dashboard argument anchor not found")
-league = league.replace(old_args, new_args, 1)
-
-old_type = '  liveRefreshing:boolean;\n}){'
-new_type = '  liveRefreshing:boolean;\n  now:number;\n}){'
-if old_type not in league:
-    raise SystemExit("Dashboard type anchor not found")
-league = league.replace(old_type, new_type, 1)
-
+# Dashboard already re-renders from the app's existing 30-second clock, so use
+# Date.now() locally and avoid changing the established Dashboard prop contract.
 old_status = '''  const statusText = !gameweek ? "No gameweek selected" :
     gameweek.status==="complete" ? "Gameweek complete" :
     isOpen ? "Selections open" : "Selections closed";
@@ -33,8 +15,9 @@ new_status = '''  const statusText = !gameweek ? "No gameweek selected" :
     gameweek.status==="complete" ? "Gameweek complete" :
     isOpen ? "Selections open" : "Selections closed";
 
+  const dashboardNow = Date.now();
   const upcomingGameweek = [...gameweeks]
-    .filter(g => Boolean(g.opens_at) && new Date(g.opens_at as string).getTime() > now)
+    .filter(g => Boolean(g.opens_at) && new Date(g.opens_at as string).getTime() > dashboardNow)
     .sort((a,b) => new Date(a.opens_at as string).getTime() - new Date(b.opens_at as string).getTime())[0] ?? null;
   const timingTarget = isOpen && gameweek ? {gameweek, mode:"LOCKS" as const, value:gameweek.locks_at} : upcomingGameweek?.opens_at ? {gameweek:upcomingGameweek, mode:"OPENS" as const, value:upcomingGameweek.opens_at} : null;
   const timingText = timingTarget ? `GW ${timingTarget.gameweek.number} ${timingTarget.mode} · ${new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(timingTarget.value)).replace(",","").replace(","," ·").toUpperCase()}` : null;
