@@ -2,16 +2,16 @@ from pathlib import Path
 
 path = Path("app/globals.css")
 css = path.read_text()
-marker = "/* mobile-dashboard-menu-align-20260819 */"
+marker = "/* mobile-dashboard-menu-align-20260819-v2 */"
 if marker not in css:
     css += r'''
 
-/* mobile-dashboard-menu-align-20260819 */
+/* mobile-dashboard-menu-align-20260819-v2 */
 @media(max-width:650px){
   main .mobileDashboardMenu{
-    top:238px!important;
+    top:48px!important;
   }
 }
 '''
 path.write_text(css)
-print("Aligned mobile menu button vertically with gameweek control")
+print("Raised mobile menu button to align with lowered gameweek control")
