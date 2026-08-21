@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createCombinedShareImage, type FixtureSharePick, type FixtureShareStanding } from "./FixtureShareImage";
+import { sortFixtureSharePicks } from "./shareFixtureSort";
 
 type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];standings:FixtureShareStanding[];disabled?:boolean};
 
@@ -11,7 +12,8 @@ export default function CombinedShareButton({gameweekNumber,seasonLabel,picks,st
     if(disabled||busy)return;
     setBusy(true);
     try{
-      const file=await createCombinedShareImage(gameweekNumber,seasonLabel,picks,standings);
+      const orderedPicks=sortFixtureSharePicks(picks);
+      const file=await createCombinedShareImage(gameweekNumber,seasonLabel,orderedPicks,standings);
       const data:ShareData={title:`Bounce BTTS GW${gameweekNumber} fixtures + table`,text:`Bounce BTTS League — GW${gameweekNumber} fixtures + table`,files:[file]};
       const nav=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};
       if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]})))await navigator.share(data);
