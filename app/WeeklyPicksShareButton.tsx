@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createFixtureShareImage, type FixtureSharePick } from "./FixtureShareImage";
+import { sortFixtureSharePicks } from "./shareFixtureSort";
 
 type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];disabled?:boolean};
 
@@ -11,7 +12,8 @@ export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks
     if(disabled||busy)return;
     setBusy(true);
     try{
-      const file=await createFixtureShareImage(gameweekNumber,seasonLabel,picks);
+      const orderedPicks=sortFixtureSharePicks(picks);
+      const file=await createFixtureShareImage(gameweekNumber,seasonLabel,orderedPicks);
       const data:ShareData={title:`Bounce BTTS GW${gameweekNumber} fixtures`,text:`Bounce BTTS League — GW${gameweekNumber} selected fixtures`,files:[file]};
       const nav=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};
       if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]})))await navigator.share(data);
