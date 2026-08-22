@@ -11,6 +11,7 @@ type Prediction = { gameweek_id: string; member_id: string; points_awarded: numb
 type Adjustment = { gameweek_id: string; member_id: string; points: number; reason: string };
 type RaceRow = { id: string; name: string; points: number; wins: number; zeroZero: number; position: number };
 type RaceFrame = { gameweek: number; rows: RaceRow[] };
+type RacePoint = { index: number; position: number; moving?: boolean };
 type Props = { profiles: Profile[]; gameweeks: Gameweek[]; predictions: Prediction[]; adjustments: Adjustment[]; seasonLabel: string };
 
 const PALETTE = ["#f1c46f", "#ef7e8c", "#7fc7ff", "#89d6a6", "#c99cff", "#ff9e67", "#8fd9d1", "#d8d0c2", "#f29fd2", "#a9c978"];
@@ -51,12 +52,12 @@ function rowPosition(frames: RaceFrame[], frameIndex: number, playerId: string) 
   return frames[frameIndex]?.rows.find((row) => row.id === playerId)?.position ?? 1;
 }
 
-function pointsAtProgress(frames: RaceFrame[], playerId: string, progress: number) {
-  if (!frames.length) return [] as Array<{ index: number; position: number; moving?: boolean }>;
+function pointsAtProgress(frames: RaceFrame[], playerId: string, progress: number): RacePoint[] {
+  if (!frames.length) return [];
   const clamped = Math.max(0, Math.min(frames.length - 1, progress));
   const whole = Math.floor(clamped);
   const frac = clamped - whole;
-  const points = Array.from({ length: whole + 1 }, (_, index) => ({ index, position: rowPosition(frames, index, playerId) }));
+  const points: RacePoint[] = Array.from({ length: whole + 1 }, (_, index) => ({ index, position: rowPosition(frames, index, playerId) }));
   if (frac > 0 && whole < frames.length - 1) {
     const from = rowPosition(frames, whole, playerId);
     const to = rowPosition(frames, whole + 1, playerId);
@@ -218,7 +219,7 @@ export default function PositionRacePortal(props: Props) {
               const polyline = points.map((point) => `${xFor(point.index)},${yFor(point.position)}`).join(" ");
               const last = points.at(-1);
               const colour = colourById.get(player.id) ?? PALETTE[playerIndex % PALETTE.length];
-              return <g key={player.id}><polyline className={styles.raceLine} points={polyline} style={{ stroke: colour }}/>{points.filter((point) => !point.moving).map((point) => <circle key={`${player.id}-${point.index}`} className={styles.raceDot} cx={xFor(point.index)} cy={yFor(point.position)} r={3} style={{ fill: colour }}/>) }{last ? <circle className={styles.raceDot} cx={xFor(last.index)} cy={yFor(last.position)} r={5} style={{ fill: colour }}/> : null}</g>;
+              return <g key={player.id}><polyline className={styles.raceLine} points={polyline} style={{ stroke: colour }}/>{points.slice(0, -1).filter((point) => !point.moving).map((point) => <circle key={`${player.id}-${point.index}`} className={styles.raceDot} cx={xFor(point.index)} cy={yFor(point.position)} r={3} style={{ fill: colour }}/>) }{last ? <circle className={styles.raceDot} cx={xFor(last.index)} cy={yFor(last.position)} r={5} style={{ fill: colour }}/> : null}</g>;
             })}
           </svg>
         </div>
