@@ -13,7 +13,6 @@ export function pointsForFinishedScore(homeScore: number, awayScore: number): 3 
   return 1;
 }
 
-
 // Backwards-compatible export used by the existing live API routes.
 // Keep this name because admin results, cron sync and API-Football import
 // already import pointsForScore from this module.
@@ -33,11 +32,12 @@ export function outcomeLabel(homeScore: number | null, awayScore: number | null,
   if (homeScore == null || awayScore == null) return { label: "Not started", points: awarded, tone: "neutral" as const };
   if (finished) {
     const points = awarded ?? pointsForFinishedScore(homeScore, awayScore);
-    if (points === 3) return { label: "Won — BTTS", points, tone: "good" as const };
+    if (points === 3) return { label: "Won", points, tone: "good" as const };
     if (points === 1) return { label: "Score–nil", points, tone: "warn" as const };
     if (points === -1) return { label: "0–0", points, tone: "bad" as const };
     return { label: "Finished", points, tone: "neutral" as const };
   }
-  if (homeScore > 0 && awayScore > 0) return { label: "Won — BTTS", points: 3, tone: "good" as const };
-  return { label: "Not winning — BTTS not currently in", points: 0, tone: "neutral" as const };
+  if (homeScore > 0 && awayScore > 0) return { label: "Won", points: null, tone: "good" as const };
+  if (homeScore === 0 && awayScore === 0) return { label: "0–0 live", points: null, tone: "bad" as const };
+  return { label: "Score–nil live", points: null, tone: "warn" as const };
 }
