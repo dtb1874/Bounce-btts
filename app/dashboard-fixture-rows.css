@@ -6,8 +6,8 @@
   grid-template-columns: minmax(125px,.85fr) minmax(260px,2.1fr) 132px !important;
   grid-template-rows: auto auto;
   column-gap: 13px !important;
-  row-gap: 3px !important;
-  align-items: center !important;
+  row-gap: 4px !important;
+  align-items: start !important;
   min-height: 72px !important;
   margin: 4px 0;
   padding: 10px 104px 10px 12px !important;
@@ -24,9 +24,10 @@
 .weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] {
   grid-column: 1;
   grid-row: 1;
-  align-self: center;
+  align-self: start;
   display: block !important;
   min-width: 0;
+  padding-top: 1px;
 }
 
 .weeklyPicksPanel .dashboardSnapshotRow [class*="avatar"] {
@@ -42,15 +43,17 @@
   word-break: normal;
   color: #eadfd4;
   font-size: 14px !important;
-  line-height: 1.1 !important;
+  line-height: 1.08 !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotFixture {
   grid-column: 2;
   grid-row: 1;
-  align-self: center;
+  align-self: start;
   display: block !important;
   min-width: 0;
+  padding-top: 1px;
+  text-align: left !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotFixture .dashboardCompetition {
@@ -64,37 +67,39 @@
   white-space: nowrap !important;
   color: #f4eee8;
   font-size: 14px !important;
-  line-height: 1.15 !important;
+  line-height: 1.08 !important;
+  text-align: left !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotLive {
   grid-column: 2;
   grid-row: 2;
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
+  display: grid !important;
+  grid-template-columns: 34px 38px;
   align-items: baseline;
-  justify-content: flex-start;
-  gap: 6px;
+  justify-content: start;
+  column-gap: 5px;
   min-width: 0;
   text-align: left !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotLive strong {
-  display: inline-block !important;
+  display: block !important;
   color: #f0cfaa !important;
   font-size: 12px !important;
   line-height: 1 !important;
   white-space: nowrap;
+  text-align: right !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotLive small {
-  display: inline-block !important;
+  display: block !important;
   margin: 0 !important;
   color: #bda58e !important;
   font-size: 10px !important;
   line-height: 1 !important;
   white-space: nowrap;
+  text-align: left !important;
 }
 
 .weeklyPicksPanel .dashboardSnapshotLive .weeklyFixtureOdds {
@@ -115,9 +120,10 @@
   grid-column: 3;
   grid-row: 1;
   justify-self: center;
-  align-self: center;
+  align-self: start;
   width: 100%;
   min-width: 0;
+  margin-top: 0;
   padding: 4px 7px;
   border: 1px solid #747984;
   border-radius: 999px;
@@ -155,25 +161,26 @@
 
 @media (max-width: 650px) {
   .weeklyPicksPanel .dashboardSnapshotRow {
-    grid-template-columns: 64px minmax(0,1fr) 70px !important;
+    grid-template-columns: 68px minmax(0,1fr) 68px !important;
     grid-template-rows: auto auto;
     column-gap: 6px !important;
-    row-gap: 4px !important;
-    min-height: 66px !important;
+    row-gap: 5px !important;
+    min-height: 64px !important;
     margin: 3px 0;
-    padding: 8px 58px 8px 8px !important;
+    padding: 9px 58px 8px 8px !important;
     border-radius: 8px;
   }
 
   .weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] {
     grid-row: 1;
-    align-self: center;
+    align-self: start;
+    padding-top: 1px;
   }
 
   .weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] strong {
-    max-width: 64px;
+    max-width: 68px;
     font-size: 10.5px !important;
-    line-height: 1.06 !important;
+    line-height: 1.02 !important;
     white-space: normal !important;
     overflow: visible !important;
     text-overflow: clip !important;
@@ -182,24 +189,32 @@
 
   .weeklyPicksPanel .dashboardSnapshotFixture {
     grid-row: 1;
-    align-self: center;
+    align-self: start;
+    padding-top: 1px;
+    text-align: left !important;
   }
 
   .weeklyPicksPanel .dashboardSnapshotFixture strong {
     font-size: 10.5px !important;
+    line-height: 1.02 !important;
+    text-align: left !important;
   }
 
   .weeklyPicksPanel .dashboardSnapshotLive {
     grid-row: 2;
-    gap: 4px;
+    grid-template-columns: 27px 31px;
+    column-gap: 4px;
+    justify-content: start;
   }
 
   .weeklyPicksPanel .dashboardSnapshotLive strong {
     font-size: 9.5px !important;
+    text-align: right !important;
   }
 
   .weeklyPicksPanel .dashboardSnapshotLive small {
     font-size: 8px !important;
+    text-align: left !important;
   }
 
   .weeklyPicksPanel .dashboardSnapshotLive .weeklyFixtureOdds {
@@ -210,7 +225,9 @@
 
   .weeklyPicksPanel .dashboardSnapshotRow > div:last-child {
     grid-row: 1;
-    width: 70px;
+    align-self: start;
+    width: 68px;
+    margin-top: 0;
     padding: 2px 3px;
     font-size: 6.3px !important;
     line-height: 1;
