@@ -44,7 +44,7 @@
 .playerSummary span{color:#d5ad67;font-weight:900;font-size:.8rem}.playerSummary b{color:#d5ad67;font-size:1rem;text-align:center}
 .playerDetails{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 12px 12px;border-top:1px solid #30262b}
 .playerDetails>div{padding-top:10px}.playerDetails b{display:block;margin-top:4px;color:#eee2d5;font-size:.82rem}
-.playerCompetition{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:end}.playerCompetition b{text-align:right;color:#c9ad91}
+.playerCompetition{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:flex-end}.playerCompetition b{text-align:right;color:#c9ad91}
 .empty{color:#9f9792;text-align:center;padding:20px}
 
 @media(max-width:900px){.statCluster{grid-template-columns:repeat(2,minmax(0,1fr))}.statItem:nth-child(3n){border-right:1px solid rgba(199,175,149,.15)}.statItem:nth-child(2n){border-right:0}.statItem:nth-last-child(-n+3){border-bottom:1px solid rgba(199,175,149,.15)}.statItem:nth-last-child(-n+2){border-bottom:0}}

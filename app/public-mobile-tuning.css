@@ -1,0 +1,60 @@
+/* Public landing/table mobile spacing only. No authenticated-member layout rules live here. */
+@media (max-width: 760px) {
+  /* Pull the bottom of the public hero upward by roughly two text lines. */
+  .publicHero {
+    min-height: 272px;
+    padding-bottom: 12px;
+  }
+
+  /* Give the LIVE PUBLIC STANDINGS eyebrow roughly two text lines of breathing room. */
+  .publicTableCard {
+    padding-top: 40px;
+  }
+
+  /*
+   * Mobile public-table header geometry:
+   * - share button top aligns exactly with LIVE PUBLIC STANDINGS;
+   * - prize stays beneath League Table;
+   * - the share button is removed from document flow so it cannot create a large blank band;
+   * - keep a deliberate but compact gap before the standings table.
+   */
+  .publicTableHeading {
+    position: relative;
+    display: block;
+    min-height: 0;
+    margin-bottom: 12px;
+    padding-right: 158px;
+  }
+
+  .publicTableHeading > div:first-child {
+    min-width: 0;
+  }
+
+  .publicTableActions {
+    position: static !important;
+    display: block;
+    width: auto;
+    margin: 3px 0 0;
+    min-height: 0;
+  }
+
+  .publicTableActions > strong {
+    display: block;
+    margin: -4px 0 0;
+    text-align: left;
+  }
+
+  .publicTableActions .tableShareControl {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 148px;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .publicTableActions .tableShareControl button {
+    width: 148px;
+    margin: 0 !important;
+  }
+}
