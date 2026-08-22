@@ -2484,3 +2484,640 @@ a,
     text-overflow:ellipsis!important;
   }
 }
+
+
+/* dashboard-cleanup-hotfix-20260817 */
+.dashboardBrandHero{
+  min-height:138px!important;
+  padding:18px 24px 11px!important;
+  align-items:flex-end!important;
+}
+.dashboardBrandLockup{display:flex;align-items:center;gap:14px;min-width:0}
+.dashboardBrandCrest{width:70px;height:74px;object-fit:contain;filter:drop-shadow(0 5px 13px rgba(0,0,0,.38));flex:0 0 auto}
+.dashboardBrandLockup h1{font-size:38px!important;line-height:.94!important;letter-spacing:.075em!important}
+.dashboardBrandLockup h2{margin-top:5px!important;font-size:16px!important;letter-spacing:.18em!important}
+.dashboardBrandEyebrow{margin:0 0 5px!important;color:#c9bba9!important;font-size:9px!important;letter-spacing:.14em!important}
+.dashboardGwCompact{
+  min-width:184px!important;width:184px!important;
+  padding:8px 9px!important;border-radius:10px!important;
+  margin-bottom:-1px!important;transform:translateY(5px);
+}
+.dashboardGwCompact label{font-size:8px!important;letter-spacing:.1em!important}
+.dashboardGwCompact [class*="gwRow"]{gap:5px!important;margin-top:4px!important}
+.dashboardGwCompact [class*="gwRow"] select,.dashboardGwCompact [class*="gwRow"] button{padding:5px 6px!important;min-height:30px!important}
+.dashboardGwCompact small{margin-top:4px!important;font-size:9px!important;line-height:1.15!important}
+
+.weeklyPicksPanel [class*="panelHeading"]{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;align-items:start!important}
+.weeklyPicksHeading{min-width:0}
+.weeklyPicksHeading h3{margin:0 0 4px!important;font-size:20px!important;color:#f1e7dc!important}
+.weeklyPicksHeading [class*="title"]{margin:0!important;font-size:9px!important;color:#bda58e!important;letter-spacing:.12em!important}
+.weeklyPicksPanel .dashboardActionGrid{
+  width:100%!important;max-width:none!important;
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+.weeklyPicksPanel .dashboardGoldAction{
+  width:100%!important;min-width:0!important;height:36px!important;min-height:36px!important;
+  padding:4px 6px!important;border-radius:8px!important;font-size:9.5px!important;line-height:1.05!important;
+}
+.weeklyPicksPanel .dashboardActionGrid>button:nth-child(4){
+  font-weight:950!important;
+  background:linear-gradient(180deg,#f7dda0,#d9ac54 60%,#ba7f29)!important;
+  border-color:#ffe4a6!important;
+  box-shadow:0 5px 14px rgba(200,151,55,.26)!important;
+}
+.weeklyPicksPanel .dashboardAdminAction{
+  background:linear-gradient(180deg,#44363a,#30272b)!important;
+  color:#dfc89f!important;border-color:#755c55!important;
+  box-shadow:none!important;
+}
+.dashboardSnapshotRow{min-height:58px!important;padding-top:7px!important;padding-bottom:7px!important}
+.dashboardSnapshotFixture{display:flex!important;flex-direction:column!important;gap:2px!important;min-width:0!important}
+.dashboardSnapshotFixture .dashboardCompetition{order:0!important;color:#c4a77f!important;font-size:9px!important;font-weight:900!important;letter-spacing:.05em!important;text-transform:uppercase!important}
+.dashboardSnapshotFixture strong{order:1!important;font-size:12px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.dashboardSnapshotFixture small:not(.dashboardCompetition){order:2!important;font-size:9px!important;color:#99918b!important}
+.dashboardSnapshotLive strong{font-size:16px!important;line-height:1!important}
+.dashboardSnapshotLive small{font-size:9px!important}
+
+@media(max-width:650px){
+  .dashboardBrandHero{
+    min-height:112px!important;padding:11px 10px 6px!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) 142px!important;
+    gap:8px!important;align-items:end!important;
+  }
+  .dashboardBrandLockup{gap:8px!important;align-self:end!important}
+  .dashboardBrandCrest{width:46px!important;height:50px!important}
+  .dashboardBrandLockup h1{font-size:25px!important;letter-spacing:.065em!important}
+  .dashboardBrandLockup h2{font-size:10px!important;letter-spacing:.14em!important;margin-top:3px!important}
+  .dashboardBrandEyebrow{font-size:7px!important;letter-spacing:.08em!important;margin-bottom:3px!important;white-space:nowrap!important}
+  .dashboardGwCompact{width:142px!important;min-width:142px!important;padding:6px!important;transform:translateY(3px)!important;margin:0!important}
+  .dashboardGwCompact [class*="gwRow"]{gap:3px!important;margin-top:3px!important}
+  .dashboardGwCompact [class*="gwRow"] select,.dashboardGwCompact [class*="gwRow"] button{padding:4px!important;min-height:27px!important;font-size:10px!important}
+  .dashboardGwCompact small{font-size:7px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .weeklyPicksPanel .dashboardActionGrid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;width:100%!important}
+  .weeklyPicksPanel .dashboardGoldAction{width:100%!important;height:34px!important;min-height:34px!important;padding:3px 3px!important;font-size:8px!important;border-radius:7px!important;white-space:normal!important}
+  .weeklyPicksHeading h3{font-size:18px!important}
+  .dashboardSnapshotRow{min-height:54px!important;gap:6px!important;padding:6px 0!important}
+  .dashboardSnapshotRow [class*="playerCell"] strong{font-size:11px!important}
+  .dashboardSnapshotFixture strong{font-size:10.5px!important}
+  .dashboardSnapshotFixture .dashboardCompetition,.dashboardSnapshotFixture small:not(.dashboardCompetition){font-size:7.5px!important}
+  .dashboardSnapshotLive strong{font-size:14px!important}
+}
+
+
+/* player-stats-presentation-20260818 */
+.leagueMoreStats{margin-top:10px;border-top:1px solid rgba(216,183,111,.12);padding-top:8px}
+.leagueMoreStats>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none;cursor:pointer;padding:8px 4px;color:#c6b7a8;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.leagueMoreStats>summary::-webkit-details-marker{display:none}
+.leagueMoreStats>summary span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border:1px solid rgba(216,183,111,.2);border-radius:999px;color:#d8b76f;font-size:9px}
+.leagueMoreStats[open]>summary{color:#ead9c4}
+.leagueMoreStats[open] .statCluster{margin-top:4px}
+.playerStatHeadline{background:rgba(113,31,49,.12);border-color:rgba(216,183,111,.18)!important}
+.playerStatHeadline b{color:#efd08b!important;font-size:14px!important}
+@media(max-width:650px){.leagueMoreStats{margin-top:7px}.leagueMoreStats>summary{padding:7px 2px;font-size:9px}.playerStatHeadline b{font-size:12px!important}}
+
+
+/* joint-stat-holder-typography-20260818 */
+.jointStatValue{font-size:clamp(10px,1.45vw,13px)!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere;word-break:normal}
+@media(max-width:650px){.jointStatValue{font-size:10px!important;line-height:1.12!important}}
+
+
+/* combined-odds-web-20260818 */
+.weeklyCombinedOddsStrip{display:flex;align-items:baseline;justify-content:flex-end;gap:7px;margin:8px 0 4px;padding-top:7px;border-top:1px solid rgba(216,183,111,.16);white-space:nowrap;color:#bda58e;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+.weeklyCombinedOddsStrip strong{color:#e8c77c;font-size:16px;letter-spacing:.02em;text-transform:none}
+@media(max-width:650px){
+  .weeklyCombinedOddsStrip{justify-content:flex-end;font-size:7.5px;gap:5px;margin-top:7px;padding-top:6px;text-align:right}
+  .weeklyCombinedOddsStrip strong{font-size:13px}
+}
+
+
+/* admin-odds-checker-20260818 */
+.adminDashboard .weeklyPicksPanel .dashboardActionGrid{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+@media(max-width:650px){
+  .adminDashboard .weeklyPicksPanel .dashboardActionGrid{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important}
+  .adminDashboard .weeklyPicksPanel .dashboardGoldAction{font-size:7.4px!important;padding:3px 2px!important}
+}
+
+
+/* historic-gameweek-archive-20260818 */
+.historicGwArchive{margin-top:14px;border:1px solid rgba(216,183,111,.18);border-radius:14px;background:linear-gradient(145deg,rgba(35,15,22,.94),rgba(15,12,16,.96));overflow:hidden}
+.historicGwArchiveToggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.historicGwArchiveToggle:hover{background:rgba(113,31,49,.10)}
+.historicGwArchiveToggle span,.historicGwArchiveHeading span,.historicFormViewerHead span{display:block;color:#d8b76f;font-size:10px;font-weight:800;letter-spacing:.14em}
+.historicGwArchiveToggle h3,.historicGwArchiveHeading h3{margin:3px 0 0;color:#f1e7dc;font-size:18px}
+.historicGwArchiveToggleMeta{display:flex;align-items:center;gap:12px;color:#94877c}
+.historicGwArchiveToggleMeta small{font-size:10px}
+.historicGwArchiveToggleMeta b{color:#d8b76f;font-size:20px;font-weight:500}
+.historicGwArchiveBody{border-top:1px solid rgba(216,183,111,.14)}
+.historicFormViewer{margin:12px 12px 4px;padding:14px;border:1px solid rgba(216,183,111,.14);border-radius:12px;background:rgba(255,255,255,.025)}
+.historicFormViewerHead{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:10px}
+.historicFormViewerHead h4{margin:3px 0 0;color:#f1e7dc;font-size:16px}
+.historicFormViewerHead small{color:#8f8278;font-size:9px}
+.historicFormPlayerButtons{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.historicFormPlayerButtons button{border:1px solid rgba(216,183,111,.18);border-radius:999px;background:transparent;color:#ad9d90;padding:7px 10px;font-size:10px;font-weight:800;cursor:pointer}
+.historicFormPlayerButtons button.historicFormPlayerActive{background:rgba(113,31,49,.48);border-color:rgba(216,183,111,.48);color:#efd08b}
+.historicFormRangeSelectors{display:flex;align-items:end;justify-content:flex-end;gap:8px;margin:2px 0 12px}
+.historicFormRangeSelectors label{display:grid;gap:4px;color:#8f8278;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.historicFormRangeSelectors select{border:1px solid rgba(216,183,111,.22);border-radius:8px;background:#171116;color:#eee2d6;padding:7px 9px;font-size:10px;font-weight:700}
+.historicFormRangeSelectors>strong{align-self:center;color:#b5a79a;font-size:9px;font-weight:700;white-space:nowrap}
+.historicFormRangeArrow{align-self:center;color:#d8b76f;font-size:15px;padding-top:12px}
+.historicFormRows{display:grid;gap:8px}
+.historicFormPlayerRow{display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.045)}
+.historicFormPlayerRow:first-child{border-top:0}
+.historicFormPlayerRow>strong{color:#e6d9cc;font-size:11px}
+.historicFormStrip{display:flex;justify-content:flex-start;gap:7px;overflow-x:auto;padding:3px 0 6px;scrollbar-width:thin}
+.historicFormResult{flex:0 0 58px;display:grid;gap:4px;justify-items:center}
+.historicFormResult small{color:#8d8177;font-size:8px;font-weight:700}
+.historicFormResult>span{width:46px;padding:4px 2px;border-radius:999px;text-align:center;font-size:7px;font-weight:900;letter-spacing:.03em}
+.historicFormResult>b{color:#e9cf96;font-size:10px}
+.historicGwArchiveHeading{display:flex;align-items:end;justify-content:space-between;gap:12px;padding:14px 18px 10px;border-top:1px solid rgba(216,183,111,.10);border-bottom:1px solid rgba(216,183,111,.10)}
+.historicGwArchiveHeading small{color:#94877c;font-size:10px}
+.historicGwArchiveList{padding:7px 10px 10px}
+.historicGwItem{border-bottom:1px solid rgba(255,255,255,.055)}
+.historicGwItem:last-child{border-bottom:0}
+.historicGwSummary{width:100%;display:grid;grid-template-columns:70px 1fr 28px;align-items:center;gap:10px;border:0;background:transparent;color:#d9cec3;padding:11px 8px;text-align:left;cursor:pointer}
+.historicGwSummary strong{color:#ebcc86;font-size:13px}
+.historicGwSummary span{color:#a99b90;font-size:11px}
+.historicGwSummary b{justify-self:end;color:#d8b76f;font-size:18px;font-weight:500}
+.historicGwItemOpen .historicGwSummary{background:rgba(113,31,49,.16)}
+.historicGwResults{padding:2px 8px 10px}
+.historicGwResultHead,.historicGwResultRow{display:grid;grid-template-columns:minmax(130px,1fr) 110px 45px;align-items:center;gap:10px}
+.historicGwResultHead{padding:6px 8px;color:#7f756d;font-size:9px;font-weight:800;letter-spacing:.1em}
+.historicGwResultRow{padding:8px;border-radius:8px;color:#ddd3ca;font-size:11px}
+.historicGwResultRow:nth-child(odd){background:rgba(255,255,255,.025)}
+.historicGwResultRow>span{width:max-content;min-width:76px;padding:4px 7px;border-radius:999px;text-align:center;font-size:9px;font-weight:800;letter-spacing:.04em}
+.historicGwResultRow>b{text-align:right;color:#ecd08e}
+.historicGwWin{background:rgba(31,122,69,.24);color:#91d6aa;border:1px solid rgba(103,197,138,.32)}
+.historicGwScoreNil{background:rgba(139,91,22,.24);color:#e0ba70;border:1px solid rgba(214,165,76,.30)}
+.historicGwLoss{background:rgba(124,32,49,.28);color:#e28a9b;border:1px solid rgba(208,92,114,.30)}
+@media(max-width:650px){
+  .historicGwArchive{margin-top:10px;border-radius:11px}
+  .historicGwArchiveToggle{padding:13px 12px}
+  .historicGwArchiveToggle h3{font-size:15px}
+  .historicGwArchiveToggleMeta small{display:none}
+  .historicFormViewer{margin:9px 8px 3px;padding:11px 9px}
+  .historicFormViewerHead{align-items:flex-start}
+  .historicFormViewerHead h4{font-size:14px}
+  .historicFormViewerHead small{font-size:8px;text-align:right}
+  .historicFormPlayerButtons{gap:4px;margin-bottom:9px}
+  .historicFormPlayerButtons button{padding:6px 8px;font-size:9px}
+  .historicFormRangeSelectors{justify-content:flex-start;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .historicFormRangeSelectors select{padding:6px 7px;font-size:9px}
+  .historicFormRangeSelectors>strong{margin-left:auto;font-size:8px}
+  .historicFormRangeArrow{font-size:13px;padding-top:10px}
+  .historicFormPlayerRow{grid-template-columns:72px minmax(0,1fr);gap:5px;padding:7px 0}
+  .historicFormPlayerRow>strong{font-size:9px;line-height:1.15}
+  .historicFormStrip{gap:4px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:7px}
+  .historicFormResult{flex:0 0 48px;gap:3px}
+  .historicFormResult small{font-size:7px}
+  .historicFormResult>span{width:38px;font-size:6px;padding:3px 1px}
+  .historicFormResult>b{font-size:9px}
+  .historicGwArchiveHeading{align-items:flex-start;padding:12px 12px 9px}
+  .historicGwArchiveHeading h3{font-size:15px}
+  .historicGwArchiveHeading small{font-size:8px;text-align:right;max-width:100px}
+  .historicGwArchiveList{padding:5px 7px 8px}
+  .historicGwSummary{grid-template-columns:48px 1fr 20px;gap:7px;padding:10px 5px}
+  .historicGwSummary strong{font-size:11px}
+  .historicGwSummary span{font-size:9px;line-height:1.35}
+  .historicGwSummary b{font-size:16px}
+  .historicGwResultHead,.historicGwResultRow{grid-template-columns:minmax(100px,1fr) 84px 34px;gap:6px}
+  .historicGwResultHead{font-size:8px;padding:5px 4px}
+  .historicGwResultRow{padding:7px 4px;font-size:10px}
+  .historicGwResultRow>span{min-width:68px;font-size:8px;padding:3px 5px}
+}
+
+
+/* history-mobile-archive-containment-20260819 */
+.historicGwArchive,
+.historicGwArchiveBody,
+.historicFormViewer,
+.historicFormRows,
+.historicFormPlayerRow,
+.historicFormStrip,
+.historicGwArchiveList,
+.historicGwItem{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+
+/* mobile-dashboard-polish-global-20260819-v2 */
+@media(max-width:650px){
+  .dashboardBrandHero.dashboardBrandHero{
+    min-height:184px!important;
+    height:184px!important;
+    padding:0!important;
+    display:block!important;
+    position:relative!important;
+    overflow:visible!important;
+    grid-template-columns:none!important;
+    gap:0!important;
+    align-items:initial!important;
+  }
+  .dashboardBrandHero .dashboardBrandLockup{
+    position:absolute!important;
+    left:50%!important;
+    top:8px!important;
+    transform:translateX(-50%)!important;
+    width:74%!important;
+    max-width:300px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:0!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardBrandCrest{
+    width:55px!important;
+    height:57px!important;
+    flex:0 0 57px!important;
+    margin:0 auto 5px!important;
+  }
+  .dashboardBrandHero .dashboardBrandLockup>div{
+    width:100%!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardBrandEyebrow{
+    display:block!important;
+    width:100%!important;
+    margin:0 0 6px!important;
+    font-size:7.5px!important;
+    line-height:1!important;
+    letter-spacing:.09em!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardBrandLockup h1{
+    margin:0!important;
+    font-size:34px!important;
+    line-height:.9!important;
+    letter-spacing:.065em!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardBrandLockup h2{
+    margin:7px 0 0!important;
+    font-size:11px!important;
+    line-height:1!important;
+    letter-spacing:.18em!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+  }
+
+  main .mobileDashboardMenu{
+    width:48px!important;
+    height:48px!important;
+    top:118px!important;
+    left:10px!important;
+    border-radius:12px!important;
+    font-size:22px!important;
+    line-height:1!important;
+    z-index:95!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact{
+    position:absolute!important;
+    right:9px!important;
+    top:132px!important;
+    width:92px!important;
+    min-width:92px!important;
+    min-height:40px!important;
+    padding:3px 4px!important;
+    margin:0!important;
+    transform:none!important;
+    border-radius:9px!important;
+    z-index:94!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact label{
+    font-size:6.8px!important;
+    line-height:1!important;
+    letter-spacing:.08em!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact small{display:none!important}
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{
+    margin-top:2px!important;
+    gap:3px!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select{
+    min-width:0!important;
+    padding:3px 2px!important;
+    min-height:25px!important;
+    font-size:9px!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{
+    width:24px!important;
+    min-width:24px!important;
+    padding:3px!important;
+    min-height:25px!important;
+    font-size:10px!important;
+  }
+
+  .mobileControlCentre.adminDashboardIntro{
+    position:relative!important;
+    min-height:54px!important;
+    height:54px!important;
+    padding:0 12px!important;
+    overflow:visible!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  .mobileControlCentre.adminDashboardIntro>div:first-child{
+    position:absolute!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-50%,-50%)!important;
+    width:calc(100% - 88px)!important;
+    min-width:0!important;
+    text-align:center!important;
+  }
+  .mobileControlCentre.adminDashboardIntro [class*="eyebrow"],
+  .mobileControlCentre.adminDashboardIntro p{display:none!important}
+  .mobileControlCentre.adminDashboardIntro h2{
+    margin:0!important;
+    text-align:center!important;
+    font-size:20px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+  .mobileControlCentre .mobileControlTrophy{
+    position:absolute!important;
+    right:-2px!important;
+    left:auto!important;
+    top:50%!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    width:70px!important;
+    height:82px!important;
+    opacity:1!important;
+    overflow:visible!important;
+    pointer-events:none!important;
+  }
+  .mobileControlCentre .mobileControlTrophy img:first-child{display:none!important}
+  .mobileControlCentre .mobileControlTrophy img:last-child{
+    display:block!important;
+    width:70px!important;
+    height:82px!important;
+    object-fit:contain!important;
+  }
+
+  .adminDashboardStats{margin-top:8px!important;margin-bottom:7px!important}
+  .mobileDashboardActions{margin-top:0!important}
+
+  .weeklyPicksHeading{text-align:left!important}
+  .weeklyPicksHeading h3{
+    text-align:left!important;
+    font-size:20px!important;
+    line-height:1.05!important;
+    margin-top:2px!important;
+  }
+}
+
+
+/* mobile-dashboard-eyebrow-centre-20260819-v3 */
+@media(max-width:650px){
+  .dashboardBrandHero .dashboardBrandLockup{
+    top:18px!important;
+  }
+  .dashboardBrandHero .dashboardBrandEyebrow{
+    width:max-content!important;
+    max-width:none!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    align-self:center!important;
+    text-align:center!important;
+    position:static!important;
+    transform:none!important;
+    font-size:8.5px!important;
+    font-weight:700!important;
+    color:#d6b36a!important;
+    letter-spacing:.10em!important;
+  }
+}
+
+
+/* mobile-dashboard-gw-position-20260819-v2 */
+@media(max-width:650px){
+  .dashboardBrandHero .dashboardGwCompact{
+    width:72px!important;
+    min-width:72px!important;
+    max-width:72px!important;
+    box-sizing:border-box!important;
+    padding:2px 3px!important;
+    transform:translateY(110px)!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact label{
+    display:block!important;
+    width:100%!important;
+    text-align:center!important;
+    margin:0!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{
+    display:grid!important;
+    grid-template-columns:16px minmax(0,1fr) 16px!important;
+    width:100%!important;
+    gap:2px!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{
+    width:16px!important;
+    min-width:16px!important;
+    max-width:16px!important;
+    padding:0!important;
+    text-align:center!important;
+  }
+  .dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    padding:2px 0!important;
+    font-size:9px!important;
+    text-align:center!important;
+    text-align-last:center!important;
+  }
+}
+
+
+/* mobile-dashboard-menu-align-20260819-v4 */
+@media(max-width:650px){
+  main .mobileDashboardMenu{
+    top:128px!important;
+  }
+}
+
+
+/* mobile-dashboard-gw-final-width-20260819-v4 */
+@media(max-width:650px){
+  /* Keep the picker compact while giving the navigation arrows clearer separation and tap targets. */
+  .dashboardBrandHero.dashboardBrandHero .dashboardGwCompact{
+    width:88px!important;
+    min-width:88px!important;
+    max-width:88px!important;
+    padding-left:2px!important;
+    padding-right:2px!important;
+  }
+  .dashboardBrandHero.dashboardBrandHero .dashboardGwCompact [class*="gwRow"]{
+    grid-template-columns:16px minmax(0,1fr) 16px!important;
+    gap:4px!important;
+  }
+  .dashboardBrandHero.dashboardBrandHero .dashboardGwCompact [class*="gwRow"] button{
+    width:16px!important;
+    min-width:16px!important;
+    max-width:16px!important;
+    padding:0!important;
+    font-size:12px!important;
+  }
+  .dashboardBrandHero.dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select{
+    min-width:44px!important;
+    width:100%!important;
+    max-width:none!important;
+    box-sizing:border-box!important;
+    padding-left:1px!important;
+    padding-right:1px!important;
+    font-size:9px!important;
+    text-align:center!important;
+    text-align-last:center!important;
+  }
+}
+
+
+/* mobile-dashboard-gw-highlight-20260819 */
+@media(max-width:650px){
+  .dashboardBrandHero.dashboardBrandHero .dashboardGwCompact [class*="gwRow"] select{
+    color:#f2c94c!important;
+    -webkit-text-fill-color:#f2c94c!important;
+    font-weight:800!important;
+  }
+}
+
+
+/* mobile-weekly-pick-odds-inline-20260819-v3 */
+.weeklyFixtureCompetition{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.weeklySnapshotLive{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.weeklySnapshotLive .weeklyFixtureOdds{
+  display:block!important;
+  margin-top:3px!important;
+  color:#e8c77c!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  letter-spacing:.01em!important;
+  white-space:nowrap!important;
+}
+@media(max-width:650px){
+  .weeklyPicksPanel .dashboardSnapshotRow{
+    min-height:48px!important;
+    padding:4px 0!important;
+    gap:4px 8px!important;
+  }
+  .weeklyPicksPanel .weeklyFixtureCompetition{
+    margin:0!important;
+    font-size:7.5px!important;
+    line-height:1!important;
+  }
+  .weeklyPicksPanel .weeklySnapshotLive .weeklyFixtureOdds{
+    margin-top:4px!important;
+    font-size:10px!important;
+  }
+}
+
+
+/* dashboard-dynamic-gameweek-status-20260819 */
+.weeklyPicksTitleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  width:100%;
+}
+.dashboardGameweekTiming{
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  color:#e6c36f!important;
+  font-weight:900!important;
+  text-align:right;
+  white-space:nowrap;
+  text-transform:none!important;
+}
+.dashboardGameweekTiming>span{
+  display:block;
+  width:100%;
+  text-align:right;
+}
+@media(max-width:650px){
+  .weeklyPicksPanel .weeklyPicksTitleRow{
+    gap:8px!important;
+  }
+  .weeklyPicksPanel .weeklyPicksTitleRow h3{
+    min-width:0!important;
+  }
+  .weeklyPicksPanel .dashboardGameweekTiming{
+    flex:0 0 auto!important;
+    padding:1px 0 0!important;
+    margin:0!important;
+    min-height:0!important;
+    line-height:1.12!important;
+    letter-spacing:.055em!important;
+    white-space:nowrap!important;
+  }
+  .weeklyPicksPanel .dashboardGameweekTiming>span+span{
+    margin-top:2px!important;
+  }
+}
+
+
+/* recent-updates-1.6.3-20260820 */
+.leagueMoreStatsChevron{display:inline-block!important;font-size:16px!important;line-height:1!important;transition:transform .18s ease;color:#d8b76f}
+.leagueMoreStats[open] .leagueMoreStatsChevron{transform:rotate(180deg)}
+.leagueStatDrilldown{padding:0!important;overflow:hidden}
+.leagueStatDrilldown>summary{list-style:none;cursor:pointer;padding:13px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-content:center;min-height:100%}
+.leagueStatDrilldown>summary::-webkit-details-marker{display:none}
+.leagueStatDrilldown>summary>span,.leagueStatDrilldown>summary>strong,.leagueStatDrilldown>summary>small{grid-column:1}
+.leagueStatDrilldown>summary>b{grid-column:2;grid-row:1/4;align-self:center;color:#d8b76f;font-size:18px;transition:transform .18s ease}
+.leagueStatDrilldown[open]>summary>b{transform:rotate(180deg)}
+.leagueStatBreakdown{border-top:1px solid rgba(216,183,111,.14);padding:8px 16px 12px;display:grid;gap:6px;color:#cbbdaf;font-size:10px;line-height:1.3}
+.historicGwArchiveHeadingButton{width:100%;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.historicGwArchiveHeadingButton:hover{background:rgba(113,31,49,.08)}
+.historicWeeklyHeadingMeta{display:flex;align-items:center;gap:10px;text-align:right}
+.historicWeeklyHeadingMeta b{color:#d8b76f;font-size:20px;font-weight:500}
+.historicWeeklyListCollapsed{display:none!important}
+.honoursTrophyButton{border:0;background:transparent;padding:0;cursor:pointer;pointer-events:auto!important}
+.dashboardHonoursPanel{margin:10px 0 12px;border:1px solid rgba(216,183,111,.24);border-radius:14px;background:linear-gradient(145deg,rgba(39,15,24,.97),rgba(18,12,17,.98));overflow:hidden}
+.dashboardHonoursHead{padding:12px 14px 9px;border-bottom:1px solid rgba(216,183,111,.13);display:flex;align-items:end;justify-content:space-between;gap:10px}
+.dashboardHonoursHead span{color:#d8b76f;font-size:8px;font-weight:900;letter-spacing:.14em}
+.dashboardHonoursHead strong{color:#f1e7dc;font-size:16px}
+.dashboardHonoursGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.dashboardHonourRow{min-width:0;padding:11px 13px;border-right:1px solid rgba(216,183,111,.10);border-bottom:1px solid rgba(216,183,111,.10)}
+.dashboardHonourRow span{display:block;color:#d8b76f;font-size:8px;font-weight:900;letter-spacing:.09em}
+.dashboardHonourRow strong{display:block;margin-top:4px;color:#f1e7dc;font-size:clamp(11px,2.5vw,16px);line-height:1.05;overflow-wrap:anywhere}
+.dashboardHonourRow small{display:block;margin-top:4px;color:#998a80;font-size:8px}
+.historyHonoursTrophyButton{border:0;background:transparent;padding:0;cursor:pointer;display:block}
+.historyHonoursTrophyButton img{display:block;width:100%;height:100%;object-fit:contain}
+.historyHonoursCollapsed{display:none!important}
+.historyHonoursOpen .honourCard strong{font-size:clamp(11px,2.4vw,17px)!important;line-height:1.05!important;white-space:normal!important;overflow-wrap:anywhere}
+@media(max-width:650px){
+  .leagueStatDrilldown>summary{padding:11px 10px}
+  .leagueStatBreakdown{padding:7px 10px 10px;font-size:9px}
+  .historicWeeklyHeadingMeta small{max-width:115px}
+  .dashboardHonoursPanel{margin:8px 6px 10px}
+  .dashboardHonoursGrid{grid-template-columns:1fr 1fr}
+  .dashboardHonourRow strong{font-size:clamp(10px,3.3vw,14px)}
+  .historyHonoursTrophyButton{width:70px;height:82px}
+}
+
+.leagueStatInlineNames{display:block!important;margin-top:4px!important;color:#d8b76f!important;font-size:10px!important;line-height:1.35!important}

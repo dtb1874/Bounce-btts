@@ -192,12 +192,15 @@ if 'perf.averageSelectedOdds' not in league:
         raise SystemExit("Logged-in expanded stats anchor not found")
     league = league.replace(old_logged_details, new_logged_details, 1)
 
-old_more_stats_close = '''{facts.map(f=><div className={publicStyles.statItem} key={f.label}><span>{f.label}</span><strong>{f.value}</strong><small>{f.detail}</small></div>)}</div></details><section className={publicStyles.publicPanel}>'''
-new_more_stats_close = '''{facts.map(f=><div className={publicStyles.statItem} key={f.label}><span>{f.label}</span><strong>{f.value}</strong><small>{f.detail}</small></div>)}<div className={publicStyles.statItem}><span>BIGGEST ODDS WINNER</span><strong>{biggestOddsWinner?.name??"—"}</strong><small>{biggestOddsWinner?.biggestWinningOdds==null?"Waiting for priced winners":`${biggestOddsWinner.biggestWinningOdds.toFixed(2)}/1 winning BTTS price`}</small></div><div className={publicStyles.statItem}><span>LONGEST BTTS STREAK</span><strong>{longestBttsStreak?.bestStreak?longestBttsStreak.name:"—"}</strong><small>{longestBttsStreak?.bestStreak?`${longestBttsStreak.bestStreak} consecutive BTTS wins`:"No streak yet"}</small></div><div className={publicStyles.statItem}><span>LONGEST WINLESS RUN</span><strong>{longestWinlessRun?.longestWinlessStreak?longestWinlessRun.name:"—"}</strong><small>{longestWinlessRun?.longestWinlessStreak?`${longestWinlessRun.longestWinlessStreak} consecutive non-winning picks`:"No run yet"}</small></div><div className={publicStyles.statItem}><span>VALUE HUNTER</span><strong>{valueHunter?.name??"—"}</strong><small>{valueHunter?.averageWinningOdds==null?"Waiting for priced winners":`${valueHunter.averageWinningOdds.toFixed(2)}/1 average winning odds`}</small></div></div></details><section className={publicStyles.publicPanel}>'''
+records_markup = '''<div className={publicStyles.statItem}><span>BIGGEST ODDS WINNER</span><strong>{biggestOddsWinner?.name??"—"}</strong><small>{biggestOddsWinner?.biggestWinningOdds==null?"Waiting for priced winners":`${biggestOddsWinner.biggestWinningOdds.toFixed(2)}/1 winning BTTS price`}</small></div><div className={publicStyles.statItem}><span>LONGEST BTTS STREAK</span><strong>{longestBttsStreak?.bestStreak?longestBttsStreak.name:"—"}</strong><small>{longestBttsStreak?.bestStreak?`${longestBttsStreak.bestStreak} consecutive BTTS wins`:"No streak yet"}</small></div><div className={publicStyles.statItem}><span>LONGEST WINLESS RUN</span><strong>{longestWinlessRun?.longestWinlessStreak?longestWinlessRun.name:"—"}</strong><small>{longestWinlessRun?.longestWinlessStreak?`${longestWinlessRun.longestWinlessStreak} consecutive non-winning picks`:"No run yet"}</small></div><div className={publicStyles.statItem}><span>VALUE HUNTER</span><strong>{valueHunter?.name??"—"}</strong><small>{valueHunter?.averageWinningOdds==null?"Waiting for priced winners":`${valueHunter.averageWinningOdds.toFixed(2)}/1 average winning odds`}</small></div>'''
 if 'biggestOddsWinner?.biggestWinningOdds' not in league:
-    if old_more_stats_close not in league:
-        raise SystemExit("Logged-in More league stats anchor not found")
-    league = league.replace(old_more_stats_close, new_more_stats_close, 1)
+    details_start = league.find('<details className="leagueMoreStats">')
+    if details_start < 0:
+        raise SystemExit("Logged-in More league stats block not found")
+    details_close = league.find('</div></details>', details_start)
+    if details_close < 0:
+        raise SystemExit("Logged-in More league stats closing block not found")
+    league = league[:details_close] + records_markup + league[details_close:]
 
 public_path.write_text(public)
 public_data_path.write_text(public_data)

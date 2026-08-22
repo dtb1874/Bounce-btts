@@ -267,26 +267,7 @@ league = replace_once(
 # Expandable honours trophy for every signed-in user on Dashboard and History.
 # Dynamic archived winners are added automatically from seasonHistory.
 # -----------------------------------------------------------------------------
-league = replace_once(
-    league,
-    '  gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing\n}:{',
-    '  gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,seasonHistory,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing\n}:{',
-    "Dashboard destructuring seasonHistory",
-)
-
-league = replace_once(
-    league,
-    '  seasonLabel:string;\n  isOpen:boolean;',
-    '  seasonLabel:string;\n  seasonHistory:SeasonHistory[];\n  isOpen:boolean;',
-    "Dashboard seasonHistory prop type",
-)
-
-league = replace_once(
-    league,
-    'entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen}',
-    'entryFee={entryFee} seasonLabel={seasonLabel} seasonHistory={seasonHistory} isOpen={isOpen}',
-    "Dashboard invocation seasonHistory",
-)
+# Dashboard seasonHistory props applied structurally by recent-updates-1.6.3-pre.py
 
 status_anchor = '''  const statusText = !gameweek ? "No gameweek selected" :
     gameweek.status==="complete" ? "Gameweek complete" :

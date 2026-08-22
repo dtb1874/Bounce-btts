@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
-import { runFootballImport } from "@/lib/api-football";
+import { runFootballImport, runSelectedOddsRefresh } from "@/lib/api-football";
 
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
@@ -11,6 +11,11 @@ export async function POST(request: Request) {
     const gameweekIds = Array.isArray(body?.gameweekIds)
       ? body.gameweekIds.filter((value: unknown): value is string => typeof value === "string" && value.length > 0)
       : undefined;
+    if (body?.oddsOnly === true) {
+      const gameweekId = gameweekIds?.[0];
+      if (!gameweekId) return NextResponse.json({ error: "A gameweek is required for odds refresh." }, { status: 400 });
+      return NextResponse.json(await runSelectedOddsRefresh(gameweekId));
+    }
 
     return NextResponse.json(await runFootballImport("admin", gameweekIds));
   } catch (error) {

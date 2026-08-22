@@ -62,8 +62,16 @@ async function bttsBetId(tracker: Tracker) {
 }
 
 async function fixtureOdds(providerId: string, betId: string, tracker: Tracker) {
-  const payload = await api("/odds", { fixture: providerId, bet: betId }, tracker);
-  const bookmakers = payload.response?.[0]?.bookmakers ?? [];
+  const bookmakers: any[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const payload = await api("/odds", { fixture: providerId, bet: betId, page: String(page) }, tracker);
+    for (const item of payload.response ?? []) bookmakers.push(...(item.bookmakers ?? []));
+    totalPages = Math.max(1, Number(payload.paging?.total) || 1);
+    page += 1;
+  } while (page <= totalPages && page <= 5 && (tracker.remaining === null || tracker.remaining > 8) && tracker.used < 75);
+
   const sorted = [...bookmakers].sort((a: any, b: any) => {
     const ai = BOOKMAKER_PRIORITY.indexOf(String(a.name));
     const bi = BOOKMAKER_PRIORITY.indexOf(String(b.name));
@@ -71,11 +79,41 @@ async function fixtureOdds(providerId: string, betId: string, tracker: Tracker) 
   });
   for (const bookmaker of sorted) {
     for (const bet of bookmaker.bets ?? []) {
-      const yes = (bet.values ?? []).find((value: any) => String(value.value).toLowerCase() === "yes");
-      if (yes?.odd) return { odds: decimalToFractional(yes.odd), bookmaker: String(bookmaker.name) };
+      const yes = (bet.values ?? []).find((value: any) => String(value.value).trim().toLowerCase() === "yes");
+      const fractional = decimalToFractional(yes?.odd);
+      if (fractional) return { odds: fractional, bookmaker: String(bookmaker.name) };
     }
   }
   return { odds: null, bookmaker: null };
+}
+
+export async function runSelectedOddsRefresh(gameweekId: string) {
+  const admin = createAdminClient();
+  const tracker: Tracker = { used: 0, limit: null, remaining: null };
+  const { data: predictions, error: predictionsError } = await admin.from("predictions").select("fixture_id").eq("gameweek_id", gameweekId).not("fixture_id", "is", null);
+  if (predictionsError) throw predictionsError;
+  const fixtureIds = [...new Set((predictions ?? []).map((row: any) => String(row.fixture_id)).filter(Boolean))];
+  if (!fixtureIds.length) return { checked: 0, updated: 0, unavailable: 0, requestsUsed: 0 };
+  const { data: fixtures, error: fixturesError } = await admin.from("fixtures").select("id,provider_fixture_id,status").in("id", fixtureIds).in("status", ["NS", "TBD"]);
+  if (fixturesError) throw fixturesError;
+  const betId = await bttsBetId(tracker);
+  if (!betId) throw new Error("BTTS odds market could not be found.");
+  let checked = 0, updated = 0, unavailable = 0;
+  for (const fixture of fixtures ?? []) {
+    const providerId = String(fixture.provider_fixture_id ?? "").trim();
+    if (!/^\d+$/.test(providerId)) { unavailable += 1; continue; }
+    if (tracker.remaining !== null && tracker.remaining <= 8) break;
+    if (tracker.used >= 75) break;
+    const result = await fixtureOdds(providerId, betId, tracker);
+    checked += 1;
+    const oddsPatch = result.odds
+      ? { odds_fractional: result.odds, odds_bookmaker: result.bookmaker, odds_checked_at: new Date().toISOString() }
+      : { odds_checked_at: new Date().toISOString() };
+    const { error } = await admin.from("fixtures").update(oddsPatch).eq("id", fixture.id);
+    if (error) throw error;
+    if (result.odds) updated += 1; else unavailable += 1;
+  }
+  return { checked, updated, unavailable, requestsUsed: tracker.used };
 }
 
 function sameInstant(a: unknown, b: unknown) {
@@ -201,12 +239,15 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
 
     const betId = await bttsBetId(tracker);
     if (betId) {
-      let candidatesQuery = admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
-        .not("provider_fixture_id", "is", null).eq("is_eligible", true).in("status", ["NS", "TBD"]);
-      candidatesQuery = requestedIds.size
-        ? candidatesQuery.in("gameweek_id", targetWeeks.map((week: any) => week.id))
-        : candidatesQuery.gte("kickoff_at", new Date(now).toISOString()).lte("kickoff_at", new Date(upper).toISOString());
-      const { data: candidates } = await candidatesQuery.order("kickoff_at").limit(60);
+      const targetWeekIds = targetWeeks.map((week: any) => week.id);
+      const { data: selectedPredictions } = targetWeekIds.length
+        ? await admin.from("predictions").select("fixture_id").in("gameweek_id", targetWeekIds).not("fixture_id", "is", null)
+        : { data: [] as any[] };
+      const selectedFixtureIds = [...new Set((selectedPredictions ?? []).map((row: any) => String(row.fixture_id)).filter(Boolean))];
+      const { data: candidates } = selectedFixtureIds.length
+        ? await admin.from("fixtures").select("id,provider_fixture_id,kickoff_at,is_eligible,status")
+            .in("id", selectedFixtureIds).not("provider_fixture_id", "is", null).in("status", ["NS", "TBD"])
+        : { data: [] as any[] };
       for (const fixture of candidates ?? []) {
         if (tracker.remaining !== null && tracker.remaining <= 8) break;
         if (tracker.used >= 75) break;
@@ -214,11 +255,10 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
         if (!/^\d+$/.test(providerId)) continue;
         try {
           const result = await fixtureOdds(providerId, betId, tracker);
-          const { error: oddsError } = await admin.from("fixtures").update({
-            odds_fractional: result.odds,
-            odds_bookmaker: result.bookmaker,
-            odds_checked_at: new Date().toISOString(),
-          }).eq("id", fixture.id);
+          const oddsPatch = result.odds
+            ? { odds_fractional: result.odds, odds_bookmaker: result.bookmaker, odds_checked_at: new Date().toISOString() }
+            : { odds_checked_at: new Date().toISOString() };
+          const { error: oddsError } = await admin.from("fixtures").update(oddsPatch).eq("id", fixture.id);
           if (oddsError) throw oddsError;
           if (result.odds) summary.oddsUpdated += 1;
         } catch (oddsError) {
