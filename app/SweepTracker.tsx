@@ -8,6 +8,7 @@ import styles from "./SweepTracker.module.css";
 
 type Gameweek = { id: string; number: number };
 type Point = { gameweek: number; goalsAway: number };
+type AnimatedPoint = Point & { index: number; moving?: boolean };
 
 type Props = {
   seasonLabel: string;
@@ -17,6 +18,8 @@ type Props = {
 };
 
 const FINISHED = new Set(["FT", "AET", "PEN"]);
+const MS_PER_GW = 650;
+const SHARE_STEPS_PER_GW = 12;
 
 function buildPoints({ gameweeks, predictions, fixtures }: Omit<Props, "seasonLabel">): Point[] {
   const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]));
@@ -40,7 +43,26 @@ function buildPoints({ gameweeks, predictions, fixtures }: Omit<Props, "seasonLa
     .filter((point): point is Point => Boolean(point));
 }
 
-function drawChart(ctx: CanvasRenderingContext2D, points: Point[], upto: number, seasonLabel: string) {
+function pointsAtProgress(points: Point[], progress: number): AnimatedPoint[] {
+  if (!points.length) return [];
+  const clamped = Math.max(0, Math.min(points.length - 1, progress));
+  const whole = Math.floor(clamped);
+  const frac = clamped - whole;
+  const visible: AnimatedPoint[] = points.slice(0, whole + 1).map((point, index) => ({ ...point, index }));
+  if (frac > 0 && whole < points.length - 1) {
+    const from = points[whole];
+    const to = points[whole + 1];
+    visible.push({
+      gameweek: to.gameweek,
+      goalsAway: from.goalsAway + (to.goalsAway - from.goalsAway) * frac,
+      index: whole + frac,
+      moving: true,
+    });
+  }
+  return visible;
+}
+
+function drawChart(ctx: CanvasRenderingContext2D, points: Point[], progress: number, seasonLabel: string) {
   const width = 900, height = 620;
   ctx.fillStyle = "#120d12";
   ctx.fillRect(0, 0, width, height);
@@ -56,16 +78,27 @@ function drawChart(ctx: CanvasRenderingContext2D, points: Point[], upto: number,
   ctx.font = "700 17px Arial";
   ctx.fillText(`SEASON ${seasonLabel} · GOALS AWAY FROM THE SWEEP`, 42, 115);
 
-  const visible = points.slice(0, upto + 1);
+  const visible = pointsAtProgress(points, progress);
   const maxValue = Math.max(3, ...points.map((point) => point.goalsAway));
   const left = 70, right = 850, top = 175, bottom = 510;
+  const xFor = (index: number) => points.length === 1 ? (left + right) / 2 : left + (index / (points.length - 1)) * (right - left);
+  const yFor = (value: number) => bottom - (value / maxValue) * (bottom - top);
+
   ctx.strokeStyle = "rgba(216,183,111,.16)";
   ctx.lineWidth = 1;
   for (let value = 0; value <= maxValue; value += 1) {
-    const y = bottom - (value / maxValue) * (bottom - top);
+    const y = yFor(value);
     ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
     ctx.fillStyle = "#9f8f83"; ctx.font = "700 13px Arial"; ctx.fillText(String(value), 48, y + 4);
   }
+
+  points.forEach((point, index) => {
+    ctx.fillStyle = "#9f8f83";
+    ctx.font = "700 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`GW ${point.gameweek}`, xFor(index), bottom + 28);
+  });
+
   if (visible.length) {
     ctx.strokeStyle = "#d8b76f";
     ctx.lineWidth = 5;
@@ -73,24 +106,34 @@ function drawChart(ctx: CanvasRenderingContext2D, points: Point[], upto: number,
     ctx.lineJoin = "round";
     ctx.beginPath();
     visible.forEach((point, index) => {
-      const x = points.length === 1 ? (left + right) / 2 : left + (index / (points.length - 1)) * (right - left);
-      const y = bottom - (point.goalsAway / maxValue) * (bottom - top);
+      const x = xFor(point.index);
+      const y = yFor(point.goalsAway);
       if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
-    visible.forEach((point, index) => {
-      const x = points.length === 1 ? (left + right) / 2 : left + (index / (points.length - 1)) * (right - left);
-      const y = bottom - (point.goalsAway / maxValue) * (bottom - top);
-      ctx.fillStyle = "#6f2036"; ctx.strokeStyle = "#f0cd87"; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#f2dfcc"; ctx.font = "900 15px Arial"; ctx.textAlign = "center"; ctx.fillText(String(point.goalsAway), x, y - 16);
-      ctx.fillStyle = "#9f8f83"; ctx.font = "700 12px Arial"; ctx.fillText(`GW ${point.gameweek}`, x, bottom + 28);
+
+    visible.forEach((point) => {
+      const x = xFor(point.index);
+      const y = yFor(point.goalsAway);
+      ctx.fillStyle = "#6f2036";
+      ctx.strokeStyle = "#f0cd87";
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(x, y, point.moving ? 9 : 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (!point.moving) {
+        ctx.fillStyle = "#f2dfcc";
+        ctx.font = "900 15px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(String(point.goalsAway), x, y - 16);
+      }
     });
+
+    const displayIndex = Math.max(0, Math.min(points.length - 1, Math.ceil(progress - 0.001)));
+    const display = points[displayIndex];
     ctx.textAlign = "left";
-    const latest = visible[visible.length - 1];
     ctx.fillStyle = "#f2dfcc"; ctx.font = "900 24px Arial";
-    ctx.fillText(`GW ${latest.gameweek}: ${latest.goalsAway} goal${latest.goalsAway === 1 ? "" : "s"} away`, 42, 568);
+    ctx.fillText(`GW ${display.gameweek}: ${display.goalsAway} goal${display.goalsAway === 1 ? "" : "s"} away`, 42, 568);
   }
+  ctx.textAlign = "left";
   ctx.fillStyle = "#8f8177"; ctx.font = "700 13px Arial";
   ctx.fillText("0 means every selected match landed BTTS · score-nil = 1 · 0-0 = 2", 42, 596);
 }
@@ -123,15 +166,19 @@ export default function SweepTracker(props: Props) {
     if (!points.length || sharing) return;
     setSharing(true);
     try {
+      const frameCount = points.length === 1 ? 1 : (points.length - 1) * SHARE_STEPS_PER_GW + 1;
       await exportAnimatedShare({
         width: 900,
         height: 620,
-        frameCount: points.length,
-        frameDurationMs: 700,
+        frameCount,
+        frameDurationMs: Math.round(MS_PER_GW / SHARE_STEPS_PER_GW),
         finalHoldMs: 1400,
         filename: `bounce-sweep-tracker-${props.seasonLabel.replace(/[^0-9a-z]+/gi, "-")}.mp4`,
         title: `Bounce BTTS · Goals Away From The Sweep · ${props.seasonLabel}`,
-        drawFrame: (ctx, index) => drawChart(ctx, points, index, props.seasonLabel),
+        drawFrame: (ctx, index) => {
+          const progress = points.length === 1 ? 0 : Math.min(points.length - 1, index / SHARE_STEPS_PER_GW);
+          drawChart(ctx, points, progress, props.seasonLabel);
+        },
       });
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Could not create animated share.");
