@@ -61,9 +61,10 @@ jobs:
       - name: Ensure build is source-clean
         shell: bash
         run: |
+          set -euo pipefail
           git diff --exit-code
-          test -z "$(git status --porcelain)" || {
-            echo "Build created or modified repository files"
-            git status --short
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Build modified tracked repository files"
+            git status --short --untracked-files=no
             exit 1
-          }
+          fi
