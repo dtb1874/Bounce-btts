@@ -6,6 +6,7 @@ import "./public-mobile-tuning.css";
 import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
 import type { Metadata, Viewport } from "next";
+import ShortRaceShareBridge from "./ShortRaceShareBridge";
 
 export const metadata: Metadata = {
   title: "Bounce BTTS League",
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><ShortRaceShareBridge />{children}</body>
     </html>
   );
 }

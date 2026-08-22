@@ -53,14 +53,44 @@ export default function RaceSharePage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get("d");
-    if (!value) { setInvalid(true); return; }
-    const decoded = decodePayload(value);
-    if (!decoded) { setInvalid(true); return; }
-    setPayload(decoded);
-    setSelectedIds(new Set(decoded.selected?.length ? decoded.selected : decoded.players.map((player) => player.id)));
-    setProgress(0);
-    setPlaying(decoded.frames.length > 1);
+    let cancelled = false;
+    const applyPayload = (next: SharedRacePayload) => {
+      if (cancelled) return;
+      setPayload(next);
+      setSelectedIds(new Set(next.selected?.length ? next.selected : next.players.map((player) => player.id)));
+      setProgress(0);
+      setPlaying(next.frames.length > 1);
+    };
+
+    const load = async () => {
+      const value = new URLSearchParams(window.location.search).get("d");
+      if (value) {
+        const decoded = decodePayload(value);
+        if (!decoded) { if (!cancelled) setInvalid(true); return; }
+        applyPayload(decoded);
+        return;
+      }
+
+      const match = window.location.pathname.match(/^\/r\/([A-Za-z0-9]{8})\/?$/);
+      const code = match?.[1];
+      if (!code) { if (!cancelled) setInvalid(true); return; }
+
+      try {
+        const response = await fetch(`/api/race-share/${encodeURIComponent(code)}`, { cache: "no-store" });
+        if (!response.ok) { if (!cancelled) setInvalid(true); return; }
+        const result = await response.json() as { payload?: SharedRacePayload };
+        if (!result.payload || result.payload.v !== 1 || !Array.isArray(result.payload.players) || !Array.isArray(result.payload.frames)) {
+          if (!cancelled) setInvalid(true);
+          return;
+        }
+        applyPayload(result.payload);
+      } catch {
+        if (!cancelled) setInvalid(true);
+      }
+    };
+
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
