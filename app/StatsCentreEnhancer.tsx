@@ -5,11 +5,15 @@ import { useEffect } from "react";
 export default function StatsCentreEnhancer() {
   useEffect(() => {
     const apply = () => {
-      const buttons = Array.from(document.querySelectorAll("button, a"));
+      const buttons = Array.from(document.querySelectorAll('nav[class*="nav"] button'));
       for (const element of buttons) {
-        if ((element.textContent ?? "").trim() !== "League Table") continue;
-        const target = element.querySelector("strong") ?? element;
-        if ((target.textContent ?? "").trim() === "League Table") target.textContent = "Stats Centre";
+        const text = (element.textContent ?? "").replace(/^\s*☷\s*/, "").trim();
+        if (text !== "League Table") continue;
+        for (const node of Array.from(element.childNodes)) {
+          if (node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").includes("League Table")) {
+            node.textContent = (node.textContent ?? "").replace("League Table", "Stats Centre");
+          }
+        }
       }
     };
     apply();
