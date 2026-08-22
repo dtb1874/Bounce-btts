@@ -51,10 +51,9 @@ elif new_dedupe not in text:
 
 old_selected = 'const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter((x):x is {prediction:Prediction;fixture:Fixture;profile:Profile}=>Boolean(x.fixture&&x.profile));'
 new_selected = 'const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter((x):x is {prediction:Prediction;fixture:Fixture;profile:Profile}=>Boolean(x.fixture&&x.profile)).sort((a,b)=>fixtureSort(a.fixture,b.fixture));'
-if old_selected in text:
-    text = text.replace(old_selected, new_selected, 1)
-elif new_selected not in text:
-    raise SystemExit("results selected sort anchor missing")
+text = text.replace(old_selected, new_selected)
+if new_selected not in text:
+    raise SystemExit("fixture-bearing results sort anchor missing")
 
 path.write_text(text)
 print("Canonical source normalization applied")
