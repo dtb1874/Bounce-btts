@@ -1,0 +1,69 @@
+name: Release guardrails
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prevent obsolete patch architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q "release-v1\.4\.9\.2\|python .*release-" package.json; then
+            echo "Obsolete build-time patch chain detected in package.json"
+            exit 1
+          fi
+
+          forbidden=(
+            LeagueApp.tsx
+            PublicLeagueTable.tsx
+            ShareTableButton.tsx
+            api-football.ts
+            public-table.ts
+            scoring.ts
+            fractional.ts
+            globals.css
+            layout.tsx
+          )
+          for path in "${forbidden[@]}"; do
+            if [ -e "$path" ]; then
+              echo "Duplicate root source file detected: $path"
+              exit 1
+            fi
+          done
+
+          if find . -maxdepth 1 -type d -name 'release-*' | grep -q .; then
+            echo "Historical release patch directory detected at repository root"
+            exit 1
+          fi
+
+      - name: Production build
+        run: npm run build
+
+      - name: Ensure build is source-clean
+        shell: bash
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain)" || {
+            echo "Build created or modified repository files"
+            git status --short
+            exit 1
+          }
