@@ -18,8 +18,11 @@ export async function GET(request: Request) {
 
   const { data: credentials } = await admin.from("member_credentials").select("user_id,encrypted_password");
   const passwordMap = new Map((credentials ?? []).map((row) => [row.user_id, decryptPassword(row.encrypted_password)]));
+  const { data: roussetEvents } = await admin.from("easter_egg_events").select("user_id").eq("event_key", "rousset");
+  const roussetMap = new Map<string, number>();
+  for (const event of roussetEvents ?? []) roussetMap.set(event.user_id, (roussetMap.get(event.user_id) ?? 0) + 1);
   return NextResponse.json({
-    users: (profiles ?? []).map((profile) => ({ ...profile, password: passwordMap.get(profile.id) ?? "" })),
+    users: (profiles ?? []).map((profile) => ({ ...profile, password: passwordMap.get(profile.id) ?? "", rousset_count: roussetMap.get(profile.id) ?? 0 })),
   });
 }
 
@@ -43,10 +46,10 @@ export async function PATCH(request: Request) {
   const { data: existing } = await admin.from("profiles").select("slot_number,username").eq("id", id).single();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (!username || !displayName) return NextResponse.json({ error: "Username and player name are required." }, { status: 400 });
-  // Slot 1 remains permanently protected as DTB / Ultimate Admin / active,
-  // but its login username may now be changed by the Ultimate Admin.
-  if (existing.slot_number === 1 && (displayName !== "DTB" || role !== "ultimate_admin" || !active)) {
-    return NextResponse.json({ error: "The DTB Ultimate Admin account must remain active and cannot change role or player name." }, { status: 400 });
+  // Slot 1 remains permanently protected as Ultimate Admin / active.
+  // Its player/display name and login username are editable by the Ultimate Admin.
+  if (existing.slot_number === 1 && (role !== "ultimate_admin" || !active)) {
+    return NextResponse.json({ error: "The Ultimate Admin account must remain active and cannot change role." }, { status: 400 });
   }
   if (password && password.length < 6) return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
 

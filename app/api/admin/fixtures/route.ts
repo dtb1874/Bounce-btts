@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
-
-function isThreePmUK(iso: string) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).formatToParts(new Date(iso));
-  const hour = parts.find((part) => part.type === "hour")?.value;
-  const minute = parts.find((part) => part.type === "minute")?.value;
-  return hour === "15" && minute === "00";
-}
+import { isExcludedBounceClub, kickoffMatchesSelectionRule, selectionRule } from "@/lib/gameweek-rules";
 
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
@@ -19,10 +11,28 @@ export async function POST(request: Request) {
   const away = String(body.awayTeam ?? "").trim();
   const kickoffAt = String(body.kickoffAt ?? "");
   const gameweekId = String(body.gameweekId ?? "");
-  const lower = `${home} ${away}`.toLowerCase();
-  if (!home || !away || !gameweekId || !kickoffAt) return NextResponse.json({ error: "Complete all fixture fields." }, { status: 400 });
-  if (lower.includes("heart of midlothian") || lower.includes("hearts")) return NextResponse.json({ error: "Hearts fixtures are not eligible." }, { status: 400 });
-  if (!isThreePmUK(kickoffAt)) return NextResponse.json({ error: "The fixture must kick off at exactly 3:00pm UK time." }, { status: 400 });
+
+  if (!home || !away || !gameweekId || !kickoffAt || Number.isNaN(Date.parse(kickoffAt))) {
+    return NextResponse.json({ error: "Complete all fixture fields with a valid kick-off time." }, { status: 400 });
+  }
+
+  const { data: gameweek } = await admin
+    .from("gameweeks")
+    .select("id,selection_rule_mode,selection_weekday,selection_time")
+    .eq("id", gameweekId)
+    .maybeSingle();
+  if (!gameweek?.id) return NextResponse.json({ error: "Gameweek not found." }, { status: 404 });
+
+  if (isExcludedBounceClub(home, away)) {
+    return NextResponse.json({ error: "Hearts and Hibs fixtures are excluded from normal Bounce selections." }, { status: 400 });
+  }
+
+  if (!kickoffMatchesSelectionRule(kickoffAt, gameweek)) {
+    const rule = selectionRule(gameweek);
+    const weekday = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][rule.weekday - 1];
+    const ruleText = rule.mode === "any_kickoff" ? `any UK kick-off on ${weekday}` : `${weekday} at ${rule.time} UK time`;
+    return NextResponse.json({ error: `This gameweek only allows ${ruleText}.` }, { status: 400 });
+  }
 
   const { data, error } = await admin.from("fixtures").insert({
     gameweek_id: gameweekId,
@@ -30,7 +40,7 @@ export async function POST(request: Request) {
     country: String(body.country ?? "United Kingdom").trim(),
     home_team: home,
     away_team: away,
-    kickoff_at: kickoffAt,
+    kickoff_at: new Date(kickoffAt).toISOString(),
     odds_fractional: String(body.oddsFractional ?? "").trim() || null,
     odds_checked_at: body.oddsFractional ? new Date().toISOString() : null,
     status: "NS",
