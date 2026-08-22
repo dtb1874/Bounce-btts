@@ -4,6 +4,7 @@ import "./league-table.css";
 import "./pre-v2-compact-restoration.css";
 import "./public-mobile-tuning.css";
 import "./league-stats.css";
+import "./dashboard-fixture-rows.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
