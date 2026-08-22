@@ -1,4 +1,4 @@
-const LONDON_TIME_ZONE = "Europe/London";
+import { addUtcCalendarDays, isoDate, londonParts } from "@/lib/london-time";
 
 export type GameweekSelectionRule = {
   selection_rule_mode?: "exact_time" | "any_kickoff" | null;
@@ -21,28 +21,6 @@ export type ProviderFixtureLike = {
 
 const UK_COUNTRIES = new Set(["England", "Scotland", "Wales", "Northern Ireland", "Northern-Ireland"]);
 const SELECTABLE_STATUSES = new Set(["NS", "TBD"]);
-
-function parts(value: string | Date) {
-  const formatted = new Intl.DateTimeFormat("en-GB", {
-    timeZone: LONDON_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(value));
-  const get = (type: string) => formatted.find((part) => part.type === type)?.value ?? "";
-  return {
-    year: Number(get("year")),
-    month: Number(get("month")),
-    day: Number(get("day")),
-    weekday: get("weekday"),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
 
 function isoWeekday(short: string) {
   const index = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(short);
@@ -68,7 +46,7 @@ export function selectionRule(gameweek: GameweekSelectionRule) {
 }
 
 export function fixtureDateForGameweek(gameweek: GameweekTiming) {
-  const lock = parts(gameweek.locks_at);
+  const lock = londonParts(new Date(gameweek.locks_at));
   const rule = selectionRule(gameweek);
   const lockWeekday = isoWeekday(lock.weekday);
   let daysAhead = (rule.weekday - lockWeekday + 7) % 7;
@@ -78,16 +56,15 @@ export function fixtureDateForGameweek(gameweek: GameweekTiming) {
     if (lock.hour > targetHour || (lock.hour === targetHour && lock.minute >= targetMinute)) daysAhead = 7;
   }
 
-  const date = new Date(Date.UTC(lock.year, lock.month - 1, lock.day, 12, 0, 0));
-  date.setUTCDate(date.getUTCDate() + daysAhead);
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+  const target = addUtcCalendarDays(lock.year, lock.month, lock.day, daysAhead);
+  return isoDate(target.year, target.month, target.day);
 }
 
 export function kickoffMatchesSelectionRule(kickoffValue: string | Date, gameweek: GameweekSelectionRule) {
   const kickoffDate = new Date(kickoffValue);
   if (Number.isNaN(kickoffDate.getTime())) return false;
 
-  const kickoff = parts(kickoffDate);
+  const kickoff = londonParts(kickoffDate);
   const rule = selectionRule(gameweek);
   if (isoWeekday(kickoff.weekday) !== rule.weekday) return false;
 
