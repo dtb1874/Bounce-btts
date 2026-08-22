@@ -6,6 +6,7 @@ import ShareTableButton from "./ShareTableButton";
 import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
 import CombinedShareButton from "./CombinedShareButton";
 import DataShareButton from "./DataShareButton";
+import CanonicalLeagueTable from "./CanonicalLeagueTable";
 import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
 import { outcomeLabel } from "@/lib/scoring";
 import { compareCompetitions } from "@/lib/competition-order";
@@ -362,26 +363,26 @@ export default function LeagueApp(props: Props) {
       <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false);void (async()=>{try{await fetch("/api/easter-egg/rousset",{method:"POST",headers:{authorization:`Bearer ${await token()}`}})}catch{}})()}}></button>
       <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
     </aside>
-    {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>}
+    {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>} 
     <section className={styles.main}>
       {emulatedProfileId&&<div className={styles.notice} style={{margin:"10px 14px 0",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderColor:"rgba(240,207,170,.55)",background:"rgba(116,32,52,.92)"}}><span><strong>EMULATION ACTIVE</strong><br/><small>Viewing as {emulatedProfile?.display_name??"another user"} · read-only</small></span><button className={styles.primary} type="button" onClick={()=>{setEmulatedProfileId(null);setView("admin");setAdminView("users");setMobileMenu(false)}}>Exit emulation</button></div>}
       <header className={`${styles.hero} dashboardBrandHero`}><div className="dashboardBrandLockup"><img className="dashboardBrandCrest" src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel}</p><h1>BOUNCE</h1><h2>BTTS LEAGUE</h2></div></div><div className={`${styles.gwCard} dashboardGwCompact`}><label>Gameweek</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small>{isDemo&&<div className={styles.demoSwitch}><button className={demoPerspective==="member"?styles.active:""} onClick={()=>{setDemoPerspective("member");setView("dashboard")}}>Member View</button><button className={demoPerspective==="admin"?styles.active:""} onClick={()=>{setDemoPerspective("admin");setView("dashboard")}}>Admin View</button></div>}</div></header>
       <div className={styles.content}><div className={styles.page}>
-        {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} seasonHistory={seasonHistory} isOpen={isOpen} role={effectiveRole} myId={viewerProfile.id} alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing} onOddsRefresh={refreshSelectedOdds} oddsRefreshing={oddsRefreshing}/>}
-        {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>}
+        {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} seasonHistory={seasonHistory} isOpen={isOpen} role={effectiveRole} myId={viewerProfile.id} alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing} onOddsRefresh={refreshSelectedOdds} oddsRefreshing={oddsRefreshing}/>} 
+        {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>} 
         {view==="fixtures" && (fixturesLoading
           ? <div className={styles.notice}>Loading fixtures…</div>
           : fixturesLoadError
             ? <div className={styles.notice}>{fixturesLoadError} <button type="button" onClick={()=>setFixturesRequested(false)}>Retry</button></div>
             : <FixturesPage fixtures={dedupeFixtures(allFixtures)}/>)}
-        {view==="table" && <LeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee} fixtures={fixtures} predictions={predictions} gameweeks={initialGameweeks} adjustments={adjustments}/>}
-        {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>}
-        {view==="combined" && <CombinedResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} standings={standings} seasonLabel={seasonLabel} entryFee={entryFee}/>}
-        {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>}
-        {view==="players" && <PlayersPage profiles={profiles} gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments}/>}
-        {view==="about" && <AboutPage role={effectiveRole} profiles={profiles}/>}
+        {view==="table" && <CanonicalLeagueTable standings={standings} seasonLabel={seasonLabel} gameweek={gameweek??null} entryFee={entryFee} fixtures={fixtures} predictions={predictions} gameweeks={initialGameweeks} adjustments={adjustments}/>} 
+        {view==="results" && <ResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} onRefresh={()=>refreshLiveData(false)}/>} 
+        {view==="combined" && <CombinedResultsPage gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} profiles={profiles} standings={standings} seasonLabel={seasonLabel} entryFee={entryFee}/>} 
+        {view==="history" && <HistoryPage seasonHistory={seasonHistory}/>} 
+        {view==="players" && <PlayersPage profiles={profiles} gameweek={gameweek??null} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments}/>} 
+        {view==="about" && <AboutPage role={effectiveRole} profiles={profiles}/>} 
         {view==="alerts" && isAdmin && (isDemo?<DemoReadOnlyPanel title="Alerts" text="Admin alerts are intentionally hidden in Demo Mode because they can contain operational details."/>:<AlertsPage notice={notice} onCount={setAlertsCount}/>)}
-        {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>}
+        {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>} 
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE · v{RELEASE_VERSION}</footer>
     </section>
     {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
@@ -427,8 +428,17 @@ function Dashboard({
   const missingPicks=picks.filter(({prediction})=>!prediction).map(({profile})=>profile);
   function remindMissingPicks(){
     if(!gameweek||!missingPicks.length)return;
-    const names=missingPicks.map(p=>`• ${p.display_name}`).join("\n");
-    const message=`⚽ BOUNCE BTTS LEAGUE — PICK REMINDER\n\nStill to make a pick for GW ${gameweek.number}:\n${names}\n\nMake your BTTS pick here:\nhttps://bounce-btts.vercel.app\n\nDeadline: ${formatKickoff(gameweek.locks_at)}`;
+    const names=missingPicks.map(p=>`• ${p.display_name}`).join("\
+");
+    const message=`⚽ BOUNCE BTTS LEAGUE — PICK REMINDER\
+\
+Still to make a pick for GW ${gameweek.number}:\
+${names}\
+\
+Make your BTTS pick here:\
+https://bounce-btts.vercel.app\
+\
+Deadline: ${formatKickoff(gameweek.locks_at)}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`,"_blank","noopener,noreferrer");
   }
   const finished=fixtures.filter(f=>finishedStatuses.includes(f.status));
@@ -933,7 +943,7 @@ function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
     <div className={`${styles.panel} ${styles.aboutSection}`}>
       {tab === "about" && <><h3>What is Bounce BTTS?</h3><p>The app runs the private Bounce Both Teams To Score league: one unique BTTS pick per player per gameweek, automatic standings and a shareable public table.</p><p>Established 2024. Current season management, historical tables and weekly sharing are all kept in one place.</p></>}
       {tab === "rules" && <><h3>Rules</h3><ul><li>Choose one eligible fixture to finish BTTS: Yes.</li><li>No two players may choose the same fixture in the same gameweek.</li><li>BTTS = <strong>+3</strong>; score–nil = <strong>+1</strong>; 0–0 = <strong>−1</strong>.</li><li>A missed deadline receives the configured missed-selection adjustment (normally −1).</li><li>Normal deadline is Friday 17:00 UK time unless the admin changes it.</li><li>Ties: fewest 0–0 results, then most BTTS wins, then alphabetical.</li></ul></>}
-      {tab === "instructions" && <Instructions role={role}/>}
+      {tab === "instructions" && <Instructions role={role}/>} 
       {tab === "releases" && <ReleaseHistory/>}
       {tab === "members" && <><h3>Members / Admins</h3>{profiles.map(p => <div className={styles.row} style={{gridTemplateColumns:"1fr 1fr"}} key={p.id}><strong>{p.display_name}</strong><span>{p.role === "ultimate_admin" ? "Ultimate Admin" : p.role === "admin" ? "League Admin" : p.role === "guest" ? "Demo Guest" : "Member"}</span></div>)}{(role === "member" || role === "guest") && <p className={styles.small}>Member view intentionally hides account/security administration details.</p>}</>}
     </div>
@@ -1046,13 +1056,17 @@ function UsersAdmin({notice,onEmulate}:{notice:(m:string)=>void;onEmulate:(id:st
   async function save(u:any){const r=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({id:u.id,username:u.username,displayName:u.display_name,role:u.role,active:u.active,password:u.password})});const j=await r.json();notice(r.ok?`${u.username} saved`:j.error)}
   function shareLogin(u:any){
     if(!u.password)return notice("Generate or save a password before sharing this login.");
-    const text=["Bounce BTTS League",`Player: ${u.display_name}`,`Username: ${u.username}`,`Password: ${u.password}`,"Login: https://bounce-btts.vercel.app","","Keep these login details private."].join("\n");
+    const text=["Bounce BTTS League",`Player: ${u.display_name}`,`Username: ${u.username}`,`Password: ${u.password}`,"Login: https://bounce-btts.vercel.app","","Keep these login details private."].join("\
+");
     const url=`https://wa.me/?text=${encodeURIComponent(text)}`;
     const opened=window.open(url,"_blank","noopener,noreferrer");
     if(!opened)window.location.href=url;
   }
   if(loading)return <div>Loading users…</div>;
-  return <div className={styles.adminUsers}><p className={styles.notice}>Passwords and access controls remain Ultimate Admin only. <Help text="Use Generate to make a replacement password, Save to apply it, then WhatsApp to send the player's name, username, password and Bounce login link privately."/></p>{users.map((u:any)=><div className={`${styles.row} ${styles.adminUserRow}`} key={u.id} data-user={u.display_name} data-slot={u.slot_number}><label className={styles.adminUserField}><span>Player</span><input aria-label="Player name" value={u.display_name} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,display_name:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Username</span><input aria-label="Login username" value={u.username} autoCapitalize="none" autoCorrect="off" onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,username:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Password</span><input aria-label="Password" type="text" autoComplete="off" value={u.password} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Role</span><select aria-label="Role" value={u.role} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,role:e.target.value}:x))}><option value="member">Member</option><option value="admin">League Admin</option><option value="guest">Demo Guest</option>{u.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><span className={styles.adminRCount} title="Rousset Easter egg presses">R {u.rousset_count??0}</span><div className={styles.buttonRow}><button className={styles.button} disabled={u.slot_number===1} aria-pressed={u.active} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,active:!x.active}:x))}>{u.active?"Active ✓":"Inactive"}</button><button className={styles.button} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:`bounce${u.slot_number}${Math.floor(10+Math.random()*90)}`}:x))}>Generate</button><button className={styles.button} onClick={()=>navigator.clipboard.writeText(`${u.display_name}\nUsername: ${u.username}\nPassword: ${u.password}\nLogin: https://bounce-btts.vercel.app`).then(()=>notice("Login details copied"))}>Copy</button><button className={styles.shareGold} disabled={!u.password} onClick={()=>shareLogin(u)}><span aria-hidden="true">↗</span><strong>WhatsApp login</strong><small>Share credentials</small></button><button className={styles.button} onClick={()=>onEmulate(u.id)}>Emulate</button><button className={styles.primary} onClick={()=>save(u)}>Save</button></div></div>)}</div>
+  return <div className={styles.adminUsers}><p className={styles.notice}><strong>Passwords and access controls remain Ultimate Admin only. <Help text="Use Generate to make a replacement password, Save to apply it, then WhatsApp to send the player's name, username, password and Bounce login link privately."/></strong></p>{users.map((u:any)=><div className={`${styles.row} ${styles.adminUserRow}`} key={u.id} data-user={u.display_name} data-slot={u.slot_number}><label className={styles.adminUserField}><span>Player</span><input aria-label="Player name" value={u.display_name} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,display_name:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Username</span><input aria-label="Login username" value={u.username} autoCapitalize="none" autoCorrect="off" onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,username:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Password</span><input aria-label="Password" type="text" autoComplete="off" value={u.password} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Role</span><select aria-label="Role" value={u.role} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,role:e.target.value}:x))}><option value="member">Member</option><option value="admin">League Admin</option><option value="guest">Demo Guest</option>{u.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><span className={styles.adminRCount} title="Rousset Easter egg presses">R {u.rousset_count??0}</span><div className={styles.buttonRow}><button className={styles.button} disabled={u.slot_number===1} aria-pressed={u.active} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,active:!x.active}:x))}>{u.active?"Active ✓":"Inactive"}</button><button className={styles.button} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:`bounce${u.slot_number}${Math.floor(10+Math.random()*90)}`}:x))}>Generate</button><button className={styles.button} onClick={()=>navigator.clipboard.writeText(`${u.display_name}\
+Username: ${u.username}\
+Password: ${u.password}\
+Login: https://bounce-btts.vercel.app`).then(()=>notice("Login details copied"))}>Copy</button><button className={styles.shareGold} disabled={!u.password} onClick={()=>shareLogin(u)}><span aria-hidden="true">↗</span><strong>WhatsApp login</strong><small>Share credentials</small></button><button className={styles.button} onClick={()=>onEmulate(u.id)}>Emulate</button><button className={styles.primary} onClick={()=>save(u)}>Save</button></div></div>)}</div>
 }
 
 function SearchableFixturePicker({value,fixtures,disabled,takenBy,onChange}:{value:string;fixtures:Fixture[];disabled:boolean;takenBy:(fixtureId:string)=>string|null;onChange:(fixtureId:string)=>void}){
@@ -1261,4 +1275,3 @@ function AlertsPage({notice,onCount}:{notice:(m:string)=>void;onCount:(n:number)
     </div>
   </section>
 }
-
