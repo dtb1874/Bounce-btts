@@ -38,6 +38,6 @@ export function outcomeLabel(homeScore: number | null, awayScore: number | null,
     if (points === -1) return { label: "0–0", points, tone: "bad" as const };
     return { label: "Finished", points, tone: "neutral" as const };
   }
-  if (homeScore > 0 && awayScore > 0) return { label: "Winning — BTTS currently in", points: 3, tone: "good" as const };
+  if (homeScore > 0 && awayScore > 0) return { label: "Won — BTTS", points: 3, tone: "good" as const };
   return { label: "Not winning — BTTS not currently in", points: 0, tone: "neutral" as const };
 }
