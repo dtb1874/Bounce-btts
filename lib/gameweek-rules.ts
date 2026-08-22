@@ -83,13 +83,11 @@ export function fixtureDateForGameweek(gameweek: GameweekTiming) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 }
 
-export function fixtureMatchesSelectionRule(item: ProviderFixtureLike, gameweek: GameweekSelectionRule) {
-  const country = String(item.league?.country ?? "");
-  if (!UK_COUNTRIES.has(country)) return false;
+export function kickoffMatchesSelectionRule(kickoffValue: string | Date, gameweek: GameweekSelectionRule) {
+  const kickoffDate = new Date(kickoffValue);
+  if (Number.isNaN(kickoffDate.getTime())) return false;
 
-  const kickoffRaw = String(item.fixture?.date ?? "");
-  if (!kickoffRaw || Number.isNaN(Date.parse(kickoffRaw))) return false;
-  const kickoff = parts(kickoffRaw);
+  const kickoff = parts(kickoffDate);
   const rule = selectionRule(gameweek);
   if (isoWeekday(kickoff.weekday) !== rule.weekday) return false;
 
@@ -97,6 +95,16 @@ export function fixtureMatchesSelectionRule(item: ProviderFixtureLike, gameweek:
     const [hour, minute] = rule.time.split(":").map(Number);
     if (kickoff.hour !== hour || kickoff.minute !== minute) return false;
   }
+
+  return true;
+}
+
+export function fixtureMatchesSelectionRule(item: ProviderFixtureLike, gameweek: GameweekSelectionRule) {
+  const country = String(item.league?.country ?? "");
+  if (!UK_COUNTRIES.has(country)) return false;
+
+  const kickoffRaw = String(item.fixture?.date ?? "");
+  if (!kickoffMatchesSelectionRule(kickoffRaw, gameweek)) return false;
 
   return SELECTABLE_STATUSES.has(String(item.fixture?.status?.short ?? "NS"));
 }
