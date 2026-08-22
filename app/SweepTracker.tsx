@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { exportAnimatedShare } from "@/lib/animated-share";
 import type { LeagueStatsFixture, LeagueStatsPrediction } from "@/lib/league-stats";
 import styles from "./SweepTracker.module.css";
@@ -95,8 +96,19 @@ function drawChart(ctx: CanvasRenderingContext2D, points: Point[], upto: number,
 }
 
 export default function SweepTracker(props: Props) {
+  const [target, setTarget] = useState<Element | null>(null);
   const points = useMemo(() => buildPoints(props), [props.gameweeks, props.predictions, props.fixtures]);
   const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    const findTarget = () => setTarget(document.querySelector('section[class*="leaguePage"]'));
+    findTarget();
+    const observer = new MutationObserver(findTarget);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  if (!target) return null;
   const maxValue = Math.max(3, ...points.map((point) => point.goalsAway));
   const latest = points[points.length - 1];
   const viewWidth = 620, viewHeight = 250, left = 34, right = 600, top = 22, bottom = 205;
@@ -128,7 +140,7 @@ export default function SweepTracker(props: Props) {
     }
   }
 
-  return <section className={`${styles.shell} ${sharing ? styles.sharing : ""}`}>
+  return createPortal(<section className={`${styles.shell} ${sharing ? styles.sharing : ""}`}>
     <div className={styles.head}>
       <div><span>WEEKLY NEAR-MISS TRACKER</span><h3>Goals Away From The Sweep</h3><p>How many extra goals were needed for every selected match to land BTTS.</p></div>
       <button className="dataShareButton shareCompactWhatsApp" type="button" onClick={shareAnimation}>{sharing ? "Creating…" : "Share tracker"}</button>
@@ -145,5 +157,5 @@ export default function SweepTracker(props: Props) {
       </svg>
       <div className={styles.summary}><span>0 = complete BTTS sweep</span><strong>{latest ? `Latest: GW ${latest.gameweek} · ${latest.goalsAway} away` : ""}</strong></div>
     </> : <div className={styles.summary}><span>The tracker starts once a gameweek is fully scored.</span></div>}
-  </section>;
+  </section>, target);
 }
