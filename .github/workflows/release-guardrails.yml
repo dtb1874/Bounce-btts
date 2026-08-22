@@ -15,11 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: fix/public-mobile-and-stats-cleanup
           fetch-depth: 0
 
       - name: Bake canonical League Stats into signed-in source
-        if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
         shell: bash
         run: |
           set -euo pipefail
@@ -91,7 +90,7 @@ function CombinedResultsPage'''
           git add app/LeagueApp.tsx app/globals.css
           if ! git diff --cached --quiet; then
             git commit -m "Use canonical stats engine in member League Stats"
-            git push origin HEAD:${{ github.head_ref }}
+            git push origin HEAD:fix/public-mobile-and-stats-cleanup
           fi
 
       - uses: actions/setup-node@v4
