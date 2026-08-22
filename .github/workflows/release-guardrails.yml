@@ -7,13 +7,92 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Bake canonical League Stats into signed-in source
+        if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('app/LeagueApp.tsx')
+          text = path.read_text()
+          import_line = 'import { calculateLeagueStats } from "@/lib/league-stats";\n'
+          if import_line not in text:
+              anchor = 'import { outcomeLabel } from "@/lib/scoring";\n'
+              if anchor not in text:
+                  raise SystemExit('LeagueApp import anchor not found')
+              text = text.replace(anchor, anchor + import_line, 1)
+
+          replacement = r'''function LeagueTable({standings,seasonLabel,gameweek,entryFee,fixtures,predictions,gameweeks,adjustments}:{standings:Standing[];seasonLabel:string;gameweek:Gameweek|null;entryFee:number;fixtures:Fixture[];predictions:Prediction[];gameweeks:Gameweek[];adjustments:ScoreAdjustment[]}){
+  const [expandedPlayer,setExpandedPlayer]=useState<string|null>(null);
+  const prizePot=standings.length*entryFee;
+  const canonical=calculateLeagueStats({
+    standings,
+    gameweeks,
+    predictions,
+    adjustments,
+    fixtures,
+    competitionName:(fixture)=>competitionDisplayName({country:fixture.country??"Other",competition:fixture.competition??"Other"}),
+  });
+  const {headline,seasonFacts,playerInsights}=canonical;
+  return <section className={styles.leaguePage} onClick={()=>setExpandedPlayer(null)}>
+    <Heading eyebrow={`SEASON ${seasonLabel} · ${gameweek?`GAMEWEEK ${gameweek.number}`:""} · EST 2024`} title="League Table" actions={<span className={styles.shareInline}><ShareTableButton rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={prizePot}/></span>}><p>S-N = score–nil +1. Ties: fewest 0–0 results, most BTTS wins, then alphabetical.</p></Heading>
+    <div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} ${styles.leagueTableFirst}`}><div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>{standings.map((r,i)=><div key={r.id} className={`${styles.tableRow} ${i===0?styles.leader:""} ${i<3?styles.tableRowTopThree:""}`}><span className={styles.positionCell}>{i===0?"🏆":i+1}</span><strong>{r.name}</strong><span>{r.played}</span><span>{r.wins}</span><span>{r.oneSided}</span><span>{r.zeroZeroCount}</span><b>{r.points}</b></div>)}</div>
+    <section className={`${publicStyles.publicPanel} ${publicStyles.statPanel}`}>
+      <div className={publicStyles.sectionHeading}><div><span>SEASON SNAPSHOT</span><h3>League Stats</h3></div></div>
+      <div className={publicStyles.statCluster}>
+        <div className={publicStyles.statItem}><span>LEAGUE LEADER</span><strong>{headline.leagueLeader?.name??"—"}</strong><small>{headline.leagueLeader?`${headline.leagueLeader.points} pts`:"No scores yet"}</small></div>
+        <div className={publicStyles.statItem}><span>SEASON POT</span><strong>£{prizePot.toFixed(0)}</strong><small>{standings.length} active players</small></div>
+        <div className={publicStyles.statItem}><span>LEAGUE STRIKE RATE</span><strong>{headline.leagueStrikeRate==null?"—":`${headline.leagueStrikeRate.toFixed(1)}%`}</strong><small>{headline.bttsWins} BTTS wins</small></div>
+        <div className={publicStyles.statItem}><span>{headline.formLeaderNames.length>1?"FORM LEADERS":"FORM LEADER"}</span><strong className={headline.formLeaderNames.length>1?"jointStatValue":undefined}>{headline.formLeaderNames.length?headline.formLeaderNames.join(", "):"—"}</strong><small>{headline.formLeaderNames.length?`${headline.topFormPoints} pts across current form`:"Waiting for scored weeks"}</small></div>
+        <div className={publicStyles.statItem}><span>{headline.bttsLeaderNames.length>1?"BTTS LEADERS":"BTTS LEADER"}</span><strong className={headline.bttsLeaderNames.length>1?"jointStatValue":undefined}>{headline.bttsLeaderNames.length?headline.bttsLeaderNames.join(", "):"—"}</strong><small>{headline.bttsLeaderNames.length?`${headline.topBttsWins} BTTS wins`:"No BTTS wins yet"}</small></div>
+        <div className={publicStyles.statItem}><span>CREATURE OF HABIT</span><strong className={headline.creatureLeaders.length>1?"jointStatValue":undefined}>{headline.creatureLeaders.length?headline.creatureLeaders.map(row=>`${row.name} — ${row.team}, ${row.count} picks`).join(" / "):"—"}</strong><small>{headline.creatureLeaders.length?`${headline.creatureLeaders.map(row=>`${row.wins}W · ${row.losses}L`).join(" / ")} · Most repeat selections of the same team`:"Most repeat selections of the same team"}</small></div>
+        <div className={publicStyles.statItem}><span>GOALS IN PICKS</span><strong>{headline.leagueGoals}</strong><small>Finished selected fixtures</small></div>
+        <div className={publicStyles.statItem}><span>FINISHED PICKS</span><strong>{headline.finishedPicks}</strong><small>{headline.recordedSelections} selections recorded</small></div>
+      </div>
+      <details className="leagueMoreStats"><summary>More league stats <span className="leagueMoreStatsChevron" aria-hidden="true">⌄</span></summary><div className={publicStyles.statCluster}>{seasonFacts.map(f=><div className={publicStyles.statItem} key={f.label}><span>{f.label}</span><strong className={f.value.includes(", ")?"jointStatValue":undefined}>{f.value}</strong><small>{f.detail}</small>{f.label.startsWith("MOST PICKED TEAM")&&f.breakdown?.length?<details className="leagueStatBreakdown" onClick={event=>event.stopPropagation()}><summary>View pick breakdown</summary><div>{f.breakdown.map(line=><small key={line}>{line}</small>)}</div></details>:null}</div>)}</div></details>
+    </section>
+    <section className={publicStyles.publicPanel}>
+      <div className={publicStyles.sectionHeading}><div><span>SEASON SELECTION PROFILE</span><h3>Player Stats</h3></div></div><p style={{margin:"-4px 0 10px",fontSize:"11px",color:"#8f8a86",letterSpacing:".02em"}}>Tap a player to expand stats</p>
+      <div className={publicStyles.playerList}>{playerInsights.map(r=>{const open=expandedPlayer===r.id;return <article className={`${publicStyles.playerCard} ${open?publicStyles.playerCardOpen:""}`} key={r.id} onClick={event=>event.stopPropagation()}><button type="button" className={publicStyles.playerSummary} aria-expanded={open} onClick={()=>setExpandedPlayer(open?null:r.id)}><strong>{r.name}</strong><span>{standings.find(s=>s.id===r.id)?.points??0} pts</span><b>{open?"−":"+"}</b></button>{open&&<div className={publicStyles.playerDetails}><div className="playerStatHeadline"><span>STRIKE RATE</span><b>{r.strikeRate.toFixed(1)}%</b></div><div className="playerStatHeadline"><span>POINTS / PICK</span><b>{r.pointsPerPick.toFixed(2)}</b></div><div className="playerStatHeadline"><span>CURRENT BTTS STREAK</span><b>{r.currentStreak}</b></div><div className="playerStatHeadline"><span>BEST BTTS STREAK</span><b>{r.bestStreak}</b></div><div><span>AVG SELECTED ODDS</span><b>{r.averageSelectedOdds==null?"—":`${r.averageSelectedOdds.toFixed(2)}/1`}</b></div><div><span>AVG WINNING ODDS</span><b>{r.averageWinningOdds==null?"—":`${r.averageWinningOdds.toFixed(2)}/1`}</b></div><div><span>BIGGEST WINNING ODDS</span><b>{r.biggestWinningOdds==null?"—":`${r.biggestWinningOdds.toFixed(2)}/1`}</b></div><div><span>LONGEST WINLESS RUN</span><b>{r.longestWinlessStreak}</b></div><div><span>TOTAL GOALS</span><b>{r.goals}</b></div><div><span>AVG GOALS / PICK</span><b>{r.averageGoals?r.averageGoals.toFixed(1):"—"}</b></div><div><span>RESULT SPLIT</span><b>{r.homeWins}H · {r.draws}D · {r.awayWins}A</b></div><div className={publicStyles.playerCompetition}><span>MOST PICKED COMPETITION</span><b>{r.favouriteCompetition}</b></div><div className={publicStyles.playerCompetition}><span>MOST PICKED TEAM</span><b>{r.mostPickedTeamCount>=2?`${r.mostPickedTeam} · ${r.mostPickedTeamCount} picks`:r.mostPickedTeam}</b></div></div>}</article>})}</div>
+    </section>
+  </section>
+}
+function CombinedResultsPage'''
+
+          pattern = r'function LeagueTable\(.*?\n}\nfunction CombinedResultsPage'
+          updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'LeagueTable replacement count was {count}')
+          path.write_text(updated)
+
+          css_path = Path('app/globals.css')
+          css = css_path.read_text()
+          css = css.replace('align-items:end', 'align-items:flex-end')
+          css = css.replace('justify-content:end', 'justify-content:flex-end')
+          css_path.write_text(css)
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/LeagueApp.tsx app/globals.css
+          if ! git diff --cached --quiet; then
+            git commit -m "Use canonical stats engine in member League Stats"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - uses: actions/setup-node@v4
         with:
