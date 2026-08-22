@@ -1,0 +1,45 @@
+name: Stabilisation capture
+
+on:
+  push:
+    branches:
+      - stabilize/canonical-v1.6-foundation
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Apply current build patches and validate build
+        run: npm run build
+
+      - name: Upload captured generated source
+        uses: actions/upload-artifact@v4
+        with:
+          name: stabilisation-generated-source
+          path: public/_stabilization-source/
+          if-no-files-found: error
+          retention-days: 2
