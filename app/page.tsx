@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeagueApp from "./LeagueApp";
 import PublicLeagueTable from "./PublicLeagueTable";
+import PositionRacePortal from "./PositionRacePortal";
+import SweepTracker from "./SweepTracker";
+import StatsCentreEnhancer from "./StatsCentreEnhancer";
 import { loadPublicTableData } from "@/lib/public-table";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
@@ -58,10 +61,8 @@ export default async function HomePage() {
     .maybeSingle();
   if (!profile?.approved) redirect("/login");
 
-  // Make any overdue no-pick penalties visible as soon as the site is opened.
   await applyMissedPickPenalties(admin).catch(() => 0);
 
-  // Initial render only needs current-season data. Historical data is fetched on demand from /api/history.
   const [settingsResponse, seasonsResponse, profilesResponse] = await Promise.all([
     supabase.from("league_settings").select("*").eq("id", true).maybeSingle(),
     supabase.from("seasons").select("id,label,is_current,starts_at,ends_at").order("starts_at", { ascending: false }),
@@ -124,19 +125,35 @@ export default async function HomePage() {
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
   const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));
   const profileRows = (profiles ?? []) as ProfileRow[];
-
+  const seasonLabel = currentSeason?.label ?? settings?.current_season_label ?? "2026/27";
 
   return (
-    <LeagueApp
-      initialProfile={profile}
-      initialProfiles={profileRows}
-      initialGameweek={gameweek ?? null}
-      initialGameweeks={seasonGameweeks}
-      initialFixtures={fixtures}
-      initialPredictions={predictions}
-      initialAdjustments={adjustments}
-      seasonLabel={currentSeason?.label ?? settings?.current_season_label ?? "2026/27"}
-      entryFee={Number(settings?.entry_fee ?? 20)}
-    />
+    <>
+      <LeagueApp
+        initialProfile={profile}
+        initialProfiles={profileRows}
+        initialGameweek={gameweek ?? null}
+        initialGameweeks={seasonGameweeks}
+        initialFixtures={fixtures}
+        initialPredictions={predictions}
+        initialAdjustments={adjustments}
+        seasonLabel={seasonLabel}
+        entryFee={Number(settings?.entry_fee ?? 20)}
+      />
+      <PositionRacePortal
+        profiles={profileRows}
+        gameweeks={seasonGameweeks}
+        predictions={predictions}
+        adjustments={adjustments}
+        seasonLabel={seasonLabel}
+      />
+      <SweepTracker
+        seasonLabel={seasonLabel}
+        gameweeks={seasonGameweeks}
+        predictions={predictions}
+        fixtures={fixtures}
+      />
+      <StatsCentreEnhancer />
+    </>
   );
 }
