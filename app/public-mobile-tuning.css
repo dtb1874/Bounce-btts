@@ -11,31 +11,44 @@
     padding-top: 40px;
   }
 
-  /* Keep the heading compact: prize left, share button alongside it, then table immediately below. */
+  /*
+   * Mobile public-table header geometry:
+   * - share button top aligns with LIVE PUBLIC STANDINGS;
+   * - prize stays beneath League Table;
+   * - remove the former action-row height so the standings table can sit much closer.
+   */
   .publicTableHeading {
-    gap: 8px;
-    margin-bottom: 10px;
+    position: relative;
+    display: block;
+    margin-bottom: 4px;
+    padding-right: 158px;
+  }
+
+  .publicTableHeading > div:first-child {
+    min-width: 0;
   }
 
   .publicTableActions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 148px;
-    align-items: start;
-    gap: 10px;
+    display: block;
+    width: auto;
+    margin-top: 5px;
   }
 
   .publicTableActions > strong {
-    align-self: start;
-    margin-top: -2px;
-  }
-
-  .publicTableActions .tableShareControl,
-  .publicTableActions .tableShareControl button {
-    width: 148px;
+    display: block;
+    margin: -2px 0 0;
+    text-align: left;
   }
 
   .publicTableActions .tableShareControl {
-    justify-self: end;
-    align-self: start;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 148px;
+    margin: 0;
+  }
+
+  .publicTableActions .tableShareControl button {
+    width: 148px;
   }
 }
