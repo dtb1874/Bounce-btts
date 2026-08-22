@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
       liveFixtures.push({ id: localId, status, elapsed: displayElapsed, homeScore: home, awayScore: away });
 
-      const { error: updateError } = await admin.from("fixtures").update({ status, home_score: home, away_score: away, completed_at: isFinished ? now : null }).eq("id", localId);
+      const { error: updateError } = await admin.from("fixtures").update({ status, home_score: home, away_score: away, live_elapsed: displayElapsed, completed_at: isFinished ? now : null }).eq("id", localId);
       if (updateError) continue;
       updated++;
 
