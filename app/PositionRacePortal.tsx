@@ -14,6 +14,10 @@ type RaceFrame = { gameweek: number; rows: RaceRow[] };
 type RacePoint = { index: number; position: number; moving?: boolean };
 type Props = { profiles: Profile[]; gameweeks: Gameweek[]; predictions: Prediction[]; adjustments: Adjustment[]; seasonLabel: string };
 
+type SharedPlayer = { id: string; name: string; colour: string };
+type SharedFrame = { gameweek: number; positions: Record<string, number> };
+type SharedRacePayload = { v: 1; seasonLabel: string; players: SharedPlayer[]; frames: SharedFrame[]; selected: string[] };
+
 const PALETTE = ["#f1c46f", "#ef7e8c", "#7fc7ff", "#89d6a6", "#c99cff", "#ff9e67", "#8fd9d1", "#d8d0c2", "#f29fd2", "#a9c978"];
 const MS_PER_GW = 650;
 const SHARE_STEPS_PER_GW = 12;
@@ -66,6 +70,13 @@ function pointsAtProgress(frames: RaceFrame[], playerId: string, progress: numbe
   return points;
 }
 
+function encodePayload(payload: SharedRacePayload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 export default function PositionRacePortal(props: Props) {
   const [target, setTarget] = useState<Element | null>(null);
   const frames = useMemo(() => buildFrames(props), [props.profiles, props.gameweeks, props.predictions, props.adjustments]);
@@ -74,6 +85,16 @@ export default function PositionRacePortal(props: Props) {
   const [progress, setProgress] = useState(Math.max(0, frames.length - 1));
   const [playing, setPlaying] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const valid = new Set(players.map((player) => player.id));
+      const kept = new Set([...current].filter((id) => valid.has(id)));
+      if (kept.size === 0) players.forEach((player) => kept.add(player.id));
+      return kept;
+    });
+  }, [players]);
 
   useEffect(() => {
     let host: HTMLDivElement | null = null;
@@ -129,6 +150,7 @@ export default function PositionRacePortal(props: Props) {
   if (!target) return null;
   const displayIndex = Math.max(0, Math.min(frames.length - 1, Math.ceil(progress - 0.001)));
   const currentFrame = frames[displayIndex];
+  const visiblePlayers = players.filter((player) => selectedIds.has(player.id));
   const width = 640, height = 300, left = 42, right = 612, top = 20, bottom = 250;
   const xFor = (index: number) => frames.length <= 1 ? (left + right) / 2 : left + (index / (frames.length - 1)) * (right - left);
   const yFor = (position: number) => top + ((position - 1) / Math.max(1, players.length - 1)) * (bottom - top);
@@ -138,8 +160,20 @@ export default function PositionRacePortal(props: Props) {
     setProgress((value) => Math.max(0, Math.min(frames.length - 1, Math.round(value) + delta)));
   }
 
+  function togglePlayer(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   async function shareAnimation() {
     if (!frames.length || sharing) return;
+    if (!visiblePlayers.length) {
+      window.alert("Select at least one player before sharing the race.");
+      return;
+    }
     setSharing(true);
     try {
       const shareFrameCount = frames.length === 1 ? 1 : (frames.length - 1) * SHARE_STEPS_PER_GW + 1;
@@ -171,8 +205,8 @@ export default function PositionRacePortal(props: Props) {
           frames.forEach((frame, index) => {
             ctx.fillStyle = "#8e8177"; ctx.font = "700 13px Arial"; ctx.textAlign = "center"; ctx.fillText(`GW${frame.gameweek}`, sx(index), gy1 + 34); ctx.textAlign = "left";
           });
-          players.forEach((player, playerIndex) => {
-            const colour = PALETTE[playerIndex % PALETTE.length];
+          visiblePlayers.forEach((player) => {
+            const colour = colourById.get(player.id) ?? "#d8b76f";
             const pts = pointsAtProgress(frames, player.id, shareProgress);
             ctx.strokeStyle = colour; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath();
             pts.forEach((point, index) => { if (index === 0) ctx.moveTo(sx(point.index), sy(point.position)); else ctx.lineTo(sx(point.index), sy(point.position)); });
@@ -180,9 +214,9 @@ export default function PositionRacePortal(props: Props) {
             const last = pts.at(-1);
             if (last) { ctx.fillStyle = colour; ctx.beginPath(); ctx.arc(sx(last.index), sy(last.position), 9, 0, Math.PI * 2); ctx.fill(); }
           });
-          players.forEach((player, playerIndex) => {
-            const col = playerIndex % 4, row = Math.floor(playerIndex / 4), x = 72 + col * 252, y = 850 + row * 66;
-            const colour = PALETTE[playerIndex % PALETTE.length];
+          visiblePlayers.forEach((player, visibleIndex) => {
+            const col = visibleIndex % 4, row = Math.floor(visibleIndex / 4), x = 72 + col * 252, y = 850 + row * 66;
+            const colour = colourById.get(player.id) ?? "#d8b76f";
             ctx.fillStyle = colour; ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#120d12"; ctx.font = "900 12px Arial"; ctx.textAlign = "center"; ctx.fillText(initials(player.name), x, y + 4); ctx.textAlign = "left";
             ctx.fillStyle = "#f1e5dc"; ctx.font = "800 16px Arial"; ctx.fillText(player.name, x + 30, y + 6);
@@ -195,12 +229,40 @@ export default function PositionRacePortal(props: Props) {
     } finally { setSharing(false); }
   }
 
+  async function shareInteractive() {
+    if (!frames.length) return;
+    const payload: SharedRacePayload = {
+      v: 1,
+      seasonLabel: props.seasonLabel,
+      players: players.map((player) => ({ id: player.id, name: player.name, colour: colourById.get(player.id) ?? "#d8b76f" })),
+      frames: frames.map((frame) => ({ gameweek: frame.gameweek, positions: Object.fromEntries(frame.rows.map((row) => [row.id, row.position])) })),
+      selected: visiblePlayers.length ? visiblePlayers.map((player) => player.id) : players.map((player) => player.id),
+    };
+    const url = `${window.location.origin}/race-share?d=${encodePayload(payload)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Bounce BTTS League Position Race", text: `Interactive league race · ${props.seasonLabel}`, url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        window.alert("Interactive race link copied.");
+      } else {
+        window.prompt("Copy this interactive race link", url);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      window.alert("Could not share the interactive race link.");
+    }
+  }
+
   return createPortal(
     <section className={`${styles.shell} ${sharing ? styles.sharing : ""}`} aria-label="League position race">
       <div className={styles.head}>
         <div className={styles.title}><span>SEASON STORY</span><h3>League Position Race</h3><p>League position by gameweek.</p></div>
         <div className={styles.topActions}>
-          <button className={`${styles.shareButton} dataShareButton shareCompactWhatsApp`} type="button" onClick={shareAnimation}>{sharing ? "Creating…" : "Share race"}</button>
+          <div className={styles.shareActions}>
+            <button className={`${styles.shareButton} dataShareButton shareCompactWhatsApp`} type="button" onClick={shareAnimation}>{sharing ? "Creating…" : "Share clip"}</button>
+            <button className={`${styles.shareButton} ${styles.interactiveButton} dataShareButton shareCompactWhatsApp`} type="button" onClick={shareInteractive}>Interactive</button>
+          </div>
           <div className={styles.picker}>
             <button type="button" onClick={() => move(-1)} aria-label="Previous gameweek">‹</button>
             <span>{currentFrame ? `GW ${currentFrame.gameweek}` : "—"}</span>
@@ -214,16 +276,22 @@ export default function PositionRacePortal(props: Props) {
           <svg className={styles.graph} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`League positions through gameweek ${currentFrame.gameweek}`}>
             {players.map((_, index) => { const rank = index + 1; const y = yFor(rank); return <g key={`rank-${rank}`}><line className={styles.grid} x1={left} x2={right} y1={y} y2={y}/><text className={styles.rank} x={16} y={y + 4}>{rank}</text></g>; })}
             {frames.map((frame, index) => <text key={frame.gameweek} className={styles.gwLabel} x={xFor(index)} y={bottom + 30} textAnchor="middle">GW{frame.gameweek}</text>)}
-            {players.map((player, playerIndex) => {
+            {visiblePlayers.map((player) => {
               const points = pointsAtProgress(frames, player.id, progress);
               const polyline = points.map((point) => `${xFor(point.index)},${yFor(point.position)}`).join(" ");
               const last = points.at(-1);
-              const colour = colourById.get(player.id) ?? PALETTE[playerIndex % PALETTE.length];
+              const colour = colourById.get(player.id) ?? "#d8b76f";
               return <g key={player.id}><polyline className={styles.raceLine} points={polyline} style={{ stroke: colour }}/>{points.slice(0, -1).filter((point) => !point.moving).map((point) => <circle key={`${player.id}-${point.index}`} className={styles.raceDot} cx={xFor(point.index)} cy={yFor(point.position)} r={3} style={{ fill: colour }}/>) }{last ? <circle className={styles.raceDot} cx={xFor(last.index)} cy={yFor(last.position)} r={5} style={{ fill: colour }}/> : null}</g>;
             })}
           </svg>
         </div>
-        <div className={styles.legend}>{players.map((player, index) => <div key={player.id} className={styles.legendItem}><span className={styles.avatar} style={{ background: colourById.get(player.id) ?? PALETTE[index % PALETTE.length] }}>{initials(player.name)}</span><strong>{player.name}</strong></div>)}</div>
+        <div className={styles.legend}>{players.map((player, index) => {
+          const selected = selectedIds.has(player.id);
+          return <button key={player.id} type="button" className={`${styles.legendItem} ${selected ? "" : styles.legendOff}`} onClick={() => togglePlayer(player.id)} aria-pressed={selected}>
+            <span className={styles.avatar} style={{ background: colourById.get(player.id) ?? PALETTE[index % PALETTE.length] }}>{initials(player.name)}</span><strong>{player.name}</strong>
+          </button>;
+        })}</div>
+        <div className={styles.legendHint}>Tap a player to show or hide their line. Your selection is also used for the shared clip.</div>
       </> : <div className={styles.empty}>The race starts once the first gameweek has been scored.</div>}
       <div className={styles.foot}><span>{frames.length} scored gameweek{frames.length === 1 ? "" : "s"}</span><span>~0.65 sec per GW</span></div>
     </section>, target,
