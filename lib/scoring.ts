@@ -38,6 +38,6 @@ export function outcomeLabel(homeScore: number | null, awayScore: number | null,
     return { label: "Finished", points, tone: "neutral" as const };
   }
   if (homeScore > 0 && awayScore > 0) return { label: "Won", points: null, tone: "good" as const };
-  if (homeScore === 0 && awayScore === 0) return { label: "0–0 live", points: null, tone: "bad" as const };
+  if (homeScore === 0 && awayScore === 0) return { label: "0–0", points: -1, tone: "bad" as const };
   return { label: "Score–nil live", points: null, tone: "warn" as const };
 }
