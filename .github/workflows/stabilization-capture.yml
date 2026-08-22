@@ -1,4 +1,4 @@
-name: Stabilisation source bake
+name: Stabilisation source normalise
 
 on:
   push:
@@ -12,8 +12,8 @@ env:
   NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
-  bake:
-    if: ${{ !contains(github.event.head_commit.message, '[bake-generated-source]') }}
+  normalise:
+    if: ${{ !contains(github.event.head_commit.message, '[canonical-source]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,21 +34,21 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts
 
-      - name: Apply current production patch chain and validate
+      - name: Normalise canonical source
+        run: python scripts/normalize-canonical-source.py
+
+      - name: Validate canonical build
         run: npm run build
 
-      - name: Bake generated tracked source into this branch
+      - name: Commit canonical source changes
         shell: bash
         run: |
-          rm -rf public/_stabilization-source
-          git add -u
+          git add app/LeagueApp.tsx
           if git diff --cached --quiet; then
-            echo "No build-time source drift remains."
+            echo "Canonical source already normalised."
             exit 0
           fi
-          echo "Build-time files being baked:"
-          git diff --cached --name-only
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Bake generated v1.6.3 source [bake-generated-source]"
+          git commit -m "Normalize canonical application source [canonical-source]"
           git push origin HEAD:stabilize/canonical-v1.6-foundation
