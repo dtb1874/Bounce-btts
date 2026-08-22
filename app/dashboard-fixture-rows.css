@@ -1,0 +1,188 @@
+/* Dashboard fixture-row presentation only.
+   Intentionally does not target the action-button grid or combined-odds strip. */
+.weeklyPicksPanel .dashboardSnapshotRow {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(140px,.9fr) minmax(250px,2fr) 160px 86px !important;
+  grid-template-rows: auto auto;
+  column-gap: 15px !important;
+  row-gap: 3px !important;
+  align-items: center !important;
+  min-height: 72px !important;
+  margin: 4px 0;
+  padding: 10px 12px !important;
+  border: 0 !important;
+  border-radius: 10px;
+  background: rgba(255,255,255,.018);
+  box-sizing: border-box;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow:nth-child(odd) {
+  background: rgba(112,31,50,.16);
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: block !important;
+  min-width: 0;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow [class*="avatar"] {
+  display: none !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #eadfd4;
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotFixture {
+  grid-column: 2;
+  grid-row: 1;
+  display: block !important;
+  min-width: 0;
+}
+
+.weeklyPicksPanel .dashboardSnapshotFixture .dashboardCompetition {
+  display: none !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotFixture strong {
+  display: block;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: #f4eee8;
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotLive {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex !important;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  text-align: left !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotLive strong {
+  color: #f0cfaa !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+.weeklyPicksPanel .dashboardSnapshotLive small {
+  margin: 0 !important;
+  color: #bda58e !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+.weeklyPicksPanel .dashboardSnapshotLive .weeklyFixtureOdds {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 86px;
+  color: #ffe0b9;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow > div:last-child {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  justify-self: stretch;
+  align-self: center;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #747984;
+  border-radius: 999px;
+  background: #41434a;
+  color: #edf0f5 !important;
+  font-size: 9px !important;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: .03em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow > [class*="statusGood"] {
+  background: #1f7a45;
+  border-color: #67c58a;
+  color: #f2fff6 !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow > [class*="statusWarn"] {
+  background: #8b5b16;
+  border-color: #d6a54c;
+  color: #fff6df !important;
+}
+
+.weeklyPicksPanel .dashboardSnapshotRow > [class*="statusBad"] {
+  background: #7c2031;
+  border-color: #d05c72;
+  color: #fff1f4 !important;
+}
+
+@media (max-width: 650px) {
+  .weeklyPicksPanel .dashboardSnapshotRow {
+    grid-template-columns: minmax(70px,.8fr) minmax(118px,1.7fr) 88px 54px !important;
+    column-gap: 6px !important;
+    row-gap: 3px !important;
+    min-height: 62px !important;
+    margin: 3px 0;
+    padding: 8px 7px !important;
+    border-radius: 8px;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotRow [class*="playerCell"] strong {
+    font-size: 10.5px !important;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotFixture strong {
+    font-size: 10.5px !important;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotLive {
+    gap: 4px;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotLive strong {
+    font-size: 9px !important;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotLive small {
+    font-size: 8px !important;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotLive .weeklyFixtureOdds {
+    right: 7px;
+    width: 54px;
+    font-size: 10px;
+  }
+
+  .weeklyPicksPanel .dashboardSnapshotRow > div:last-child {
+    padding: 5px 4px;
+    font-size: 7px !important;
+    letter-spacing: 0;
+  }
+}
