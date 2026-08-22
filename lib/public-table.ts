@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
+import { competitionDisplayName } from "@/lib/competition-display";
 import {
   calculateLeagueStats,
   type LeagueStatsAdjustment,
@@ -125,6 +126,7 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
     predictions,
     adjustments,
     fixtures,
+    competitionName: competitionDisplayName,
   });
 
   const seasonLabel = currentSeason?.label ?? settings?.current_season_label ?? "2026/27";
