@@ -10,4 +10,32 @@
   .publicTableCard {
     padding-top: 40px;
   }
+
+  /* Keep the heading compact: prize left, share button alongside it, then table immediately below. */
+  .publicTableHeading {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .publicTableActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 148px;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .publicTableActions > strong {
+    align-self: start;
+    margin-top: -2px;
+  }
+
+  .publicTableActions .tableShareControl,
+  .publicTableActions .tableShareControl button {
+    width: 148px;
+  }
+
+  .publicTableActions .tableShareControl {
+    justify-self: end;
+    align-self: start;
+  }
 }
