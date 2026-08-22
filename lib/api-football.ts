@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pointsForScore } from "@/lib/scoring";
+import {
+  fixtureDateForGameweek,
+  fixtureMatchesSelectionRule,
+  isEligibleProviderFixture,
+} from "@/lib/gameweek-rules";
 
 const API_BASE = "https://v3.football.api-sports.io";
 const UK_COUNTRIES = new Set(["England", "Scotland", "Wales", "Northern Ireland", "Northern-Ireland"]);
@@ -7,45 +12,13 @@ const FINISHED = new Set(["FT", "AET", "PEN"]);
 const AFFECTING_STATUSES = new Set(["PST", "CANC", "ABD", "SUSP", "INT", "TBD"]);
 const BOOKMAKER_PRIORITY = ["Bet365", "Paddy Power", "William Hill", "Sky Bet", "Betfair"];
 
-function londonParts(value: string | Date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit",
-    weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).formatToParts(new Date(value));
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return { year: get("year"), month: get("month"), day: get("day"), weekday: get("weekday"), hour: get("hour"), minute: get("minute") };
-}
-
-function londonDate(value: string | Date) {
-  const p = londonParts(value);
-  return `${p.year}-${p.month}-${p.day}`;
-}
-
-function isExcluded(home: string, away: string) {
-  const teams = `${home} ${away}`.toLowerCase();
-  return teams.includes("heart of midlothian") || /(^|\s)hearts($|\s)/.test(teams)
-    || teams.includes("hibernian") || /(^|\s)hibs($|\s)/.test(teams);
-}
-
-const DUPLICATE_TEAM_SUFFIXES = new Set(["city", "town", "united", "wanderers", "rovers", "albion", "athletic", "county"]);
 function canonicalTeam(value: string) {
-  const parts = value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
-  while (parts.length > 1 && DUPLICATE_TEAM_SUFFIXES.has(parts[parts.length - 1])) parts.pop();
-  return parts.join(" ");
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
+
 function sameFixtureTeams(left: { home_team?: string; away_team?: string }, right: { home_team?: string; away_team?: string }) {
   return canonicalTeam(String(left.home_team ?? "")) === canonicalTeam(String(right.home_team ?? ""))
     && canonicalTeam(String(left.away_team ?? "")) === canonicalTeam(String(right.away_team ?? ""));
-}
-
-function isEligible(item: any) {
-  const country = String(item.league?.country ?? "");
-  const home = String(item.teams?.home?.name ?? "");
-  const away = String(item.teams?.away?.name ?? "");
-  const kickoff = londonParts(String(item.fixture?.date ?? ""));
-  const status = String(item.fixture?.status?.short ?? "NS");
-  return UK_COUNTRIES.has(country) && kickoff.weekday === "Sat" && kickoff.hour === "15" && kickoff.minute === "00"
-    && !isExcluded(home, away) && ["NS", "TBD"].includes(status);
 }
 
 function decimalToFractional(value: string | number | null | undefined) {
@@ -120,15 +93,9 @@ async function createAffectedAlerts(admin: ReturnType<typeof createAdminClient>,
   const teamsChanged = before.home_team !== after.home_team || before.away_team !== after.away_team;
   const enteredAffectingStatus = before.status !== after.status && AFFECTING_STATUSES.has(String(after.status));
 
-  // API-Football can represent the same UK kickoff as either 14:00Z or
-  // 15:00+01:00 during BST. Compare actual instants, not raw strings, so
-  // timezone formatting alone never creates an alert.
   if (kickoffChanged) changes.push(`Kick-off changed from ${before.kickoff_at} to ${after.kickoff_at}`);
   if (enteredAffectingStatus) changes.push(`Status changed from ${before.status} to ${after.status}`);
   if (teamsChanged) changes.push("Teams changed");
-
-  // Do not alert merely because is_eligible becomes false. That naturally
-  // happens when a selected fixture moves from NS to live/finished status.
   if (!changes.length) return 0;
 
   const selectionInvalidated = kickoffChanged && Boolean(before.is_eligible) && !Boolean(after.is_eligible);
@@ -154,29 +121,41 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
   try {
     const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
     const { data: gameweeks } = season?.id
-      ? await admin.from("gameweeks").select("id,number,opens_at,locks_at").eq("season_id", season.id).order("number")
+      ? await admin.from("gameweeks")
+          .select("id,number,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time")
+          .eq("season_id", season.id)
+          .order("number")
       : { data: [] as any[] };
+
     const now = Date.now();
     const upper = now + 15 * 86400000;
     const requestedIds = new Set((requestedGameweekIds ?? []).filter(Boolean));
     const targetWeeks = requestedIds.size
       ? (gameweeks ?? []).filter((gw: any) => requestedIds.has(String(gw.id)))
       : (gameweeks ?? []).filter((gw: any) => {
-          const sat = new Date(new Date(gw.locks_at).getTime() + 24 * 3600000);
-          return sat.getTime() >= now - 2 * 86400000 && sat.getTime() <= upper;
+          const fixtureDate = fixtureDateForGameweek(gw);
+          const fixtureDay = Date.parse(`${fixtureDate}T12:00:00Z`);
+          return fixtureDay >= now - 2 * 86400000 && fixtureDay <= upper;
         });
+
     if (requestedIds.size && !targetWeeks.length) throw new Error("The selected gameweek could not be found in the current season.");
-    const dateToGameweek = new Map<string, any>();
-    for (const gw of targetWeeks) dateToGameweek.set(londonDate(new Date(new Date(gw.locks_at).getTime() + 24 * 3600000)), gw);
-    const dates = [...dateToGameweek.keys()].sort().slice(0, 3);
+
+    const dateToGameweeks = new Map<string, any[]>();
+    for (const gw of targetWeeks) {
+      const date = fixtureDateForGameweek(gw);
+      dateToGameweeks.set(date, [...(dateToGameweeks.get(date) ?? []), gw]);
+    }
+    const dates = [...dateToGameweeks.keys()].sort().slice(0, 3);
     summary.dates = dates;
 
     for (const date of dates) {
       const payload = await api("/fixtures", { date, timezone: "Europe/London" }, tracker);
       const incoming = (payload.response ?? []).filter((item: any) => UK_COUNTRIES.has(String(item.league?.country ?? "")));
+      const dateGameweeks = dateToGameweeks.get(date) ?? [];
+
       for (const item of incoming) {
         const providerId = String(item.fixture.id);
-        const gameweek = dateToGameweek.get(date);
+        const gameweek = dateGameweeks.find((gw: any) => fixtureMatchesSelectionRule(item, gw)) ?? dateGameweeks[0] ?? null;
         const next = {
           gameweek_id: gameweek?.id ?? null,
           provider_fixture_id: providerId,
@@ -190,10 +169,11 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           away_score: Number.isInteger(item.goals?.away) ? item.goals.away : null,
           completed_at: FINISHED.has(String(item.fixture?.status?.short)) ? new Date().toISOString() : null,
           source: "api-football",
-          is_eligible: isEligible(item),
+          is_eligible: Boolean(gameweek && isEligibleProviderFixture(item, gameweek)),
           provider_updated_at: item.fixture?.timestamp ? new Date(Number(item.fixture.timestamp) * 1000).toISOString() : null,
           last_synced_at: new Date().toISOString(),
         };
+
         const { data: providerRows } = await admin.from("fixtures").select("*").eq("provider_fixture_id", providerId).limit(1);
         let existing = providerRows?.[0] ?? null;
         if (!existing && next.gameweek_id) {
@@ -201,6 +181,7 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
             .eq("gameweek_id", next.gameweek_id).eq("kickoff_at", next.kickoff_at);
           existing = (sameKickoffRows ?? []).find((row: any) => sameFixtureTeams(row, next)) ?? null;
         }
+
         if (existing) {
           summary.alertsCreated += await createAffectedAlerts(admin, existing, existing, next);
           const { error } = await admin.from("fixtures").update(next).eq("id", existing.id);
@@ -230,8 +211,6 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
         if (tracker.remaining !== null && tracker.remaining <= 8) break;
         if (tracker.used >= 75) break;
         const providerId = String(fixture.provider_fixture_id ?? "").trim();
-        // API-Football only accepts its numeric fixture IDs. Manual and Sky IDs
-        // must never be sent to the odds endpoint.
         if (!/^\d+$/.test(providerId)) continue;
         try {
           const result = await fixtureOdds(providerId, betId, tracker);
@@ -243,8 +222,6 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           if (oddsError) throw oddsError;
           if (result.odds) summary.oddsUpdated += 1;
         } catch (oddsError) {
-          // One unavailable or malformed odds response must not cancel the
-          // complete fixture import. Keep the run partial and continue.
           summary.errors.push(`Odds ${providerId}: ${oddsError instanceof Error ? oddsError.message : "update failed"}`);
         }
       }
