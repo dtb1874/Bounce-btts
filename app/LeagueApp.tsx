@@ -721,7 +721,7 @@ function CombinedResultsPage({gameweek,fixtures,predictions,profiles,standings,s
 }
 
 function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];onRefresh:()=>void}){
-  const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter((x):x is {prediction:Prediction;fixture:Fixture;profile:Profile}=>Boolean(x.fixture&&x.profile));
+  const selected=predictions.map(p=>({prediction:p,fixture:fixtures.find(f=>f.id===p.fixture_id),profile:profiles.find(pr=>pr.id===p.member_id)})).filter((x):x is {prediction:Prediction;fixture:Fixture;profile:Profile}=>Boolean(x.fixture&&x.profile)).sort((a,b)=>fixtureSort(a.fixture,b.fixture));
   const resultDayKey=(f:Fixture)=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at));
   const ordered=[...fixtures].sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));
   const days=Array.from(new Set(ordered.map(resultDayKey)));
