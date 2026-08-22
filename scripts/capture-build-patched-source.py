@@ -31,17 +31,22 @@ def main() -> None:
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True, exist_ok=True)
 
-    manifest: list[str] = []
+    manifest: list[dict[str, str]] = []
     for relative in changed_paths():
         source = ROOT / relative
         try:
             source.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        target = OUT / relative
+
+        capture_relative = Path(f"{relative.as_posix()}.txt")
+        target = OUT / capture_relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
-        manifest.append(relative.as_posix())
+        manifest.append({
+            "source": relative.as_posix(),
+            "capture": capture_relative.as_posix(),
+        })
 
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"Captured {len(manifest)} build-patched source files for stabilisation review")
