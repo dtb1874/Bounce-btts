@@ -21,14 +21,38 @@ function validSelectionTime(value: unknown) {
   return time;
 }
 
+function defaultOpeningForDeadline(deadlineIso: string) {
+  // Backwards-compatible safe default for callers that do not yet supply
+  // an explicit opening time: four days before the deadline, never "now".
+  return new Date(new Date(deadlineIso).getTime() - 4 * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   const { admin, user } = context;
   const body = await request.json();
+
   const locksAt = String(body.locksAt ?? "");
+  const opensAtRaw = body.opensAt == null || String(body.opensAt).trim() === "" ? null : String(body.opensAt);
+  const selectionRuleMode = validSelectionMode(body.selectionRuleMode);
+  const selectionWeekday = validWeekday(body.selectionWeekday);
+  const selectionTime = validSelectionTime(body.selectionTime);
+
   if (!locksAt || Number.isNaN(new Date(locksAt).getTime())) {
     return NextResponse.json({ error: "Choose a valid gameweek deadline." }, { status: 400 });
+  }
+  if (opensAtRaw && Number.isNaN(new Date(opensAtRaw).getTime())) {
+    return NextResponse.json({ error: "Choose a valid opening date and time." }, { status: 400 });
+  }
+  if (!selectionTime) {
+    return NextResponse.json({ error: "Choose a valid eligible kick-off time." }, { status: 400 });
+  }
+
+  const normalisedDeadline = new Date(locksAt).toISOString();
+  const normalisedOpening = opensAtRaw ? new Date(opensAtRaw).toISOString() : defaultOpeningForDeadline(normalisedDeadline);
+  if (new Date(normalisedOpening) >= new Date(normalisedDeadline)) {
+    return NextResponse.json({ error: "The gameweek must open before its deadline." }, { status: 400 });
   }
 
   const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).single();
@@ -46,11 +70,11 @@ export async function POST(request: Request) {
     season_id: season.id,
     number: Number(latest?.number ?? 0) + 1,
     status: "open",
-    opens_at: new Date().toISOString(),
-    locks_at: new Date(locksAt).toISOString(),
-    selection_rule_mode: "exact_time",
-    selection_weekday: 6,
-    selection_time: "15:00",
+    opens_at: normalisedOpening,
+    locks_at: normalisedDeadline,
+    selection_rule_mode: selectionRuleMode,
+    selection_weekday: selectionWeekday,
+    selection_time: selectionTime,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
