@@ -7,6 +7,7 @@ import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
+import EasterEggDiscovery from "./EasterEggDiscovery";
 
 export const metadata: Metadata = {
   title: "Bounce BTTS League",
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body><ShortRaceShareBridge />{children}</body>
+      <body><ShortRaceShareBridge /><EasterEggDiscovery />{children}</body>
     </html>
   );
 }
