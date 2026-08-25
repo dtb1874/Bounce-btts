@@ -13,9 +13,11 @@ const reminderFunction = /\n  function remindMissingPicks\(\)\{[\s\S]*?\n  \}\n 
 if (reminderFunction.test(source)) source = source.replace(reminderFunction, "\n  const finished=");
 
 const oldReminderButton = '{isAdmin&&<button type="button" className="dashboardGoldAction dashboardAdminAction" onClick={remindMissingPicks} disabled={!isOpen||!missingPicks.length} aria-label={missingPicks.length?`Remind ${missingPicks.length} missing picks via WhatsApp`:"All picks are in"}>{missingPicks.length?"Remind Picks":"All Picks In ✓"}</button>}';
-const newReminderButton = '{isAdmin&&gameweek&&<ReminderShareButton gameweekNumber={gameweek.number} deadline={gameweek.locks_at} missingNames={missingPicks.map(p=>p.display_name)} disabled={!isOpen||!missingPicks.length}/>}';
+const oldNewButton = '{isAdmin&&gameweek&&<ReminderShareButton gameweekNumber={gameweek.number} deadline={gameweek.locks_at} missingNames={missingPicks.map(p=>p.display_name)} disabled={!isOpen||!missingPicks.length}/>}';
+const newReminderButton = '{isAdmin&&gameweek&&<ReminderShareButton gameweekNumber={gameweek.number} seasonLabel={seasonLabel} deadline={gameweek.locks_at} missingNames={missingPicks.map(p=>p.display_name)} submittedPicks={picks.filter(p=>p.prediction&&p.fixture).map(p=>({name:p.profile.display_name,fixture:`${p.fixture!.home_team} v ${p.fixture!.away_team}`}))} disabled={!isOpen||!missingPicks.length}/>}';
 if (source.includes(oldReminderButton)) source = source.replace(oldReminderButton, newReminderButton);
-else if (!source.includes("<ReminderShareButton")) throw new Error("Could not find dashboard reminder button");
+else if (source.includes(oldNewButton)) source = source.replace(oldNewButton, newReminderButton);
+else if (!source.includes("submittedPicks={picks.filter")) throw new Error("Could not find dashboard reminder button");
 
 const pickPattern = /function PickPage\(\{gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixture\}:\{gameweek:Gameweek\|null;fixtures:Fixture\[\];predictions:Prediction\[\];profiles:Profile\[\];isOpen:boolean;myId:string;selectFixture:\(id:string\)=>void\}\)\{[\s\S]*?\n\}\nfunction FixturesPage/;
 if (pickPattern.test(source)) {
