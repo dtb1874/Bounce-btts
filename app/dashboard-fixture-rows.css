@@ -141,6 +141,14 @@
   box-sizing: border-box;
 }
 
+/* No-pick rows must look different for every viewer, not only admins. */
+.weeklyPicksPanel .dashboardSnapshotRow:has(.dashboardSnapshotFixture > span) > div:last-child {
+  background: #7c2031 !important;
+  border-color: #d05c72 !important;
+  color: #fff1f4 !important;
+  box-shadow: 0 0 0 1px rgba(208,92,114,.10),0 3px 10px rgba(124,32,49,.24);
+}
+
 .weeklyPicksPanel .dashboardSnapshotRow > [class*="statusGood"] {
   background: #1f7a45 !important;
   border-color: #67c58a !important;
