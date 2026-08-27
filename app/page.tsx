@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import LeagueApp from "./LeagueApp";
 import PublicLeagueTable from "./PublicLeagueTable";
 import PositionRacePortal from "./PositionRacePortal";
+import GameweekArchivePortal from "./GameweekArchivePortal";
 import SweepTracker from "./SweepTracker";
 import StatsCentreEnhancer from "./StatsCentreEnhancer";
 import { loadPublicTableData } from "@/lib/public-table";
@@ -145,6 +146,13 @@ export default async function HomePage() {
         gameweeks={seasonGameweeks}
         predictions={predictions}
         adjustments={adjustments}
+        seasonLabel={seasonLabel}
+      />
+      <GameweekArchivePortal
+        profiles={profileRows}
+        gameweeks={seasonGameweeks}
+        predictions={predictions}
+        fixtures={fixtures}
         seasonLabel={seasonLabel}
       />
       <SweepTracker

@@ -5,6 +5,7 @@ import "./pre-v2-compact-restoration.css";
 import "./public-mobile-tuning.css";
 import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
+import "./gameweek-recap-order.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
 import EasterEggDiscovery from "./EasterEggDiscovery";

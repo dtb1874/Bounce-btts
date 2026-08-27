@@ -1,0 +1,6 @@
+@media(max-width:650px){
+  .compactDashboard .gameweekRecapDashboardCard{order:4!important;width:100%!important;margin:0!important}
+  .compactDashboard .mobileLeaguePreview{order:5!important}
+  .compactDashboard .mobilePickPanel{order:6!important}
+  .compactDashboard #current-form{order:7!important}
+}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ShareTableButton from "./ShareTableButton";
+import CreatureHabitStat from "./CreatureHabitStat";
 import { calculateLeagueStats, type LeagueStatsAdjustment, type LeagueStatsFixture, type LeagueStatsPrediction, type LeagueStatsStanding } from "@/lib/league-stats";
 import { competitionDisplayName } from "@/lib/competition-display";
 import styles from "./release.module.css";
@@ -65,7 +66,7 @@ export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek,
         <div className={publicStyles.statItem}><span>LEAGUE STRIKE RATE</span><strong>{headline.leagueStrikeRate == null ? "—" : `${headline.leagueStrikeRate.toFixed(1)}%`}</strong><small>{headline.bttsWins} BTTS wins</small></div>
         <div className={publicStyles.statItem}><span>{headline.formLeaderNames.length > 1 ? "FORM LEADERS" : "FORM LEADER"}</span><strong className={headline.formLeaderNames.length > 1 ? "jointStatValue" : undefined}>{headline.formLeaderNames.length ? headline.formLeaderNames.join(", ") : "—"}</strong><small>{headline.formLeaderNames.length ? `${headline.topFormPoints} pts across current form` : "Waiting for scored weeks"}</small></div>
         <div className={publicStyles.statItem}><span>{headline.bttsLeaderNames.length > 1 ? "BTTS LEADERS" : "BTTS LEADER"}</span><strong className={headline.bttsLeaderNames.length > 1 ? "jointStatValue" : undefined}>{headline.bttsLeaderNames.length ? headline.bttsLeaderNames.join(", ") : "—"}</strong><small>{headline.bttsLeaderNames.length ? `${headline.topBttsWins} BTTS wins` : "No BTTS wins yet"}</small></div>
-        <div className={publicStyles.statItem}><span>CREATURE OF HABIT</span><strong className={headline.creatureLeaders.length > 1 ? "jointStatValue" : undefined}>{headline.creatureLeaders.length ? headline.creatureLeaders.map((row) => `${row.name} — ${row.team}, ${row.count} picks`).join(" / ") : "—"}</strong><small>{headline.creatureLeaders.length ? `${headline.creatureLeaders.map((row) => `${row.wins}W · ${row.losses}L`).join(" / ")} · Most repeat selections of the same team` : "Most repeat selections of the same team"}</small></div>
+        <div className={publicStyles.statItem}><span>CREATURE OF HABIT</span><CreatureHabitStat leaders={headline.creatureLeaders}/></div>
         <div className={publicStyles.statItem}><span>GOALS IN PICKS</span><strong>{headline.leagueGoals}</strong><small>Finished selected fixtures</small></div>
         <div className={publicStyles.statItem}><span>FINISHED PICKS</span><strong>{headline.finishedPicks}</strong><small>{headline.recordedSelections} selections recorded</small></div>
       </div>
