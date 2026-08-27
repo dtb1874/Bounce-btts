@@ -86,9 +86,12 @@ export async function loadPublicTableData(): Promise<PublicTableData> {
   if (fixtureIds.length) {
     const fixtureResponse = await admin
       .from("fixtures")
-      .select("id,competition,country,home_team,away_team,home_score,away_score,odds_fractional,status")
+      .select("id,competition,country,home_team,away_team,home_score,away_score,odds_fractional,odds_deadline_fractional,status")
       .in("id", fixtureIds);
-    fixtures = (fixtureResponse.data ?? []) as LeagueStatsFixture[];
+    fixtures = (fixtureResponse.data ?? []).map((fixture: any) => ({
+      ...fixture,
+      odds_fractional: fixture.odds_deadline_fractional ?? fixture.odds_fractional ?? null,
+    })) as LeagueStatsFixture[];
   }
 
   const rows: PublicStandingRow[] = (profiles ?? [])
