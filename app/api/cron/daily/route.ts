@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runFootballImport } from "@/lib/api-football";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
+import { captureDeadlineOdds } from "@/lib/deadline-odds";
 
 function authorised(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -18,6 +19,10 @@ export async function GET(request: NextRequest) {
   if (londonHour() !== 8) return NextResponse.json({ ok: true, skipped: true, reason: "The paired UTC cron only runs the importer when it is 08:00 in Europe/London." });
   const admin = createAdminClient();
   const penaltiesApplied = await applyMissedPickPenalties(admin).catch(() => 0);
-  try { return NextResponse.json({ penaltiesApplied, ...(await runFootballImport("cron")) }); }
+  try {
+    const result = await runFootballImport("cron");
+    const deadlineOdds = await captureDeadlineOdds(admin);
+    return NextResponse.json({ penaltiesApplied, ...result, deadlineOdds });
+  }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Import failed", penaltiesApplied }, { status: 500 }); }
 }

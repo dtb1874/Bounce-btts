@@ -8,6 +8,7 @@ import styles from "./release.module.css";
 import publicStyles from "./PublicLeagueTable.module.css";
 
 type Gameweek = { id: string; number: number };
+type DeadlineOddsFixture = LeagueStatsFixture & { odds_deadline_fractional?: string | null };
 
 type Props = {
   standings: LeagueStatsStanding[];
@@ -23,12 +24,19 @@ type Props = {
 export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek, entryFee, fixtures, predictions, gameweeks, adjustments }: Props) {
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   const prizePot = standings.length * entryFee;
+  const statsFixtures = fixtures.map((fixture) => {
+    const deadlineFixture = fixture as DeadlineOddsFixture;
+    return {
+      ...fixture,
+      odds_fractional: deadlineFixture.odds_deadline_fractional ?? fixture.odds_fractional ?? null,
+    };
+  });
   const canonical = calculateLeagueStats({
     standings,
     gameweeks,
     predictions,
     adjustments,
-    fixtures,
+    fixtures: statsFixtures,
     competitionName: competitionDisplayName,
   });
   const { headline, seasonFacts, playerInsights } = canonical;
@@ -50,6 +58,7 @@ export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek,
 
     <section className={`${publicStyles.publicPanel} ${publicStyles.statPanel}`}>
       <div className={publicStyles.sectionHeading}><div><span>SEASON SNAPSHOT</span><h3>League Stats</h3></div></div>
+      <p style={{ margin: "-4px 0 12px", fontSize: "11px", color: "#8f8a86", letterSpacing: ".02em" }}>Odds-based statistics use the latest price captured by each gameweek deadline.</p>
       <div className={publicStyles.statCluster}>
         <div className={publicStyles.statItem}><span>LEAGUE LEADER</span><strong>{headline.leagueLeader?.name ?? "—"}</strong><small>{headline.leagueLeader ? `${headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
         <div className={publicStyles.statItem}><span>SEASON POT</span><strong>£{prizePot.toFixed(0)}</strong><small>{standings.length} active players</small></div>
