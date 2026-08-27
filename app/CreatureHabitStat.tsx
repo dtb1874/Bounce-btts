@@ -14,10 +14,10 @@ export default function CreatureHabitStat({ leaders }: { leaders: CreatureLeader
   }
 
   return <>
-    <div style={{ display: "grid", gap: "5px", marginTop: "2px" }}>
+    <div style={{ display: "grid", gap: "3px", marginTop: "2px" }}>
       {leaders.map((row) => (
         <details className="leagueStatBreakdown" key={`${row.name}-${row.team}`} onClick={(event) => event.stopPropagation()}>
-          <summary style={{ fontFamily: "Georgia, serif", fontSize: "17px", fontWeight: 700 }}>
+          <summary style={{ fontFamily: "Georgia, serif", fontSize: "13px", lineHeight: 1.25, fontWeight: 700, textTransform: "none", letterSpacing: "normal" }}>
             {row.name} — {row.team}, {row.count} picks
           </summary>
           <div>
@@ -26,6 +26,6 @@ export default function CreatureHabitStat({ leaders }: { leaders: CreatureLeader
         </details>
       ))}
     </div>
-    <small style={{ marginTop: "5px" }}>Most repeat selections of the same team</small>
+    <small style={{ marginTop: "4px" }}>Most repeat selections of the same team</small>
   </>;
 }
