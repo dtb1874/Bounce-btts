@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
 import { runFootballImport, runSelectedOddsRefresh } from "@/lib/api-football";
+import { captureDeadlineOdds } from "@/lib/deadline-odds";
 
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
@@ -14,10 +15,14 @@ export async function POST(request: Request) {
     if (body?.oddsOnly === true) {
       const gameweekId = gameweekIds?.[0];
       if (!gameweekId) return NextResponse.json({ error: "A gameweek is required for odds refresh." }, { status: 400 });
-      return NextResponse.json(await runSelectedOddsRefresh(gameweekId));
+      const result = await runSelectedOddsRefresh(gameweekId);
+      const deadlineOdds = await captureDeadlineOdds(context.admin, [gameweekId]);
+      return NextResponse.json({ ...result, deadlineOdds });
     }
 
-    return NextResponse.json(await runFootballImport("admin", gameweekIds));
+    const result = await runFootballImport("admin", gameweekIds);
+    const deadlineOdds = await captureDeadlineOdds(context.admin, gameweekIds);
+    return NextResponse.json({ ...result, deadlineOdds });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Import failed" }, { status: 500 });
   }
