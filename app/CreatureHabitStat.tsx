@@ -17,9 +17,10 @@ export default function CreatureHabitStat({ leaders }: { leaders: CreatureLeader
     <div style={{ display: "grid", gap: "5px", marginTop: "2px" }}>
       {leaders.map((row) => (
         <details className="leagueStatBreakdown" key={`${row.name}-${row.team}`} onClick={(event) => event.stopPropagation()}>
-          <summary style={{ fontFamily: "Georgia, serif", fontSize: "17px", fontWeight: 700 }}>{row.name}</summary>
+          <summary style={{ fontFamily: "Georgia, serif", fontSize: "17px", fontWeight: 700 }}>
+            {row.name} — {row.team}, {row.count} picks
+          </summary>
           <div>
-            <small><b>{row.team}</b> · {row.count} picks</small>
             <small>{row.wins}W · {row.losses}L</small>
           </div>
         </details>
