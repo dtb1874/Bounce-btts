@@ -5,6 +5,8 @@ export type GameweekSelectionRule = {
   selection_weekday?: number | null;
   selection_time?: string | null;
   selection_times?: string[] | null;
+  selection_time_from?: string | null;
+  selection_time_to?: string | null;
   one_off_rule?: boolean | null;
 };
 
@@ -39,21 +41,17 @@ function normaliseTime(value: string | null | undefined) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : "15:00";
 }
 
-function normaliseTimes(values: string[] | null | undefined, fallback: string | null | undefined) {
-  const source = Array.isArray(values) && values.length ? values : [fallback ?? "15:00"];
-  const clean = source
-    .map((value) => String(value).slice(0, 5))
-    .filter((value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value));
-  return [...new Set(clean.length ? clean : [normaliseTime(fallback)])].sort();
-}
-
 export function selectionRule(gameweek: GameweekSelectionRule) {
-  const times = normaliseTimes(gameweek.selection_times, gameweek.selection_time);
+  const fallback = normaliseTime(gameweek.selection_time);
+  const from = normaliseTime(gameweek.selection_time_from ?? fallback);
+  const toCandidate = normaliseTime(gameweek.selection_time_to ?? from);
+  const to = toCandidate >= from ? toCandidate : from;
   return {
     mode: gameweek.selection_rule_mode === "any_kickoff" ? "any_kickoff" as const : "exact_time" as const,
     weekday: normaliseWeekday(gameweek.selection_weekday),
-    time: times[0] ?? "15:00",
-    times,
+    time: from,
+    from,
+    to,
   };
 }
 
@@ -64,8 +62,7 @@ export function fixtureDateForGameweek(gameweek: GameweekTiming) {
   let daysAhead = (rule.weekday - lockWeekday + 7) % 7;
 
   if (daysAhead === 0 && rule.mode === "exact_time") {
-    const latestTime = rule.times[rule.times.length - 1] ?? rule.time;
-    const [targetHour, targetMinute] = latestTime.split(":").map(Number);
+    const [targetHour, targetMinute] = rule.to.split(":").map(Number);
     if (lock.hour > targetHour || (lock.hour === targetHour && lock.minute >= targetMinute)) daysAhead = 7;
   }
 
@@ -83,7 +80,7 @@ export function kickoffMatchesSelectionRule(kickoffValue: string | Date, gamewee
 
   if (rule.mode === "exact_time") {
     const kickoffTime = `${String(kickoff.hour).padStart(2, "0")}:${String(kickoff.minute).padStart(2, "0")}`;
-    if (!rule.times.includes(kickoffTime)) return false;
+    if (kickoffTime < rule.from || kickoffTime > rule.to) return false;
   }
 
   return true;
