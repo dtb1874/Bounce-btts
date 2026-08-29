@@ -160,7 +160,7 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
     const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
     const { data: gameweeks } = season?.id
       ? await admin.from("gameweeks")
-          .select("id,number,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time")
+          .select("id,number,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time,selection_times")
           .eq("season_id", season.id)
           .order("number")
       : { data: [] as any[] };
