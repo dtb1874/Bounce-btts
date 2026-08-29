@@ -8,7 +8,8 @@ create or replace function public.insert_one_off_gameweek(
   p_locks_at timestamptz,
   p_selection_rule_mode text,
   p_selection_weekday smallint,
-  p_selection_times text[]
+  p_selection_time_from text,
+  p_selection_time_to text
 )
 returns public.gameweeks
 language plpgsql
@@ -19,6 +20,8 @@ declare
   anchor public.gameweeks;
   inserted public.gameweeks;
   shift_by integer;
+  from_time time;
+  to_time time;
 begin
   select * into anchor
   from public.gameweeks
@@ -41,15 +44,15 @@ begin
     raise exception 'Invalid fixture weekday';
   end if;
 
-  if p_selection_times is null or cardinality(p_selection_times) < 1 then
-    raise exception 'At least one kick-off time is required';
+  if p_selection_time_from !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+     or p_selection_time_to !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then
+    raise exception 'Invalid kick-off time window';
   end if;
 
-  if exists (
-    select 1 from unnest(p_selection_times) as t(value)
-    where value !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
-  ) then
-    raise exception 'Invalid kick-off time';
+  from_time := p_selection_time_from::time;
+  to_time := p_selection_time_to::time;
+  if from_time > to_time then
+    raise exception 'Kick-off From time must not be later than To time';
   end if;
 
   select coalesce(max(number), 0) + 1000 into shift_by
@@ -77,6 +80,8 @@ begin
     selection_weekday,
     selection_time,
     selection_times,
+    selection_time_from,
+    selection_time_to,
     one_off_rule
   ) values (
     anchor.season_id,
@@ -86,8 +91,10 @@ begin
     p_locks_at,
     p_selection_rule_mode,
     p_selection_weekday,
-    p_selection_times[1]::time,
-    p_selection_times,
+    from_time,
+    array[p_selection_time_from],
+    from_time,
+    to_time,
     true
   )
   returning * into inserted;
@@ -96,7 +103,7 @@ begin
 end;
 $$;
 
-revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text[]) from public;
-revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text[]) from anon;
-revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text[]) from authenticated;
-grant execute on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text[]) to service_role;
+revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text,text) from public;
+revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text,text) from anon;
+revoke all on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text,text) from authenticated;
+grant execute on function public.insert_one_off_gameweek(uuid,timestamptz,timestamptz,text,smallint,text,text) to service_role;
