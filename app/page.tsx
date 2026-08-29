@@ -7,6 +7,7 @@ import PositionRacePortal from "./PositionRacePortal";
 import GameweekArchivePortal from "./GameweekArchivePortal";
 import SweepTracker from "./SweepTracker";
 import StatsCentreEnhancer from "./StatsCentreEnhancer";
+import OneOffGameweekPortal from "./OneOffGameweekPortal";
 import { loadPublicTableData } from "@/lib/public-table";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
@@ -141,6 +142,7 @@ export default async function HomePage() {
         seasonLabel={seasonLabel}
         entryFee={Number(settings?.entry_fee ?? 20)}
       />
+      {profile.role === "ultimate_admin" && <OneOffGameweekPortal gameweeks={seasonGameweeks.map(({ id, number }) => ({ id, number }))} />}
       <PositionRacePortal
         profiles={profileRows}
         gameweeks={seasonGameweeks}
