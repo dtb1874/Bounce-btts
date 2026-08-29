@@ -26,7 +26,7 @@ export default async function AdminControlsPage() {
   const { data: gameweeks } = season?.id
     ? await supabase
         .from("gameweeks")
-        .select("id,number,status,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time")
+        .select("id,number,status,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time,selection_times,selection_time_from,selection_time_to,one_off_rule")
         .eq("season_id", season.id)
         .order("number")
     : { data: [] };
