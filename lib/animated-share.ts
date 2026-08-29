@@ -31,25 +31,34 @@ function extensionFor(type: string) {
   return type.includes("mp4") ? "mp4" : "webm";
 }
 
-async function shareOrSave(blob: Blob, filename: string, title: string) {
-  const file = new File([blob], filename, { type: blob.type || "video/webm" });
-  try {
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title });
-      return;
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return;
-  }
-  const url = URL.createObjectURL(blob);
+function shareMimeType(type: string) {
+  return type.includes("mp4") ? "video/mp4" : "video/webm";
+}
+
+function downloadFile(file: File) {
+  const url = URL.createObjectURL(file);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = file.name;
   a.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export async function exportAnimatedShare(options: AnimatedShareOptions) {
+export async function sharePreparedAnimatedFile(file: File, title: string) {
+  try {
+    const canShareFiles = !navigator.canShare || navigator.canShare({ files: [file] });
+    if (navigator.share && canShareFiles) {
+      await navigator.share({ files: [file], title });
+      return true;
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return true;
+  }
+  downloadFile(file);
+  return false;
+}
+
+export async function createAnimatedShareFile(options: AnimatedShareOptions) {
   const {
     width,
     height,
@@ -57,7 +66,6 @@ export async function exportAnimatedShare(options: AnimatedShareOptions) {
     frameDurationMs = 650,
     finalHoldMs = 1200,
     filename,
-    title,
     drawFrame,
   } = options;
   if (frameCount <= 0) throw new Error("Nothing to animate yet.");
@@ -97,5 +105,11 @@ export async function exportAnimatedShare(options: AnimatedShareOptions) {
   const blob = new Blob(chunks, { type: actualType });
   if (!blob.size) throw new Error("Animated share was empty.");
   const base = filename.replace(/\.(mp4|webm)$/i, "");
-  await shareOrSave(blob, `${base}.${extensionFor(actualType)}`, title);
+  const extension = extensionFor(actualType);
+  return new File([blob], `${base}.${extension}`, { type: shareMimeType(actualType) });
+}
+
+export async function exportAnimatedShare(options: AnimatedShareOptions) {
+  const file = await createAnimatedShareFile(options);
+  await sharePreparedAnimatedFile(file, options.title);
 }
