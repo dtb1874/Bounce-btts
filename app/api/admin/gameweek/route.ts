@@ -15,24 +15,20 @@ function validWeekday(value: unknown) {
   return Number.isInteger(weekday) && weekday >= 1 && weekday <= 7 ? weekday : 6;
 }
 
-function validSelectionTime(value: unknown) {
-  const time = String(value ?? "15:00").slice(0, 5);
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
-  return time;
-}
-
-function validSelectionTimes(value: unknown, fallback: unknown) {
-  const input = Array.isArray(value) ? value : [];
-  const clean = input
-    .map((item) => String(item).slice(0, 5))
-    .filter((item) => /^([01]\d|2[0-3]):[0-5]\d$/.test(item));
-  const fallbackTime = validSelectionTime(fallback);
-  if (!clean.length && fallbackTime) clean.push(fallbackTime);
-  return [...new Set(clean)].sort();
+function validTime(value: unknown, fallback = "15:00") {
+  const time = String(value ?? fallback).slice(0, 5);
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : null;
 }
 
 function defaultOpeningForDeadline(deadlineIso: string) {
   return new Date(new Date(deadlineIso).getTime() - 4 * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function timeWindow(body: any) {
+  const from = validTime(body.selectionTimeFrom ?? body.selectionTime, "15:00");
+  const to = validTime(body.selectionTimeTo ?? body.selectionTimeFrom ?? body.selectionTime, from ?? "15:00");
+  if (!from || !to || from > to) return null;
+  return { from, to };
 }
 
 export async function POST(request: Request) {
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
   const opensAtRaw = body.opensAt == null || String(body.opensAt).trim() === "" ? null : String(body.opensAt);
   const selectionRuleMode = validSelectionMode(body.selectionRuleMode);
   const selectionWeekday = validWeekday(body.selectionWeekday);
-  const selectionTimes = validSelectionTimes(body.selectionTimes, body.selectionTime);
+  const window = timeWindow(body);
   const insertAfterGameweekId = String(body.insertAfterGameweekId ?? "").trim();
 
   if (!locksAt || Number.isNaN(new Date(locksAt).getTime())) {
@@ -54,8 +50,8 @@ export async function POST(request: Request) {
   if (opensAtRaw && Number.isNaN(new Date(opensAtRaw).getTime())) {
     return NextResponse.json({ error: "Choose a valid opening date and time." }, { status: 400 });
   }
-  if (!selectionTimes.length) {
-    return NextResponse.json({ error: "Choose at least one valid eligible kick-off time." }, { status: 400 });
+  if (!window) {
+    return NextResponse.json({ error: "Choose a valid kick-off From and To time. From cannot be later than To." }, { status: 400 });
   }
 
   const normalisedDeadline = new Date(locksAt).toISOString();
@@ -71,7 +67,8 @@ export async function POST(request: Request) {
       p_locks_at: normalisedDeadline,
       p_selection_rule_mode: selectionRuleMode,
       p_selection_weekday: selectionWeekday,
-      p_selection_times: selectionTimes,
+      p_selection_time_from: window.from,
+      p_selection_time_to: window.to,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
@@ -96,7 +93,6 @@ export async function POST(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  const primarySelectionTime = selectionTimes[0] ?? "15:00";
   const { data: gameweek, error } = await admin.from("gameweeks").insert({
     season_id: season.id,
     number: Number(latest?.number ?? 0) + 1,
@@ -105,19 +101,15 @@ export async function POST(request: Request) {
     locks_at: normalisedDeadline,
     selection_rule_mode: selectionRuleMode,
     selection_weekday: selectionWeekday,
-    selection_time: primarySelectionTime,
-    selection_times: selectionTimes,
+    selection_time: window.from,
+    selection_times: [window.from],
+    selection_time_from: window.from,
+    selection_time_to: window.to,
     one_off_rule: false,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  await admin.from("audit_log").insert({
-    actor_id: user.id,
-    action: "gameweek_created",
-    entity_type: "gameweek",
-    entity_id: gameweek.id,
-    details: gameweek,
-  });
+  await admin.from("audit_log").insert({ actor_id: user.id, action: "gameweek_created", entity_type: "gameweek", entity_id: gameweek.id, details: gameweek });
   return NextResponse.json({ gameweek });
 }
 
@@ -132,7 +124,7 @@ export async function PATCH(request: Request) {
   const opensAtRaw = body.opensAt == null || String(body.opensAt).trim() === "" ? null : String(body.opensAt);
   const selectionRuleMode = validSelectionMode(body.selectionRuleMode);
   const selectionWeekday = validWeekday(body.selectionWeekday);
-  const selectionTimes = validSelectionTimes(body.selectionTimes, body.selectionTime);
+  const window = timeWindow(body);
   const oneOffRule = body.oneOffRule === true;
 
   if (!id || !locksAt || Number.isNaN(new Date(locksAt).getTime())) {
@@ -141,8 +133,8 @@ export async function PATCH(request: Request) {
   if (opensAtRaw && Number.isNaN(new Date(opensAtRaw).getTime())) {
     return NextResponse.json({ error: "Choose a valid opening date and time." }, { status: 400 });
   }
-  if (!selectionTimes.length) {
-    return NextResponse.json({ error: "Choose at least one valid eligible kick-off time." }, { status: 400 });
+  if (!window) {
+    return NextResponse.json({ error: "Choose a valid kick-off From and To time. From cannot be later than To." }, { status: 400 });
   }
 
   const normalisedDeadline = new Date(locksAt).toISOString();
@@ -151,15 +143,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "The gameweek must open before its deadline." }, { status: 400 });
   }
 
-  const primarySelectionTime = selectionTimes[0] ?? "15:00";
   const { error } = await admin.from("gameweeks").update({
     status,
     opens_at: normalisedOpening,
     locks_at: normalisedDeadline,
     selection_rule_mode: selectionRuleMode,
     selection_weekday: selectionWeekday,
-    selection_time: primarySelectionTime,
-    selection_times: selectionTimes,
+    selection_time: window.from,
+    selection_times: [window.from],
+    selection_time_from: window.from,
+    selection_time_to: window.to,
     one_off_rule: oneOffRule,
   }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -167,12 +160,9 @@ export async function PATCH(request: Request) {
   if (status !== "open" || new Date(normalisedDeadline) <= new Date()) {
     await applyMissedPickPenalties(admin, id);
   } else {
-    await admin
-      .from("score_adjustments")
-      .delete()
-      .eq("gameweek_id", id)
-      .eq("source", "automatic");
+    await admin.from("score_adjustments").delete().eq("gameweek_id", id).eq("source", "automatic");
   }
+
   await admin.from("audit_log").insert({
     actor_id: user.id,
     action: "gameweek_updated",
@@ -184,7 +174,8 @@ export async function PATCH(request: Request) {
       locksAt: normalisedDeadline,
       selectionRuleMode,
       selectionWeekday,
-      selectionTimes,
+      selectionTimeFrom: window.from,
+      selectionTimeTo: window.to,
       oneOffRule,
     },
   });
