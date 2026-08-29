@@ -49,12 +49,13 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
 
   const anchor = useMemo(() => gameweeks.find((gw) => gw.number === anchorNumber) ?? null, [gameweeks, anchorNumber]);
   if (!target || !anchor) return null;
+  const activeAnchor = anchor;
 
   async function insertOneOff() {
     if (!opensAt || !locksAt) return setMessage("Choose both the opening time and deadline.");
     if (new Date(opensAt) >= new Date(locksAt)) return setMessage("The one-off must open before its deadline.");
     if (fromTime > toTime) return setMessage("Kick-off From must be earlier than or equal to Kick-off To.");
-    if (!window.confirm(`Insert a new one-off GW${anchor.number + 1} after GW${anchor.number}? Existing future gameweeks will move up one number but keep their dates and fixtures.`)) return;
+    if (!window.confirm(`Insert a new one-off GW${activeAnchor.number + 1} after GW${activeAnchor.number}? Existing future gameweeks will move up one number but keep their dates and fixtures.`)) return;
 
     setBusy(true);
     setMessage("");
@@ -63,7 +64,7 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${await accessToken()}` },
         body: JSON.stringify({
-          insertAfterGameweekId: anchor.id,
+          insertAfterGameweekId: activeAnchor.id,
           opensAt: new Date(opensAt).toISOString(),
           locksAt: new Date(locksAt).toISOString(),
           selectionRuleMode: "exact_time",
@@ -75,7 +76,7 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Could not insert one-off gameweek.");
-      setMessage(`One-off GW${payload.gameweek?.number ?? anchor.number + 1} inserted. Reloading the updated schedule…`);
+      setMessage(`One-off GW${payload.gameweek?.number ?? activeAnchor.number + 1} inserted. Reloading the updated schedule…`);
       window.setTimeout(() => window.location.reload(), 700);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not insert one-off gameweek.");
@@ -87,7 +88,7 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
     <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid rgba(112,66,77,.55)" }}>
       <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: "#d9b85f", marginBottom: 8 }}>ONE-OFF / MIDWEEK GAMEWEEK</div>
       <p style={{ margin: "0 0 14px", color: "#cbbfc4", lineHeight: 1.45 }}>
-        Insert an extra gameweek after GW {anchor.number}. The existing next Saturday round and every later round keep their dates, fixtures and data; only their GW numbers move up by one.
+        Insert an extra gameweek after GW {activeAnchor.number}. The existing next Saturday round and every later round keep their dates, fixtures and data; only their GW numbers move up by one.
       </p>
       <div style={{ display: "grid", gap: 12 }}>
         <label style={{ display: "grid", gap: 6 }}><strong>Opens</strong><input type="datetime-local" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} /></label>
@@ -100,7 +101,7 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
         <small style={{ color: "#bcaeb4", lineHeight: 1.4 }}>The range is inclusive. For one exact kick-off, set From and To to the same time.</small>
         {message && <div style={{ border: "1px solid rgba(217,184,95,.5)", borderRadius: 9, padding: 10, color: "#f4e5d6", background: "rgba(217,184,95,.08)" }}>{message}</div>}
         <button type="button" disabled={busy} onClick={insertOneOff} style={{ border: 0, borderRadius: 10, padding: "13px 15px", background: "#9b254b", color: "#fff4e8", fontWeight: 900, fontSize: 16 }}>
-          {busy ? "Inserting…" : `Insert one-off gameweek after GW ${anchor.number}`}
+          {busy ? "Inserting…" : `Insert one-off gameweek after GW ${activeAnchor.number}`}
         </button>
       </div>
     </div>,
