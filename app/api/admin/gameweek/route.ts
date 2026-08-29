@@ -32,8 +32,6 @@ function validSelectionTimes(value: unknown, fallback: unknown) {
 }
 
 function defaultOpeningForDeadline(deadlineIso: string) {
-  // Backwards-compatible safe default for callers that do not yet supply
-  // an explicit opening time: four days before the deadline, never "now".
   return new Date(new Date(deadlineIso).getTime() - 4 * 24 * 60 * 60 * 1000).toISOString();
 }
 
@@ -45,10 +43,10 @@ export async function POST(request: Request) {
 
   const locksAt = String(body.locksAt ?? "");
   const opensAtRaw = body.opensAt == null || String(body.opensAt).trim() === "" ? null : String(body.opensAt);
-  const requestedOneOffRule = body.oneOffRule === true;
-  let selectionRuleMode = validSelectionMode(body.selectionRuleMode);
-  let selectionWeekday = validWeekday(body.selectionWeekday);
-  let selectionTimes = validSelectionTimes(body.selectionTimes, body.selectionTime);
+  const selectionRuleMode = validSelectionMode(body.selectionRuleMode);
+  const selectionWeekday = validWeekday(body.selectionWeekday);
+  const selectionTimes = validSelectionTimes(body.selectionTimes, body.selectionTime);
+  const insertAfterGameweekId = String(body.insertAfterGameweekId ?? "").trim();
 
   if (!locksAt || Number.isNaN(new Date(locksAt).getTime())) {
     return NextResponse.json({ error: "Choose a valid gameweek deadline." }, { status: 400 });
@@ -66,24 +64,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "The gameweek must open before its deadline." }, { status: 400 });
   }
 
+  if (insertAfterGameweekId) {
+    const { data: gameweek, error } = await admin.rpc("insert_one_off_gameweek", {
+      p_after_gameweek_id: insertAfterGameweekId,
+      p_opens_at: normalisedOpening,
+      p_locks_at: normalisedDeadline,
+      p_selection_rule_mode: selectionRuleMode,
+      p_selection_weekday: selectionWeekday,
+      p_selection_times: selectionTimes,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    await admin.from("audit_log").insert({
+      actor_id: user.id,
+      action: "one_off_gameweek_inserted",
+      entity_type: "gameweek",
+      entity_id: gameweek?.id ?? null,
+      details: { gameweek, insertAfterGameweekId },
+    });
+    return NextResponse.json({ gameweek });
+  }
+
   const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).single();
   if (!season?.id) return NextResponse.json({ error: "No current season is configured." }, { status: 400 });
 
   const { data: latest } = await admin
     .from("gameweeks")
-    .select("number,one_off_rule")
+    .select("number")
     .eq("season_id", season.id)
     .order("number", { ascending: false })
     .limit(1)
     .maybeSingle();
-
-  // A marked one-off can never become the next game's inherited fixture rule.
-  // Unless the new GW is explicitly itself marked one-off, reset to standard.
-  if (latest?.one_off_rule === true && !requestedOneOffRule) {
-    selectionRuleMode = "exact_time";
-    selectionWeekday = 6;
-    selectionTimes = ["15:00"];
-  }
 
   const primarySelectionTime = selectionTimes[0] ?? "15:00";
   const { data: gameweek, error } = await admin.from("gameweeks").insert({
@@ -96,7 +107,7 @@ export async function POST(request: Request) {
     selection_weekday: selectionWeekday,
     selection_time: primarySelectionTime,
     selection_times: selectionTimes,
-    one_off_rule: requestedOneOffRule,
+    one_off_rule: false,
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -156,8 +167,6 @@ export async function PATCH(request: Request) {
   if (status !== "open" || new Date(normalisedDeadline) <= new Date()) {
     await applyMissedPickPenalties(admin, id);
   } else {
-    // Extending/reopening the deadline removes only automatic penalties.
-    // Explicit admin adjustments remain untouched.
     await admin
       .from("score_adjustments")
       .delete()
