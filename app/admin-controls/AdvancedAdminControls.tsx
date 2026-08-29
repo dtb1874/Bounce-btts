@@ -30,6 +30,8 @@ type Gameweek = {
   selection_rule_mode: "exact_time" | "any_kickoff";
   selection_weekday: number;
   selection_time: string;
+  selection_times: string[] | null;
+  one_off_rule: boolean;
 };
 
 function londonInput(iso: string | null) {
@@ -41,6 +43,16 @@ function londonInput(iso: string | null) {
   }).formatToParts(new Date(iso));
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+function kickoffList(gameweek: Gameweek) {
+  const values = gameweek.selection_times?.length ? gameweek.selection_times : [gameweek.selection_time || "15:00"];
+  return values.map((value) => String(value).slice(0, 5)).join(", ");
+}
+
+function parseKickoffTimes(value: string) {
+  const matches = value.match(/(?:[01]\d|2[0-3]):[0-5]\d/g) ?? [];
+  return [...new Set(matches)].sort();
 }
 
 async function accessToken() {
@@ -76,14 +88,23 @@ export default function AdvancedAdminControls({
     const deadlineInput = document.getElementById("gw-deadline") as HTMLInputElement | null;
     const weekdayInput = document.getElementById("gw-weekday") as HTMLSelectElement | null;
     const modeInput = document.getElementById("gw-mode") as HTMLSelectElement | null;
-    const timeInput = document.getElementById("gw-time") as HTMLInputElement | null;
+    const timesInput = document.getElementById("gw-times") as HTMLInputElement | null;
+    const oneOffInput = document.getElementById("gw-one-off") as HTMLInputElement | null;
 
     const opensAt = openingInput?.value ? new Date(openingInput.value).toISOString() : null;
     const locksAt = deadlineInput?.value ? new Date(deadlineInput.value).toISOString() : "";
     const selectionWeekday = Number(weekdayInput?.value ?? 6);
     const selectionRuleMode = modeInput?.value ?? "exact_time";
-    const selectionTime = timeInput?.value || "15:00";
+    const selectionTimes = parseKickoffTimes(timesInput?.value ?? "");
+    const oneOffRule = oneOffInput?.checked === true;
 
+    if (selectionRuleMode === "exact_time" && !selectionTimes.length) {
+      setMessage("Enter at least one kick-off time, for example 19:45, 20:00.");
+      setBusy(false);
+      return;
+    }
+
+    const effectiveTimes = selectionTimes.length ? selectionTimes : ["15:00"];
     const response = await fetch("/api/admin/gameweek", {
       method: "PATCH",
       headers: { "content-type": "application/json", authorization: `Bearer ${await accessToken()}` },
@@ -94,7 +115,9 @@ export default function AdvancedAdminControls({
         locksAt,
         selectionWeekday,
         selectionRuleMode,
-        selectionTime,
+        selectionTime: effectiveTimes[0],
+        selectionTimes: effectiveTimes,
+        oneOffRule,
       }),
     });
     const payload = await response.json();
@@ -105,9 +128,13 @@ export default function AdvancedAdminControls({
         locks_at: locksAt,
         selection_weekday: selectionWeekday,
         selection_rule_mode: selectionRuleMode as Gameweek["selection_rule_mode"],
-        selection_time: selectionTime,
+        selection_time: effectiveTimes[0],
+        selection_times: effectiveTimes,
+        one_off_rule: oneOffRule,
       } : row));
-      setMessage(`GW${gameweek.number} settings saved.`);
+      setMessage(oneOffRule
+        ? `GW${gameweek.number} one-off rules saved. The next new gameweek will revert to Saturday 15:00.`
+        : `GW${gameweek.number} settings saved.`);
     } else {
       setMessage(payload.error ?? "Could not save gameweek settings.");
     }
@@ -158,17 +185,26 @@ export default function AdvancedAdminControls({
           <label style={{ display: "grid", gap: 6, marginBottom: 14 }}>
             <strong>Gameweek</strong>
             <select value={gameweekId} onChange={(e) => setGameweekId(e.target.value)} style={inputStyle}>
-              {gameweeks.map((row) => <option key={row.id} value={row.id}>GW {row.number}</option>)}
+              {gameweeks.map((row) => <option key={row.id} value={row.id}>GW {row.number}{row.one_off_rule ? " · ONE-OFF" : ""}</option>)}
             </select>
           </label>
 
           {gameweek && <div key={gameweek.id} style={{ display: "grid", gap: 14 }}>
             <label style={labelStyle}><strong>Status</strong><select value={gameweek.status} onChange={(e) => setGameweeks((rows) => rows.map((row) => row.id === gameweek.id ? { ...row, status: e.target.value as Gameweek["status"] } : row))} style={inputStyle}><option value="open">Open</option><option value="locked">Locked</option><option value="complete">Complete</option></select></label>
-            <label style={labelStyle}><strong>Opens</strong><input id="gw-opening" type="datetime-local" defaultValue={londonInput(gameweek.opens_at)} style={inputStyle}/><small style={helpStyle}>Set this earlier whenever you want members to start selecting before the normal Monday opening.</small></label>
+            <label style={labelStyle}><strong>Opens</strong><input id="gw-opening" type="datetime-local" defaultValue={londonInput(gameweek.opens_at)} style={inputStyle}/><small style={helpStyle}>Set this earlier whenever you want members to start selecting before the normal opening.</small></label>
             <label style={labelStyle}><strong>Deadline</strong><input id="gw-deadline" type="datetime-local" defaultValue={londonInput(gameweek.locks_at)} style={inputStyle}/></label>
-            <label style={labelStyle}><strong>Eligible fixture day</strong><select id="gw-weekday" defaultValue={String(gameweek.selection_weekday ?? 6)} style={inputStyle}>{weekdays.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small style={helpStyle}>For provider imports in this live version, set the deadline on the day before the fixture day (for example Tuesday deadline for a Wednesday round).</small></label>
-            <label style={labelStyle}><strong>Kick-off rule</strong><select id="gw-mode" defaultValue={gameweek.selection_rule_mode ?? "exact_time"} style={inputStyle}><option value="exact_time">Exact UK kick-off time</option><option value="any_kickoff">Any UK kick-off on the selected day</option></select></label>
-            <label style={labelStyle}><strong>Eligible kick-off time</strong><input id="gw-time" type="time" defaultValue={(gameweek.selection_time || "15:00").slice(0,5)} style={inputStyle}/><small style={helpStyle}>Normal rule is 15:00. For a midweek round you can use values such as 19:45 or 20:00. This field is ignored when Any UK kick-off is selected.</small></label>
+            <label style={labelStyle}><strong>Eligible fixture day</strong><select id="gw-weekday" defaultValue={String(gameweek.selection_weekday ?? 6)} style={inputStyle}>{weekdays.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small style={helpStyle}>Use the actual day of the fixtures, e.g. Wednesday for a midweek round.</small></label>
+            <label style={labelStyle}><strong>Kick-off rule</strong><select id="gw-mode" defaultValue={gameweek.selection_rule_mode ?? "exact_time"} style={inputStyle}><option value="exact_time">Only selected UK kick-off times</option><option value="any_kickoff">Any UK kick-off on the selected day</option></select></label>
+            <label style={labelStyle}><strong>Eligible kick-off times</strong><input id="gw-times" type="text" inputMode="numeric" defaultValue={kickoffList(gameweek)} placeholder="19:45, 20:00" style={inputStyle}/><small style={helpStyle}>Enter one or more exact times separated by commas, for example <strong>19:45, 20:00</strong>. Only those kick-offs will be selectable. Ignored when “Any UK kick-off” is selected.</small></label>
+
+            <label htmlFor="gw-one-off" style={{ ...labelStyle, border: `1px solid ${gameweek.one_off_rule ? gold : "rgba(217,184,95,.35)"}`, borderRadius: 12, padding: 13, background: gameweek.one_off_rule ? "rgba(217,184,95,.12)" : "rgba(255,255,255,.025)" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input id="gw-one-off" type="checkbox" defaultChecked={gameweek.one_off_rule} style={{ width: 22, height: 22, accentColor: gold }} />
+                <strong>One-off gameweek override</strong>
+              </span>
+              <small style={helpStyle}>Switch this on for temporary midweek/special rules. The next newly-created gameweek is then forced back to the standard Saturday 15:00 fixture rule unless you deliberately mark that next gameweek as another one-off.</small>
+            </label>
+
             <button disabled={busy} onClick={saveGameweek} style={primaryStyle}>{busy ? "Saving…" : `Save GW${gameweek.number} controls`}</button>
           </div>}
         </section>
