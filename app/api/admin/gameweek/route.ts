@@ -86,6 +86,27 @@ export async function POST(request: Request) {
   return NextResponse.json({ gameweek });
 }
 
+export async function DELETE(request: Request) {
+  const context = await requireAdmin(request);
+  if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const { admin, user } = context;
+  const body = await request.json();
+  const id = String(body.id ?? "").trim();
+  if (!id) return NextResponse.json({ error: "Choose a gameweek to remove." }, { status: 400 });
+
+  const { data: result, error } = await admin.rpc("remove_future_gameweek", { p_gameweek_id: id });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  await admin.from("audit_log").insert({
+    actor_id: user.id,
+    action: "future_gameweek_removed",
+    entity_type: "gameweek",
+    entity_id: id,
+    details: result,
+  });
+  return NextResponse.json({ result });
+}
+
 export async function PATCH(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
