@@ -1,0 +1,385 @@
+/* Release 4 — League History prestige treatment.
+   Presentation-only: no scoring, archive or season data behaviour changes. */
+
+[class*="historyPage"] {
+  position: relative;
+  isolation: isolate;
+}
+
+[class*="historyPage"]::before {
+  content: "";
+  position: absolute;
+  inset: -22px -18px auto;
+  height: 330px;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(9, 8, 12, .18), rgba(9, 8, 12, .94)),
+    url("/assets/edinburgh-skyline.jpg") center 44% / cover no-repeat;
+  opacity: .3;
+  filter: saturate(.7) contrast(1.08);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.86) 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.86) 58%, transparent 100%);
+}
+
+[class*="historyPage"]::after {
+  content: "";
+  position: absolute;
+  top: 24px;
+  right: 4%;
+  width: 190px;
+  height: 190px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  background: url("/assets/st-giles-round.jpg") center / cover no-repeat;
+  opacity: .055;
+  box-shadow: 0 0 0 1px rgba(240,207,170,.16), 0 0 70px rgba(116,32,52,.28);
+}
+
+[class*="historyHero"] {
+  position: relative;
+  min-height: 186px;
+  height: auto !important;
+  padding: 28px 32px !important;
+  background:
+    radial-gradient(circle at 83% 35%, rgba(238,196,139,.22), transparent 12rem),
+    linear-gradient(100deg, rgba(14,10,13,.96) 0%, rgba(47,17,28,.94) 48%, rgba(101,27,50,.92) 100%),
+    url("/assets/edinburgh-skyline.jpg") center 48% / cover no-repeat !important;
+  border: 1px solid rgba(224,182,132,.42) !important;
+  box-shadow: 0 22px 55px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,236,207,.08) !important;
+}
+
+[class*="historyHero"]::before {
+  content: "EST 2024";
+  position: absolute;
+  right: 138px;
+  bottom: 22px;
+  color: rgba(240,207,170,.15);
+  font: 800 11px Georgia, serif;
+  letter-spacing: .25em;
+}
+
+[class*="historyHero"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #c9a06b 18%, #f0cfaa 50%, #c9a06b 82%, transparent);
+  opacity: .62;
+}
+
+[class*="historyHero"] h3 {
+  margin: 6px 0 7px !important;
+  font-size: clamp(34px, 4vw, 50px) !important;
+  letter-spacing: .025em;
+  text-shadow: 0 6px 24px rgba(0,0,0,.55);
+}
+
+[class*="historyHero"] p {
+  max-width: 590px;
+  color: #d0bbaa !important;
+  font-size: 13px;
+}
+
+.historyHonoursTrophyButton {
+  position: relative;
+  flex: 0 0 auto;
+  width: 150px;
+  height: 145px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.historyHonoursTrophyButton::before {
+  content: "";
+  position: absolute;
+  inset: 14px 10px 8px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,207,170,.25), rgba(116,32,52,.14) 45%, transparent 70%);
+  filter: blur(3px);
+}
+
+.historyHonoursTrophyButton img {
+  width: 138px !important;
+  height: 138px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 15px 22px rgba(0,0,0,.52)) drop-shadow(0 0 16px rgba(229,185,128,.2)) !important;
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.historyHonoursTrophyButton:active img,
+.historyHonoursTrophyButton[aria-expanded="true"] img {
+  transform: translateY(-3px) scale(1.04);
+  filter: drop-shadow(0 17px 26px rgba(0,0,0,.56)) drop-shadow(0 0 24px rgba(240,207,170,.28)) !important;
+}
+
+[class*="historyStatsBand"] {
+  gap: 10px !important;
+}
+
+[class*="historyStatsBand"] article {
+  position: relative;
+  overflow: hidden;
+  min-height: 92px;
+  padding: 18px 19px !important;
+  border: 1px solid rgba(168,120,91,.32) !important;
+  background:
+    linear-gradient(145deg, rgba(35,18,24,.94), rgba(17,16,21,.98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+[class*="historyStatsBand"] article:first-child {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(240,207,170,.14), transparent 6rem),
+    linear-gradient(145deg, rgba(88,27,45,.86), rgba(27,17,22,.98)) !important;
+  border-color: rgba(212,167,112,.47) !important;
+}
+
+[class*="historyStatsBand"] article:first-child::after {
+  content: "♛";
+  position: absolute;
+  right: 14px;
+  top: 9px;
+  color: rgba(240,207,170,.12);
+  font: 700 42px Georgia, serif;
+}
+
+[class*="historyStatsBand"] strong,
+[class*="historySpotlightCard"] strong {
+  text-shadow: 0 4px 15px rgba(0,0,0,.34);
+}
+
+[class*="honourPanel"] {
+  border-color: rgba(169,117,87,.34) !important;
+  background:
+    radial-gradient(circle at 90% 14%, rgba(116,32,52,.21), transparent 15rem),
+    linear-gradient(145deg, rgba(29,16,22,.99), rgba(13,14,18,.99)) !important;
+}
+
+[class*="honourPanel"]::before {
+  content: "";
+  position: absolute;
+  right: -28px;
+  top: -26px;
+  width: 210px;
+  height: 210px;
+  pointer-events: none;
+  background: url("/assets/st-giles-heart.jpg") center / cover no-repeat;
+  opacity: .035;
+  transform: rotate(7deg);
+  border-radius: 24px;
+}
+
+[class*="honourGrid"] {
+  gap: 14px !important;
+}
+
+[class*="honourCard"] {
+  min-height: 116px;
+  padding: 18px !important;
+  border-color: rgba(134,83,72,.46) !important;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(240,207,170,.08), transparent 6rem),
+    linear-gradient(145deg, #18151b, #27151e) !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+[class*="honourCardLeader"] {
+  border-color: rgba(232,190,133,.58) !important;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(240,207,170,.18), transparent 7rem),
+    linear-gradient(145deg, #592039, #2c171f 72%) !important;
+  box-shadow: 0 16px 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,239,216,.08) !important;
+}
+
+[class*="honourCardLeader"]::before {
+  content: "REIGNING";
+  position: absolute;
+  right: 13px;
+  top: 12px;
+  color: #f0cfaa;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  opacity: .72;
+}
+
+[class*="archiveControls"] {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  padding: 7px;
+  border-radius: 13px;
+  border: 1px solid rgba(112,66,77,.34);
+  background: rgba(11,10,14,.88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+}
+
+[class*="archiveButton"],
+[class*="archiveButtonActive"] {
+  min-height: 39px;
+}
+
+[class*="archiveButtonActive"] {
+  color: #fff4e6 !important;
+  border-color: rgba(228,181,123,.58) !important;
+  background: linear-gradient(180deg, #8a2b49, #671c34) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 8px 18px rgba(73,17,34,.22);
+}
+
+[class*="historySpotlight"] {
+  gap: 10px !important;
+}
+
+[class*="historySpotlightCard"] {
+  position: relative;
+  overflow: hidden;
+  min-height: 110px;
+  border-color: rgba(141,91,79,.38) !important;
+  background:
+    linear-gradient(155deg, rgba(37,20,27,.97), rgba(15,15,20,.99)) !important;
+}
+
+[class*="historySpotlightCard"]:first-child {
+  background:
+    radial-gradient(circle at 90% 18%, rgba(240,207,170,.12), transparent 7rem),
+    linear-gradient(155deg, rgba(88,29,48,.9), rgba(21,16,21,.99)) !important;
+}
+
+[class*="historySpotlightCard"]:first-child::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: -20px;
+  width: 76px;
+  height: 90px;
+  background: url("/assets/bounce-cup.png") center / contain no-repeat;
+  opacity: .085;
+}
+
+[class*="historyTableShell"] {
+  position: relative;
+  border: 1px solid rgba(151,101,81,.36) !important;
+  background: linear-gradient(145deg, rgba(18,16,21,.99), rgba(10,11,14,.99)) !important;
+  box-shadow: 0 20px 45px rgba(0,0,0,.27) !important;
+}
+
+[class*="historyTableShell"] [class*="header"] {
+  background: linear-gradient(90deg, #5b182c, #832744 48%, #5b182c) !important;
+  box-shadow: inset 0 -1px 0 rgba(240,207,170,.22);
+}
+
+[class*="historyTableShell"] [class*="leader"] {
+  background:
+    linear-gradient(90deg, rgba(141,50,75,.34), rgba(240,207,170,.05), rgba(141,50,75,.16)) !important;
+  box-shadow: inset 3px 0 0 rgba(240,207,170,.75);
+}
+
+[class*="historyTableShell"] [class*="tableRowTopThree"]:not([class*="leader"]) {
+  background: linear-gradient(90deg, rgba(103,61,54,.18), transparent) !important;
+}
+
+.historicGwArchive {
+  border: 1px solid rgba(146,94,78,.32) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 95% 0, rgba(116,32,52,.13), transparent 12rem),
+    rgba(13,13,18,.86) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.2);
+}
+
+.historicGwArchiveToggle,
+.historicGwArchiveHeadingButton {
+  background: linear-gradient(90deg, rgba(70,24,38,.72), rgba(22,16,21,.9)) !important;
+}
+
+.historicGwArchiveOpen .historicGwArchiveToggle {
+  box-shadow: inset 0 -1px 0 rgba(240,207,170,.14);
+}
+
+@media (max-width: 650px) {
+  [class*="historyPage"]::before {
+    inset: -12px -8px auto;
+    height: 240px;
+    opacity: .24;
+  }
+
+  [class*="historyPage"]::after {
+    width: 120px;
+    height: 120px;
+    right: -6px;
+    top: 48px;
+  }
+
+  [class*="historyHero"] {
+    min-height: 132px;
+    padding: 18px 16px !important;
+    align-items: center !important;
+  }
+
+  [class*="historyHero"]::before {
+    display: none;
+  }
+
+  [class*="historyHero"] h3 {
+    font-size: 29px !important;
+  }
+
+  [class*="historyHero"] p {
+    max-width: 210px;
+    font-size: 10px !important;
+    line-height: 1.35;
+  }
+
+  .historyHonoursTrophyButton {
+    width: 88px;
+    height: 94px;
+    margin-right: -4px;
+  }
+
+  .historyHonoursTrophyButton img {
+    width: 84px !important;
+    height: 84px !important;
+  }
+
+  [class*="historyStatsBand"] article {
+    min-height: 76px;
+    padding: 13px 14px !important;
+  }
+
+  [class*="historyStatsBand"] strong {
+    font-size: 21px !important;
+  }
+
+  [class*="archiveControls"] {
+    top: 5px;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  [class*="archiveControls"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  [class*="archiveControls"] button {
+    flex: 0 0 auto;
+  }
+
+  [class*="historySpotlightCard"] {
+    min-height: 86px;
+  }
+
+  [class*="honourCard"] {
+    min-height: 96px;
+  }
+}
