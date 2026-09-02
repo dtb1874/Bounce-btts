@@ -8,6 +8,7 @@ import GameweekArchivePortal from "./GameweekArchivePortal";
 import SweepTracker from "./SweepTracker";
 import StatsCentreEnhancer from "./StatsCentreEnhancer";
 import OneOffGameweekPortal from "./OneOffGameweekPortal";
+import ValueLeaderPortal from "./ValueLeaderPortal";
 import { loadPublicTableData } from "@/lib/public-table";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
 
@@ -164,6 +165,7 @@ export default async function HomePage() {
         fixtures={fixtures}
       />
       <StatsCentreEnhancer />
+      <ValueLeaderPortal profiles={profileRows} predictions={predictions} fixtures={fixtures} />
     </>
   );
 }
