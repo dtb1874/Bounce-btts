@@ -13,14 +13,27 @@
     gap: 8px !important;
   }
 
-  main[class*="shell"] > aside nav::before {
-    content: "QUICK ACCESS";
+  main[class*="shell"] > aside nav::before,
+  main[class*="shell"] > aside nav::after {
     grid-column: 1 / -1;
     color: #c7af95;
     font-size: 9px;
     font-weight: 900;
     letter-spacing: .12em;
     padding: 2px 4px 0;
+  }
+
+  main[class*="shell"] > aside nav::before {
+    content: "QUICK ACCESS";
+    order: 0;
+  }
+
+  main[class*="shell"] > aside nav::after {
+    content: "MORE";
+    order: 5;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(199, 175, 149, .15);
   }
 
   main[class*="shell"] > aside nav button {
@@ -51,18 +64,8 @@
     background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
   }
 
-  main[class*="shell"] > aside nav button:nth-child(4)::after {
-    content: "Stat Centre";
-    display: block;
-    margin-top: 3px;
-    color: #b99f8a;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .05em;
-  }
-
+  main[class*="shell"] > aside nav button:nth-child(4)::after,
   main[class*="shell"] > aside nav button:nth-child(5)::after {
-    content: "All picks";
     display: block;
     margin-top: 3px;
     color: #b99f8a;
@@ -71,11 +74,8 @@
     letter-spacing: .05em;
   }
 
-  main[class*="shell"] > aside nav button:nth-child(3)::before {
-    content: "MORE";
-    display: block;
-    grid-column: 1 / -1;
-  }
+  main[class*="shell"] > aside nav button:nth-child(4)::after { content: "Stat Centre"; }
+  main[class*="shell"] > aside nav button:nth-child(5)::after { content: "All picks"; }
 
   main[class*="shell"] > aside [class*="sidebarEgg"] {
     min-height: 34px !important;
