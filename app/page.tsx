@@ -23,6 +23,8 @@ type ProfileRow = {
   approved?: boolean;
   active: boolean;
   slot_number: number | null;
+  avatar_portrait_path?: string | null;
+  avatar_portrait_url?: string | null;
 };
 
 type PredictionRow = {
@@ -60,7 +62,7 @@ export default async function HomePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id,username,display_name,role,approved,active,slot_number")
+    .select("id,username,display_name,role,approved,active,slot_number,avatar_portrait_path")
     .eq("id", user.id)
     .maybeSingle();
   if (!profile?.approved) redirect("/login");
@@ -70,12 +72,18 @@ export default async function HomePage() {
   const [settingsResponse, seasonsResponse, profilesResponse] = await Promise.all([
     supabase.from("league_settings").select("*").eq("id", true).maybeSingle(),
     supabase.from("seasons").select("id,label,is_current,starts_at,ends_at").order("starts_at", { ascending: false }),
-    supabase.from("profiles").select("id,username,display_name,role,active,slot_number").eq("approved", true).order("slot_number"),
+    supabase.from("profiles").select("id,username,display_name,role,active,slot_number,avatar_portrait_path").eq("approved", true).order("slot_number"),
   ]);
 
   const settings = settingsResponse.data;
   const seasons = seasonsResponse.data;
-  const profiles = profilesResponse.data;
+  const profileImages = admin.storage.from("profile-images");
+  const withPortraitUrl = <T extends { avatar_portrait_path?: string | null }>(row: T) => ({
+    ...row,
+    avatar_portrait_url: row.avatar_portrait_path ? profileImages.getPublicUrl(row.avatar_portrait_path).data.publicUrl : null,
+  });
+  const profiles = (profilesResponse.data ?? []).map(withPortraitUrl);
+  const profileWithPortrait = withPortraitUrl(profile);
 
   const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
   const gameweeksResponse = currentSeason?.id
@@ -128,13 +136,13 @@ export default async function HomePage() {
 
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
   const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));
-  const profileRows = (profiles ?? []) as ProfileRow[];
+  const profileRows = profiles as ProfileRow[];
   const seasonLabel = currentSeason?.label ?? settings?.current_season_label ?? "2026/27";
 
   return (
     <>
       <LeagueApp
-        initialProfile={profile}
+        initialProfile={profileWithPortrait}
         initialProfiles={profileRows}
         initialGameweek={gameweek ?? null}
         initialGameweeks={seasonGameweeks}
