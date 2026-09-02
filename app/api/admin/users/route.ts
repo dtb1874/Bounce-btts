@@ -7,8 +7,7 @@ export const runtime = "nodejs";
 
 function normaliseMobileNumber(value: unknown) {
   const cleaned = String(value ?? "").trim().replace(/[\s()-]/g, "");
-  if (!cleaned) return null;
-  return cleaned;
+  return cleaned || null;
 }
 
 function validInternationalMobile(value: string | null) {
@@ -53,22 +52,19 @@ export async function PATCH(request: Request) {
   const username = normaliseUsername(String(body.username ?? ""));
   const displayName = String(body.displayName ?? "").trim();
   const password = String(body.password ?? "");
-  const mobileNumber = normaliseMobileNumber(body.mobileNumber);
+  const hasMobileNumber = Object.prototype.hasOwnProperty.call(body, "mobileNumber");
+  const mobileNumber = hasMobileNumber ? normaliseMobileNumber(body.mobileNumber) : null;
   const requestedRole = String(body.role ?? "member");
   const role: "ultimate_admin" | "admin" | "member" | "guest" =
-    requestedRole === "ultimate_admin" || requestedRole === "admin" || requestedRole === "guest"
-      ? requestedRole
-      : "member";
+    requestedRole === "ultimate_admin" || requestedRole === "admin" || requestedRole === "guest" ? requestedRole : "member";
   const active = Boolean(body.active);
 
   const { data: existing } = await admin.from("profiles").select("slot_number,username").eq("id", id).single();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (!username || !displayName) return NextResponse.json({ error: "Username and player name are required." }, { status: 400 });
-  if (!validInternationalMobile(mobileNumber)) {
+  if (hasMobileNumber && !validInternationalMobile(mobileNumber)) {
     return NextResponse.json({ error: "Mobile number must use international format, for example +447700900123." }, { status: 400 });
   }
-  // Slot 1 remains permanently protected as Ultimate Admin / active.
-  // Its player/display name and login username are editable by the Ultimate Admin.
   if (existing.slot_number === 1 && (role !== "ultimate_admin" || !active)) {
     return NextResponse.json({ error: "The Ultimate Admin account must remain active and cannot change role." }, { status: 400 });
   }
@@ -79,31 +75,23 @@ export async function PATCH(request: Request) {
   };
   if (username !== existing.username) authChanges.email = usernameToEmail(username);
   if (password) authChanges.password = password;
-
   const { error: authError } = await admin.auth.admin.updateUserById(id, authChanges);
   if (authError) return NextResponse.json({ error: authError.message }, { status: 400 });
 
-  const { error: profileError } = await admin.from("profiles").update({
-    username,
-    display_name: displayName,
-    role,
-    active,
-    approved: true,
-  }).eq("id", id);
+  const { error: profileError } = await admin.from("profiles").update({ username, display_name: displayName, role, active, approved: true }).eq("id", id);
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
 
-  const { error: privateError } = await admin.from("profile_private_details").upsert({
-    profile_id: id,
-    mobile_number: mobileNumber,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "profile_id" });
-  if (privateError) return NextResponse.json({ error: privateError.message }, { status: 400 });
+  if (hasMobileNumber) {
+    const { error: privateError } = await admin.from("profile_private_details").upsert({
+      profile_id: id,
+      mobile_number: mobileNumber,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "profile_id" });
+    if (privateError) return NextResponse.json({ error: privateError.message }, { status: 400 });
+  }
 
   if (password) {
-    await admin.from("member_credentials").upsert({
-      user_id: id,
-      encrypted_password: encryptPassword(password),
-    });
+    await admin.from("member_credentials").upsert({ user_id: id, encrypted_password: encryptPassword(password) });
   }
 
   const { data: currentSeason } = await admin.from("seasons").select("id").eq("is_current", true).single();
@@ -121,9 +109,8 @@ export async function PATCH(request: Request) {
     action: "user_updated",
     entity_type: "profile",
     entity_id: id,
-    details: { username, displayName, role, active, passwordReset: Boolean(password), mobileUpdated: Object.prototype.hasOwnProperty.call(body, "mobileNumber") },
+    details: { username, displayName, role, active, passwordReset: Boolean(password), mobileUpdated: hasMobileNumber },
   });
-
   return NextResponse.json({ ok: true });
 }
 
