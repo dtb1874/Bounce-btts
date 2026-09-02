@@ -5,6 +5,19 @@ export const runtime = "nodejs";
 
 const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+export async function GET(request: Request) {
+  const context = await requireAdmin(request);
+  if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
+  const profileId = new URL(request.url).searchParams.get("profileId") ?? "";
+  if (!profileId) return NextResponse.json({ error: "Profile is required." }, { status: 400 });
+  const { data: profile } = await context.admin.from("profiles").select("avatar_original_path,avatar_portrait_path").eq("id", profileId).maybeSingle();
+  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const bucket = context.admin.storage.from("profile-images");
+  const portraitUrl = profile.avatar_portrait_path ? bucket.getPublicUrl(profile.avatar_portrait_path).data.publicUrl : null;
+  return NextResponse.json({ originalPath: profile.avatar_original_path ?? null, portraitPath: profile.avatar_portrait_path ?? null, portraitUrl });
+}
+
 export async function POST(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
