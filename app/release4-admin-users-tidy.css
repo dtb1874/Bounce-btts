@@ -1,0 +1,194 @@
+/* Release 4 — Admin > Users final mobile tidy-up.
+   Presentation only. Intentionally scoped to the Admin Users view so existing admin behaviour is untouched.
+   This layer is temporary technical debt to be removed during the scheduled UI Foundation migration. */
+
+@media (max-width: 700px) {
+  [class*="adminPage"] [class*="adminTabs"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100%;
+    margin-bottom: 14px !important;
+  }
+
+  [class*="adminPage"] [class*="adminTabs"] button {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 8px 6px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.08;
+    font-size: 11px;
+    border-radius: 11px;
+    box-sizing: border-box;
+  }
+
+  [class*="adminPage"] [class*="adminUsers"] {
+    gap: 18px !important;
+  }
+
+  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 12px !important;
+    row-gap: 10px !important;
+    padding: 52px 14px 14px !important;
+    border-radius: 18px !important;
+    box-sizing: border-box;
+  }
+
+  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"]::before {
+    min-height: 40px !important;
+    padding: 8px 14px !important;
+    align-items: center;
+    font-size: 10px !important;
+    line-height: 1.15;
+    letter-spacing: .11em;
+    box-sizing: border-box;
+  }
+
+  [class*="adminPage"] [class*="adminUserField"] {
+    display: grid !important;
+    grid-template-rows: 14px 48px;
+    gap: 5px !important;
+    min-width: 0;
+    align-content: start;
+  }
+
+  [class*="adminPage"] [class*="adminUserField"] > span {
+    display: flex;
+    align-items: end;
+    min-height: 14px;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    letter-spacing: .09em !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserField"] input,
+  [class*="adminPage"] [class*="adminUserField"] select {
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 12px !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    line-height: 48px;
+    box-sizing: border-box !important;
+  }
+
+  [class*="adminPage"] [class*="adminRCount"] {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+    width: auto !important;
+    min-width: 58px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 0 12px;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+    padding-top: 12px !important;
+    align-items: stretch !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 54px !important;
+    height: 54px !important;
+    margin: 0 !important;
+    padding: 7px 8px !important;
+    border-radius: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] button,
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [role="button"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1.08 !important;
+    font-size: 12px !important;
+    font-weight: 850 !important;
+    white-space: normal !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 7px !important;
+    align-content: center !important;
+    align-items: center !important;
+    justify-items: start !important;
+    text-align: left !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > span {
+    grid-row: 1 / 3 !important;
+    align-self: center !important;
+    margin: 0 !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > strong {
+    align-self: end !important;
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+    white-space: nowrap;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > small {
+    align-self: start !important;
+    margin: 2px 0 0 !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 390px) {
+  [class*="adminPage"] [class*="adminTabs"] {
+    gap: 6px !important;
+  }
+
+  [class*="adminPage"] [class*="adminTabs"] button {
+    min-height: 44px;
+    padding: 7px 4px !important;
+    font-size: 10px;
+  }
+
+  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] {
+    column-gap: 9px !important;
+    padding-left: 11px !important;
+    padding-right: 11px !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserField"] input,
+  [class*="adminPage"] [class*="adminUserField"] select {
+    padding: 0 9px !important;
+    font-size: 13px !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] {
+    gap: 8px !important;
+  }
+
+  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] > * {
+    min-height: 52px !important;
+    height: 52px !important;
+  }
+}
