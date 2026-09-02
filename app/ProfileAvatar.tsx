@@ -11,7 +11,7 @@ function initials(name: string) {
 }
 
 export default function ProfileAvatar({ name, portraitUrl, size = "small", className = "", presentation = "avatar" }: Props) {
-  const px = size === "large" ? 72 : size === "medium" ? 42 : 31;
+  const px = size === "large" ? 76 : size === "medium" ? 50 : 36;
   const isCutout = presentation === "cutout";
   return (
     <span
@@ -22,27 +22,29 @@ export default function ProfileAvatar({ name, portraitUrl, size = "small", class
         width: px,
         height: px,
         minWidth: px,
-        borderRadius: isCutout ? 14 : "50%",
+        borderRadius: isCutout ? 16 : "50%",
         overflow: isCutout ? "visible" : "hidden",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         flex: "0 0 auto",
-        border: isCutout ? "1px solid rgba(240,207,170,.26)" : "1px solid rgba(240,207,170,.58)",
+        border: isCutout ? "1px solid rgba(240,207,170,.34)" : "2px solid rgba(240,207,170,.78)",
+        outline: isCutout ? "none" : "1px solid rgba(116,32,52,.9)",
+        outlineOffset: 2,
         background: isCutout
-          ? "radial-gradient(circle at 50% 72%, rgba(116,32,52,.28), rgba(20,14,18,.2) 58%, transparent 72%)"
-          : "linear-gradient(145deg, rgba(116,32,52,.88), rgba(39,17,26,.96))",
-        color: "#f0cfaa",
-        fontSize: size === "large" ? 19 : size === "medium" ? 13 : 10,
+          ? "radial-gradient(circle at 50% 72%, rgba(116,32,52,.38), rgba(20,14,18,.26) 58%, transparent 72%)"
+          : "linear-gradient(145deg, #8f2a49, #3f1426 72%)",
+        color: "#f5d9b2",
+        fontSize: size === "large" ? 20 : size === "medium" ? 14 : 11,
         fontWeight: 900,
-        letterSpacing: ".04em",
+        letterSpacing: ".045em",
         boxShadow: isCutout
-          ? "inset 0 1px 0 rgba(255,239,216,.07)"
-          : "0 5px 12px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,239,216,.12)",
+          ? "0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,239,216,.09)"
+          : "0 8px 18px rgba(0,0,0,.36), 0 0 0 4px rgba(116,32,52,.18), inset 0 1px 0 rgba(255,239,216,.15)",
       }}
       aria-hidden="true"
     >
-      {portraitUrl ? <img src={portraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: isCutout ? "contain" : "cover", display: "block", borderRadius: isCutout ? 0 : "inherit", filter: isCutout ? "drop-shadow(0 8px 10px rgba(0,0,0,.38))" : "none" }} /> : <span>{initials(name)}</span>}
+      {portraitUrl ? <img src={portraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: isCutout ? "contain" : "cover", display: "block", borderRadius: isCutout ? 0 : "inherit", filter: isCutout ? "drop-shadow(0 10px 12px rgba(0,0,0,.42))" : "saturate(.94) contrast(1.03)" }} /> : <span>{initials(name)}</span>}
     </span>
   );
 }
