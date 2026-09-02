@@ -29,11 +29,24 @@ function findUsersAdminPanel() {
   const section = heading.closest("section");
   if (!section) return null;
   const panels = Array.from(section.querySelectorAll(":scope > div"));
-  return panels[panels.length - 1] ?? section;
+  return (panels[panels.length - 1] ?? section) as HTMLElement;
+}
+
+function ensureContactHost(panel: HTMLElement) {
+  const existing = panel.querySelector<HTMLElement>(":scope > [data-private-contact-host='true']");
+  if (existing) return existing;
+
+  const host = document.createElement("div");
+  host.dataset.privateContactHost = "true";
+
+  const firstUserCard = Array.from(panel.children).find((child) => /^USER\s+\d+\s*·/i.test((child.textContent ?? "").trim()));
+  if (firstUserCard) panel.insertBefore(host, firstUserCard);
+  else panel.appendChild(host);
+  return host;
 }
 
 export default function MemberContactAdminPortal() {
-  const [target, setTarget] = useState<Element | null>(null);
+  const [target, setTarget] = useState<HTMLElement | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [mobile, setMobile] = useState("");
@@ -41,7 +54,14 @@ export default function MemberContactAdminPortal() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const update = () => setTarget(findUsersAdminPanel());
+    const update = () => {
+      const panel = findUsersAdminPanel();
+      if (!panel) {
+        setTarget(null);
+        return;
+      }
+      setTarget(ensureContactHost(panel));
+    };
     update();
     const observer = new MutationObserver(update);
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
@@ -107,7 +127,7 @@ export default function MemberContactAdminPortal() {
   if (!target) return null;
 
   return createPortal(
-    <section style={{ marginTop: 18, padding: 16, border: "1px solid rgba(112,66,77,.42)", borderRadius: 14, background: "linear-gradient(145deg,rgba(24,18,23,.98),rgba(12,13,17,.98))", position: "relative", zIndex: 3 }}>
+    <section style={{ margin: "14px 0 18px", padding: 16, border: "1px solid rgba(112,66,77,.42)", borderRadius: 14, background: "linear-gradient(145deg,rgba(24,18,23,.98),rgba(12,13,17,.98))", position: "relative", zIndex: 3 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap", marginBottom: 12 }}>
         <div>
           <strong style={{ display: "block", color: "#f0cfaa", letterSpacing: ".08em", fontSize: 11 }}>PRIVATE MEMBER CONTACT</strong>
