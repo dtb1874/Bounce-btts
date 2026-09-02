@@ -8,6 +8,7 @@ type UserRow = {
   id: string;
   display_name: string;
   username: string;
+  role: "ultimate_admin" | "admin" | "member" | "guest";
   active: boolean;
   slot_number: number | null;
   mobile_number?: string;
@@ -84,7 +85,7 @@ export default function MemberContactAdminPortal() {
           id: selected.id,
           username: selected.username,
           displayName: selected.display_name,
-          role: (selected as any).role ?? "member",
+          role: selected.role,
           active: selected.active,
           password: "",
           mobileNumber: mobile,
@@ -92,8 +93,9 @@ export default function MemberContactAdminPortal() {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error ?? "Could not save mobile number.");
-      setUsers((current) => current.map((user) => user.id === selected.id ? { ...user, mobile_number: mobile.trim().replace(/[\s()-]/g, "") } : user));
-      setMobile((value) => value.trim().replace(/[\s()-]/g, ""));
+      const cleaned = mobile.trim().replace(/[\s()-]/g, "");
+      setUsers((current) => current.map((user) => user.id === selected.id ? { ...user, mobile_number: cleaned } : user));
+      setMobile(cleaned);
       setMessage("Private mobile number saved.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save mobile number.");
