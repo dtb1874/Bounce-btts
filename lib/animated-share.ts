@@ -63,8 +63,8 @@ export async function createAnimatedShareFile(options: AnimatedShareOptions) {
     width,
     height,
     frameCount,
-    frameDurationMs = 650,
-    finalHoldMs = 1200,
+    frameDurationMs = 1000,
+    finalHoldMs = 1900,
     filename,
     drawFrame,
   } = options;
