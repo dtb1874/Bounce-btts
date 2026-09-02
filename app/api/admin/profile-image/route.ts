@@ -4,6 +4,20 @@ import { requireAdmin } from "@/lib/server-auth";
 export const runtime = "nodejs";
 
 const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PORTRAIT_BUCKET = "profile-images";
+const ORIGINAL_BUCKET = "profile-image-originals";
+
+async function removeOriginal(admin: any, path: string | null | undefined) {
+  if (!path) return;
+  await admin.storage.from(ORIGINAL_BUCKET).remove([path]);
+  // Backward compatibility: originals created before Release 3 cleanup lived in the public portrait bucket.
+  await admin.storage.from(PORTRAIT_BUCKET).remove([path]);
+}
+
+async function removePortrait(admin: any, path: string | null | undefined) {
+  if (!path) return;
+  await admin.storage.from(PORTRAIT_BUCKET).remove([path]);
+}
 
 export async function GET(request: Request) {
   const context = await requireAdmin(request);
@@ -13,8 +27,9 @@ export async function GET(request: Request) {
   if (!profileId) return NextResponse.json({ error: "Profile is required." }, { status: 400 });
   const { data: profile } = await context.admin.from("profiles").select("avatar_original_path,avatar_portrait_path").eq("id", profileId).maybeSingle();
   if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
-  const bucket = context.admin.storage.from("profile-images");
-  const portraitUrl = profile.avatar_portrait_path ? bucket.getPublicUrl(profile.avatar_portrait_path).data.publicUrl : null;
+  const portraitUrl = profile.avatar_portrait_path
+    ? context.admin.storage.from(PORTRAIT_BUCKET).getPublicUrl(profile.avatar_portrait_path).data.publicUrl
+    : null;
   return NextResponse.json({ originalPath: profile.avatar_original_path ?? null, portraitPath: profile.avatar_portrait_path ?? null, portraitUrl });
 }
 
@@ -45,28 +60,47 @@ export async function POST(request: Request) {
   const originalExt = original.type === "image/png" ? "png" : original.type === "image/webp" ? "webp" : "jpg";
   const originalPath = `${profileId}/original-${stamp}.${originalExt}`;
   const portraitPath = `${profileId}/portrait-${stamp}.jpg`;
-
   const originalBuffer = Buffer.from(await original.arrayBuffer());
   const portraitBuffer = Buffer.from(await portrait.arrayBuffer());
-  const bucket = admin.storage.from("profile-images");
-  const originalUpload = await bucket.upload(originalPath, originalBuffer, { contentType: original.type, upsert: false });
+  const originals = admin.storage.from(ORIGINAL_BUCKET);
+  const portraits = admin.storage.from(PORTRAIT_BUCKET);
+
+  const originalUpload = await originals.upload(originalPath, originalBuffer, { contentType: original.type, upsert: false });
   if (originalUpload.error) return NextResponse.json({ error: originalUpload.error.message }, { status: 400 });
-  const portraitUpload = await bucket.upload(portraitPath, portraitBuffer, { contentType: "image/jpeg", upsert: false });
+  const portraitUpload = await portraits.upload(portraitPath, portraitBuffer, { contentType: "image/jpeg", upsert: false });
   if (portraitUpload.error) {
-    await bucket.remove([originalPath]);
+    await originals.remove([originalPath]);
     return NextResponse.json({ error: portraitUpload.error.message }, { status: 400 });
   }
 
   const { error: updateError } = await admin.from("profiles").update({ avatar_original_path: originalPath, avatar_portrait_path: portraitPath }).eq("id", profileId);
   if (updateError) {
-    await bucket.remove([originalPath, portraitPath]);
+    await originals.remove([originalPath]);
+    await portraits.remove([portraitPath]);
     return NextResponse.json({ error: updateError.message }, { status: 400 });
   }
 
-  const oldPaths = [profile.avatar_original_path, profile.avatar_portrait_path].filter((value): value is string => Boolean(value));
-  if (oldPaths.length) await bucket.remove(oldPaths);
+  await removeOriginal(admin, profile.avatar_original_path);
+  await removePortrait(admin, profile.avatar_portrait_path);
+  await admin.from("audit_log").insert({ actor_id: actor.id, action: "profile_image_updated", entity_type: "profile", entity_id: profileId, details: { originalUpdated: true, portraitUpdated: true, originalPrivate: true } });
+  return NextResponse.json({ ok: true, originalPath, portraitPath, portraitUrl: portraits.getPublicUrl(portraitPath).data.publicUrl });
+}
 
-  await admin.from("audit_log").insert({ actor_id: actor.id, action: "profile_image_updated", entity_type: "profile", entity_id: profileId, details: { originalUpdated: true, portraitUpdated: true } });
-  const { data: publicData } = bucket.getPublicUrl(portraitPath);
-  return NextResponse.json({ ok: true, originalPath, portraitPath, portraitUrl: publicData.publicUrl });
+export async function DELETE(request: Request) {
+  const context = await requireAdmin(request);
+  if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
+  const { admin, user: actor } = context;
+  const { profileId } = await request.json();
+  const id = String(profileId ?? "");
+  if (!id) return NextResponse.json({ error: "Profile is required." }, { status: 400 });
+  const { data: profile } = await admin.from("profiles").select("avatar_original_path,avatar_portrait_path").eq("id", id).maybeSingle();
+  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  await removeOriginal(admin, profile.avatar_original_path);
+  await removePortrait(admin, profile.avatar_portrait_path);
+  const { error } = await admin.from("profiles").update({ avatar_original_path: null, avatar_portrait_path: null }).eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  await admin.from("audit_log").insert({ actor_id: actor.id, action: "profile_image_removed", entity_type: "profile", entity_id: id, details: { originalRemoved: Boolean(profile.avatar_original_path), portraitRemoved: Boolean(profile.avatar_portrait_path) } });
+  return NextResponse.json({ ok: true });
 }
