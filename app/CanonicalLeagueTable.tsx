@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ShareTableButton from "./ShareTableButton";
 import CreatureHabitStat from "./CreatureHabitStat";
+import ProfileAvatar from "./ProfileAvatar";
 import { calculateLeagueStats, type LeagueStatsAdjustment, type LeagueStatsFixture, type LeagueStatsPrediction, type LeagueStatsStanding } from "@/lib/league-stats";
 import { competitionDisplayName } from "@/lib/competition-display";
 import styles from "./release.module.css";
@@ -10,9 +11,11 @@ import publicStyles from "./PublicLeagueTable.module.css";
 
 type Gameweek = { id: string; number: number };
 type DeadlineOddsFixture = LeagueStatsFixture & { odds_deadline_fractional?: string | null };
+type PortraitProfile = { id: string; display_name: string; avatar_portrait_url?: string | null };
 
 type Props = {
   standings: LeagueStatsStanding[];
+  profiles: PortraitProfile[];
   seasonLabel: string;
   gameweek: { number: number } | null;
   entryFee: number;
@@ -22,9 +25,10 @@ type Props = {
   adjustments: LeagueStatsAdjustment[];
 };
 
-export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek, entryFee, fixtures, predictions, gameweeks, adjustments }: Props) {
+export default function CanonicalLeagueTable({ standings, profiles, seasonLabel, gameweek, entryFee, fixtures, predictions, gameweeks, adjustments }: Props) {
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   const prizePot = standings.length * entryFee;
+  const portraitById = new Map(profiles.map((profile) => [profile.id, profile.avatar_portrait_url ?? null]));
   const statsFixtures = fixtures.map((fixture) => {
     const deadlineFixture = fixture as DeadlineOddsFixture;
     return {
@@ -54,7 +58,7 @@ export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek,
 
     <div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.enhancedTableShell} ${styles.leagueTableFirst}`}>
       <div className={`${styles.tableRow} ${styles.header}`}><span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span></div>
-      {standings.map((row, index) => <div key={row.id} className={`${styles.tableRow} ${index === 0 ? styles.leader : ""} ${index < 3 ? styles.tableRowTopThree : ""}`}><span className={styles.positionCell}>{index === 0 ? "🏆" : index + 1}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}
+      {standings.map((row, index) => <div key={row.id} className={`${styles.tableRow} ${index === 0 ? styles.leader : ""} ${index < 3 ? styles.tableRowTopThree : ""}`}><span className={styles.positionCell}>{index === 0 ? "🏆" : index + 1}</span><strong className="leaguePlayerIdentity"><ProfileAvatar name={row.name} portraitUrl={portraitById.get(row.id)} /> <span>{row.name}</span></strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b></div>)}
     </div>
 
     <section className={`${publicStyles.publicPanel} ${publicStyles.statPanel}`}>
@@ -82,7 +86,7 @@ export default function CanonicalLeagueTable({ standings, seasonLabel, gameweek,
       <div className={publicStyles.playerList}>{playerInsights.map((row) => {
         const open = expandedPlayer === row.id;
         return <article className={`${publicStyles.playerCard} ${open ? publicStyles.playerCardOpen : ""}`} key={row.id} onClick={(event) => event.stopPropagation()}>
-          <button type="button" className={publicStyles.playerSummary} aria-expanded={open} onClick={() => setExpandedPlayer(open ? null : row.id)}><strong>{row.name}</strong><span>{standings.find((standing) => standing.id === row.id)?.points ?? 0} pts</span><b>{open ? "−" : "+"}</b></button>
+          <button type="button" className={`${publicStyles.playerSummary} playerSummaryWithPortrait`} aria-expanded={open} onClick={() => setExpandedPlayer(open ? null : row.id)}><span className="playerSummaryIdentity"><ProfileAvatar name={row.name} portraitUrl={portraitById.get(row.id)} size="medium" /><strong>{row.name}</strong></span><span>{standings.find((standing) => standing.id === row.id)?.points ?? 0} pts</span><b>{open ? "−" : "+"}</b></button>
           {open && <div className={publicStyles.playerDetails}>
             <div className="playerStatHeadline"><span>STRIKE RATE</span><b>{row.strikeRate.toFixed(1)}%</b></div><div className="playerStatHeadline"><span>POINTS / PICK</span><b>{row.pointsPerPick.toFixed(2)}</b></div><div className="playerStatHeadline"><span>CURRENT BTTS STREAK</span><b>{row.currentStreak}</b></div><div className="playerStatHeadline"><span>BEST BTTS STREAK</span><b>{row.bestStreak}</b></div><div><span>AVG SELECTED ODDS</span><b>{row.averageSelectedOdds == null ? "—" : `${row.averageSelectedOdds.toFixed(2)}/1`}</b></div><div><span>AVG WINNING ODDS</span><b>{row.averageWinningOdds == null ? "—" : `${row.averageWinningOdds.toFixed(2)}/1`}</b></div><div><span>BIGGEST WINNING ODDS</span><b>{row.biggestWinningOdds == null ? "—" : `${row.biggestWinningOdds.toFixed(2)}/1`}</b></div><div><span>LONGEST WINLESS RUN</span><b>{row.longestWinlessStreak}</b></div><div><span>TOTAL GOALS</span><b>{row.goals}</b></div><div><span>AVG GOALS / PICK</span><b>{row.averageGoals ? row.averageGoals.toFixed(1) : "—"}</b></div><div><span>RESULT SPLIT</span><b>{row.homeWins}H · {row.draws}D · {row.awayWins}A</b></div><div className={publicStyles.playerCompetition}><span>MOST PICKED COMPETITION</span><b>{row.favouriteCompetition}</b></div><div className={publicStyles.playerCompetition}><span>MOST PICKED TEAM</span><b>{row.mostPickedTeamCount >= 2 ? `${row.mostPickedTeam} · ${row.mostPickedTeamCount} picks` : row.mostPickedTeam}</b></div>
           </div>}
