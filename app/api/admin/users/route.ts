@@ -14,6 +14,14 @@ function validInternationalMobile(value: string | null) {
   return value === null || /^\+[1-9][0-9]{7,14}$/.test(value);
 }
 
+async function clearProfileImages(admin: any, originalPath?: string | null, portraitPath?: string | null) {
+  if (originalPath) {
+    await admin.storage.from("profile-image-originals").remove([originalPath]);
+    await admin.storage.from("profile-images").remove([originalPath]);
+  }
+  if (portraitPath) await admin.storage.from("profile-images").remove([portraitPath]);
+}
+
 export async function GET(request: Request) {
   const context = await requireAdmin(request);
   if (!context) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
@@ -90,9 +98,7 @@ export async function PATCH(request: Request) {
     if (privateError) return NextResponse.json({ error: privateError.message }, { status: 400 });
   }
 
-  if (password) {
-    await admin.from("member_credentials").upsert({ user_id: id, encrypted_password: encryptPassword(password) });
-  }
+  if (password) await admin.from("member_credentials").upsert({ user_id: id, encrypted_password: encryptPassword(password) });
 
   const { data: currentSeason } = await admin.from("seasons").select("id").eq("is_current", true).single();
   if (currentSeason?.id) {
@@ -153,17 +159,19 @@ export async function DELETE(request: Request) {
   if (context.profile.role !== "ultimate_admin") return NextResponse.json({ error: "Ultimate Admin access required" }, { status: 403 });
   const { admin, user: actor } = context;
   const { id } = await request.json();
-  const { data: existing } = await admin.from("profiles").select("id,slot_number,display_name").eq("id", String(id)).maybeSingle();
+  const { data: existing } = await admin.from("profiles").select("id,slot_number,display_name,avatar_original_path,avatar_portrait_path").eq("id", String(id)).maybeSingle();
   if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (existing.slot_number === 1) return NextResponse.json({ error: "The Ultimate Admin account cannot be reset." }, { status: 400 });
   const username = `user${existing.slot_number}`;
   const password = generatedPassword(existing.slot_number);
   const { error: authError } = await admin.auth.admin.updateUserById(existing.id, { email: usernameToEmail(username), password, user_metadata: { username, display_name: username } });
   if (authError) return NextResponse.json({ error: authError.message }, { status: 400 });
-  await admin.from("profiles").update({ username, display_name: username, role: "member", active: false, approved: true }).eq("id", existing.id);
+
+  await clearProfileImages(admin, existing.avatar_original_path, existing.avatar_portrait_path);
+  await admin.from("profiles").update({ username, display_name: username, role: "member", active: false, approved: true, avatar_original_path: null, avatar_portrait_path: null }).eq("id", existing.id);
   await admin.from("profile_private_details").delete().eq("profile_id", existing.id);
   await admin.from("member_credentials").upsert({ user_id: existing.id, encrypted_password: encryptPassword(password) });
   await admin.from("season_memberships").update({ active: false }).eq("profile_id", existing.id);
-  await admin.from("audit_log").insert({ actor_id: actor.id, action: "user_reset_to_placeholder", entity_type: "profile", entity_id: existing.id, details: { previousDisplayName: existing.display_name, username } });
+  await admin.from("audit_log").insert({ actor_id: actor.id, action: "user_reset_to_placeholder", entity_type: "profile", entity_id: existing.id, details: { previousDisplayName: existing.display_name, username, profileImageCleared: Boolean(existing.avatar_original_path || existing.avatar_portrait_path) } });
   return NextResponse.json({ ok: true, username, password });
 }
