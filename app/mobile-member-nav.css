@@ -78,9 +78,10 @@
   main[class*="shell"] > aside nav button:nth-child(5)::after { content: "All picks"; }
 
   main[class*="shell"] > aside [class*="sidebarEgg"] {
-    min-height: 34px !important;
-    height: 34px !important;
-    margin: 4px 0 !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    margin: 6px -8px 8px !important;
+    width: calc(100% + 16px) !important;
   }
 }
 
