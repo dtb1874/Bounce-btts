@@ -7,6 +7,7 @@ import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
 import "./gameweek-recap-order.css";
 import "./mobile-member-nav.css";
+import "./release4-history.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
 import EasterEggDiscovery from "./EasterEggDiscovery";
