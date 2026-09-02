@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type UserRow = { id:string; display_name:string; username:string; role:"ultimate_admin"|"admin"|"member"|"guest"; active:boolean; slot_number:number|null; mobile_number?:string };
 type UserTarget = { slot:number; host:HTMLElement };
+type LoadedImage = { source:CanvasImageSource; width:number; height:number; close:()=>void };
 
 async function accessToken(){ const { data } = await createClient().auth.getSession(); return data.session?.access_token ?? ""; }
 
@@ -24,18 +25,36 @@ function findUserCardTargets(){
   return targets;
 }
 
+async function loadImage(file:File):Promise<LoadedImage>{
+  if(typeof window !== "undefined" && "createImageBitmap" in window){
+    try{
+      const bitmap=await createImageBitmap(file);
+      return { source:bitmap, width:bitmap.width, height:bitmap.height, close:()=>bitmap.close() };
+    }catch{}
+  }
+  const url=URL.createObjectURL(file);
+  return await new Promise<LoadedImage>((resolve,reject)=>{
+    const image=new Image();
+    image.onload=()=>resolve({ source:image, width:image.naturalWidth || image.width, height:image.naturalHeight || image.height, close:()=>URL.revokeObjectURL(url) });
+    image.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error("Could not open this image on this device.")); };
+    image.src=url;
+  });
+}
+
 async function portraitBlob(file:File, zoom:number, panX:number, panY:number){
-  const image=await createImageBitmap(file); const width=720, height=900;
-  const canvas=document.createElement("canvas"); canvas.width=width; canvas.height=height;
-  const ctx=canvas.getContext("2d"); if(!ctx) throw new Error("Could not prepare portrait crop.");
-  const safeZoom=Math.max(1.1,zoom);
-  const scale=Math.max(width/image.width,height/image.height)*safeZoom;
-  const sourceWidth=width/scale, sourceHeight=height/scale;
-  const availableX=Math.max(0,image.width-sourceWidth), availableY=Math.max(0,image.height-sourceHeight);
-  const sx=availableX*Math.max(0,Math.min(100,panX))/100;
-  const sy=availableY*Math.max(0,Math.min(100,panY))/100;
-  ctx.drawImage(image,sx,sy,sourceWidth,sourceHeight,0,0,width,height); image.close();
-  return await new Promise<Blob>((resolve,reject)=>canvas.toBlob((blob)=>blob?resolve(blob):reject(new Error("Could not create portrait crop.")),"image/jpeg",.9));
+  const image=await loadImage(file); const width=720, height=900;
+  try{
+    const canvas=document.createElement("canvas"); canvas.width=width; canvas.height=height;
+    const ctx=canvas.getContext("2d"); if(!ctx) throw new Error("Could not prepare portrait crop.");
+    const safeZoom=Math.max(1.1,zoom);
+    const scale=Math.max(width/image.width,height/image.height)*safeZoom;
+    const sourceWidth=width/scale, sourceHeight=height/scale;
+    const availableX=Math.max(0,image.width-sourceWidth), availableY=Math.max(0,image.height-sourceHeight);
+    const sx=availableX*Math.max(0,Math.min(100,panX))/100;
+    const sy=availableY*Math.max(0,Math.min(100,panY))/100;
+    ctx.drawImage(image.source,sx,sy,sourceWidth,sourceHeight,0,0,width,height);
+    return await new Promise<Blob>((resolve,reject)=>canvas.toBlob((blob)=>blob?resolve(blob):reject(new Error("Could not create portrait crop.")),"image/jpeg",.9));
+  } finally { image.close(); }
 }
 
 export default function MemberContactAdminPortal(){
@@ -66,6 +85,8 @@ export default function MemberContactAdminPortal(){
     }catch(error){ setMessages({global:error instanceof Error?error.message:"Could not load member profiles."}); } })();
   },[targets.length,users.length]);
 
+  useEffect(()=>()=>{ for(const url of Object.values(previewUrls)) if(url) URL.revokeObjectURL(url); },[previewUrls]);
+
   const usersBySlot=useMemo(()=>new Map(users.map((user)=>[Number(user.slot_number),user])),[users]);
 
   async function saveContact(user:UserRow){
@@ -81,13 +102,35 @@ export default function MemberContactAdminPortal(){
     if(file.size>10*1024*1024){ setMessages((c)=>({...c,[user.id]:"Photo must be under 10 MB."})); return; }
     if(previewUrls[user.id]) URL.revokeObjectURL(previewUrls[user.id]);
     const url=URL.createObjectURL(file); setFiles((c)=>({...c,[user.id]:file})); setPreviewUrls((c)=>({...c,[user.id]:url})); setZoom((c)=>({...c,[user.id]:1.15})); setFocusX((c)=>({...c,[user.id]:50})); setFocusY((c)=>({...c,[user.id]:45})); setMessages((c)=>({...c,[user.id]:"Suggested crop ready — adjust if needed."}));
-    try{ const Detector=(window as any).FaceDetector; if(Detector){ const bitmap=await createImageBitmap(file); const faces=await new Detector({fastMode:true,maxDetectedFaces:1}).detect(bitmap); if(faces?.[0]?.boundingBox){ const box=faces[0].boundingBox; const x=((box.x+box.width*.5)/bitmap.width)*100; const y=((box.y+box.height*.52)/bitmap.height)*100; const suggestedZoom=Math.max(1.15,Math.min(2.1,bitmap.height/Math.max(1,box.height*3.8))); setFocusX((c)=>({...c,[user.id]:Math.max(0,Math.min(100,x))})); setFocusY((c)=>({...c,[user.id]:Math.max(0,Math.min(100,y))})); setZoom((c)=>({...c,[user.id]:suggestedZoom})); setMessages((c)=>({...c,[user.id]:"Face detected — suggested portrait crop applied."})); } bitmap.close(); } }catch{}
+    try{
+      const Detector=(window as any).FaceDetector;
+      if(Detector){
+        const image=await loadImage(file);
+        try{
+          const faces=await new Detector({fastMode:true,maxDetectedFaces:1}).detect(image.source);
+          if(faces?.[0]?.boundingBox){ const box=faces[0].boundingBox; const x=((box.x+box.width*.5)/image.width)*100; const y=((box.y+box.height*.52)/image.height)*100; const suggestedZoom=Math.max(1.15,Math.min(2.1,image.height/Math.max(1,box.height*3.8))); setFocusX((c)=>({...c,[user.id]:Math.max(0,Math.min(100,x))})); setFocusY((c)=>({...c,[user.id]:Math.max(0,Math.min(100,y))})); setZoom((c)=>({...c,[user.id]:suggestedZoom})); setMessages((c)=>({...c,[user.id]:"Face detected — suggested portrait crop applied."})); }
+        } finally { image.close(); }
+      }
+    }catch{}
   }
 
   async function savePhoto(user:UserRow){
     const file=files[user.id]; if(!file) return; setImageSavingId(user.id); setMessages((c)=>({...c,[user.id]:""}));
-    try{ const crop=await portraitBlob(file,zoom[user.id] ?? 1.15,focusX[user.id] ?? 50,focusY[user.id] ?? 45); const form=new FormData(); form.append("profileId",user.id); form.append("original",file,file.name || "original.jpg"); form.append("portrait",new File([crop],"portrait.jpg",{type:"image/jpeg"})); const response=await fetch("/api/admin/profile-image",{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`},body:form}); const json=await response.json(); if(!response.ok) throw new Error(json.error ?? "Could not save profile picture."); setSavedPortraitUrls((c)=>({...c,[user.id]:`${json.portraitUrl}?v=${Date.now()}`})); setMessages((c)=>({...c,[user.id]:"Profile picture saved."})); }
+    try{ const crop=await portraitBlob(file,zoom[user.id] ?? 1.15,focusX[user.id] ?? 50,focusY[user.id] ?? 45); const form=new FormData(); form.append("profileId",user.id); form.append("original",file,file.name || "original.jpg"); form.append("portrait",new File([crop],"portrait.jpg",{type:"image/jpeg"})); const response=await fetch("/api/admin/profile-image",{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`},body:form}); const json=await response.json(); if(!response.ok) throw new Error(json.error ?? "Could not save profile picture."); setSavedPortraitUrls((c)=>({...c,[user.id]:`${json.portraitUrl}?v=${Date.now()}`})); setMessages((c)=>({...c,[user.id]:"Profile picture saved. Original stored privately."})); }
     catch(error){ setMessages((c)=>({...c,[user.id]:error instanceof Error?error.message:"Could not save profile picture."})); }
+    finally{ setImageSavingId(null); }
+  }
+
+  async function removePhoto(user:UserRow){
+    if(!window.confirm(`Remove the saved profile picture for ${user.display_name}?`)) return;
+    setImageSavingId(user.id); setMessages((c)=>({...c,[user.id]:""}));
+    try{
+      const response=await fetch("/api/admin/profile-image",{method:"DELETE",headers:{"content-type":"application/json",authorization:`Bearer ${await accessToken()}`},body:JSON.stringify({profileId:user.id})});
+      const json=await response.json(); if(!response.ok) throw new Error(json.error ?? "Could not remove profile picture.");
+      if(previewUrls[user.id]) URL.revokeObjectURL(previewUrls[user.id]);
+      setFiles((c)=>({...c,[user.id]:undefined})); setPreviewUrls((c)=>({...c,[user.id]:""})); setSavedPortraitUrls((c)=>({...c,[user.id]:""}));
+      setZoom((c)=>({...c,[user.id]:1.15})); setFocusX((c)=>({...c,[user.id]:50})); setFocusY((c)=>({...c,[user.id]:45})); setMessages((c)=>({...c,[user.id]:"Profile picture removed."}));
+    }catch(error){ setMessages((c)=>({...c,[user.id]:error instanceof Error?error.message:"Could not remove profile picture."})); }
     finally{ setImageSavingId(null); }
   }
 
@@ -112,11 +155,12 @@ export default function MemberContactAdminPortal(){
                   <label style={{display:"grid",gap:4,color:"#a99d96",fontSize:10}}>VERTICAL FRAMING<input type="range" min="0" max="100" step="1" value={py} onChange={(e)=>setFocusY((c)=>({...c,[user.id]:Number(e.target.value)}))}/></label>
                   <button type="button" disabled={imageSavingId===user.id} onClick={()=>void savePhoto(user)} style={{border:"1px solid #93475c",borderRadius:9,padding:"9px 12px",background:"linear-gradient(180deg,#7c263d,#641b31)",color:"#f2ede7",fontWeight:800}}>{imageSavingId===user.id?"Saving picture…":"Save profile picture"}</button>
                 </>}
+                {savedPortraitUrls[user.id] && <button type="button" disabled={imageSavingId===user.id} onClick={()=>void removePhoto(user)} style={{border:"1px solid #783743",borderRadius:9,padding:"8px 11px",background:"#2a151b",color:"#eab0b8",fontWeight:800}}>{imageSavingId===user.id?"Working…":"Remove saved picture"}</button>}
               </div>
             </div>
-            <small style={{color:"#8f8781"}}>The portrait starts slightly zoomed so both framing sliders always have room to pan. The saved 4:5 crop uses the same left/right and up/down positions.</small>
+            <small style={{color:"#8f8781"}}>The portrait starts slightly zoomed so both framing sliders have room to pan. The saved 4:5 portrait is public for league display; the original upload is stored privately.</small>
           </div>
-          {message && <span style={{color:/(saved|ready|detected)/i.test(message)?"#9fd8b8":"#ef9aa8",fontSize:12}}>{message}</span>}
+          {message && <span style={{color:/(saved|ready|detected|removed|privately)/i.test(message)?"#9fd8b8":"#ef9aa8",fontSize:12}}>{message}</span>}
         </div>
       </details>,host,`member-profile-${slot}`); })}
   </>;
