@@ -7,7 +7,11 @@
 
 .release4ReigningChampion {
   position: relative;
-  flex: 0 0 min(410px, 46vw);
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  box-sizing: border-box;
   min-height: 104px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 96px;
@@ -58,7 +62,7 @@
   display: block !important;
   margin-bottom: 5px;
   color: #e7bf89 !important;
-  font-size: 9px !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
   letter-spacing: .14em !important;
   text-transform: uppercase;
@@ -155,6 +159,10 @@
     grid-template-columns: minmax(0, 1fr) 78px;
     gap: 8px;
     min-height: 102px;
+  }
+
+  .release4ReigningChampionEyebrow {
+    font-size: 10px !important;
   }
 
   .release4ReigningChampionName {
