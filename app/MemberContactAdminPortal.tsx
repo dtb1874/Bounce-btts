@@ -127,50 +127,54 @@ export default function MemberContactAdminPortal() {
   if (!target) return null;
 
   return createPortal(
-    <section style={{ margin: "14px 0 18px", padding: 16, border: "1px solid rgba(112,66,77,.42)", borderRadius: 14, background: "linear-gradient(145deg,rgba(24,18,23,.98),rgba(12,13,17,.98))", position: "relative", zIndex: 3 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap", marginBottom: 12 }}>
+    <details style={{ margin: "14px 0 18px", border: "1px solid rgba(112,66,77,.42)", borderRadius: 14, background: "linear-gradient(145deg,rgba(24,18,23,.98),rgba(12,13,17,.98))", position: "relative", zIndex: 3, overflow: "hidden" }}>
+      <summary style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", cursor: "pointer", listStyle: "none", userSelect: "none" }}>
         <div>
-          <strong style={{ display: "block", color: "#f0cfaa", letterSpacing: ".08em", fontSize: 11 }}>PRIVATE MEMBER CONTACT</strong>
-          <span style={{ display: "block", color: "#aaa09a", fontSize: 12, marginTop: 4 }}>Ultimate Admin only. Mobile numbers are not exposed in member or public profile data.</span>
+          <strong style={{ display: "block", color: "#f0cfaa", letterSpacing: ".08em", fontSize: 11 }}>MEMBER CONTACT & PROFILE</strong>
+          <span style={{ display: "block", color: "#aaa09a", fontSize: 12, marginTop: 4 }}>Private contact details and profile picture controls</span>
         </div>
-      </div>
-      {loading && !users.length ? <div style={{ color: "#b9ada6", fontSize: 12 }}>Loading contacts…</div> : (
-        <div style={{ display: "grid", gap: 10 }}>
-          <label style={{ display: "grid", gap: 5, color: "#c9bbb2", fontSize: 11, fontWeight: 800 }}>
-            MEMBER
-            <select
-              value={selectedId}
-              onChange={(event) => {
-                const next = users.find((user) => user.id === event.target.value);
-                setSelectedId(event.target.value);
-                setMobile(next?.mobile_number ?? "");
-                setMessage("");
-              }}
-              style={{ width: "100%", boxSizing: "border-box", background: "#0c0e13", color: "#fff", border: "1px solid #4c3139", borderRadius: 8, padding: 10 }}
-            >
-              {users.map((user) => <option key={user.id} value={user.id}>{user.display_name}{user.active ? "" : " · inactive"}</option>)}
-            </select>
-          </label>
-          <label style={{ display: "grid", gap: 5, color: "#c9bbb2", fontSize: 11, fontWeight: 800 }}>
-            MOBILE NUMBER
-            <input
-              type="tel"
-              inputMode="tel"
-              autoComplete="off"
-              placeholder="+447700900123"
-              value={mobile}
-              onChange={(event) => setMobile(event.target.value)}
-              style={{ width: "100%", boxSizing: "border-box", background: "#0c0e13", color: "#fff", border: "1px solid #4c3139", borderRadius: 8, padding: 10 }}
-            />
-          </label>
-          <small style={{ color: "#938a84" }}>Use international format such as +44. Spaces and brackets are cleaned automatically. Leave blank to clear.</small>
-          <div style={{ display: "flex", gap: 9, alignItems: "center", flexWrap: "wrap" }}>
-            <button type="button" disabled={!selected || loading} onClick={save} style={{ border: "1px solid #93475c", borderRadius: 9, padding: "9px 12px", background: "linear-gradient(180deg,#7c263d,#641b31)", color: "#f2ede7", fontWeight: 800, cursor: "pointer" }}>{loading ? "Saving…" : "Save private mobile"}</button>
-            {message && <span style={{ color: message.includes("saved") ? "#9fd8b8" : "#ef9aa8", fontSize: 12 }}>{message}</span>}
+        <span aria-hidden="true" style={{ color: "#d6b793", fontSize: 18, fontWeight: 900 }}>＋</span>
+      </summary>
+      <div style={{ borderTop: "1px solid rgba(112,66,77,.35)", padding: 16 }}>
+        <small style={{ display: "block", color: "#938a84", marginBottom: 12 }}>Ultimate Admin only. Mobile numbers are not exposed in member or public profile data. Profile picture controls will live in this same section.</small>
+        {loading && !users.length ? <div style={{ color: "#b9ada6", fontSize: 12 }}>Loading contacts…</div> : (
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "grid", gap: 5, color: "#c9bbb2", fontSize: 11, fontWeight: 800 }}>
+              MEMBER
+              <select
+                value={selectedId}
+                onChange={(event) => {
+                  const next = users.find((user) => user.id === event.target.value);
+                  setSelectedId(event.target.value);
+                  setMobile(next?.mobile_number ?? "");
+                  setMessage("");
+                }}
+                style={{ width: "100%", boxSizing: "border-box", background: "#0c0e13", color: "#fff", border: "1px solid #4c3139", borderRadius: 8, padding: 10 }}
+              >
+                {users.map((user) => <option key={user.id} value={user.id}>{user.display_name}{user.active ? "" : " · inactive"}</option>)}
+              </select>
+            </label>
+            <label style={{ display: "grid", gap: 5, color: "#c9bbb2", fontSize: 11, fontWeight: 800 }}>
+              MOBILE NUMBER
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                placeholder="+447700900123"
+                value={mobile}
+                onChange={(event) => setMobile(event.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", background: "#0c0e13", color: "#fff", border: "1px solid #4c3139", borderRadius: 8, padding: 10 }}
+              />
+            </label>
+            <small style={{ color: "#938a84" }}>Use international format such as +44. Spaces and brackets are cleaned automatically. Leave blank to clear.</small>
+            <div style={{ display: "flex", gap: 9, alignItems: "center", flexWrap: "wrap" }}>
+              <button type="button" disabled={!selected || loading} onClick={save} style={{ border: "1px solid #93475c", borderRadius: 9, padding: "9px 12px", background: "linear-gradient(180deg,#7c263d,#641b31)", color: "#f2ede7", fontWeight: 800, cursor: "pointer" }}>{loading ? "Saving…" : "Save private mobile"}</button>
+              {message && <span style={{ color: message.includes("saved") ? "#9fd8b8" : "#ef9aa8", fontSize: 12 }}>{message}</span>}
+            </div>
           </div>
-        </div>
-      )}
-    </section>,
+        )}
+      </div>
+    </details>,
     target,
   );
 }
