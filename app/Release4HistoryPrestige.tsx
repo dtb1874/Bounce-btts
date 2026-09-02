@@ -20,7 +20,14 @@ export default function Release4HistoryPrestige() {
       const champion = textOf(statsBand, "article:first-child strong");
       const championSeason = textOf(honourGrid, "article:first-child span");
 
-      let plaque = heading.querySelector(":scope > .release4ReigningChampion") as HTMLElement | null;
+      let plaque = page.querySelector(":scope > .release4ReigningChampion") as HTMLElement | null;
+      const nestedPlaque = heading.querySelector(":scope > .release4ReigningChampion") as HTMLElement | null;
+
+      if (!plaque && nestedPlaque) {
+        plaque = nestedPlaque;
+        heading.insertAdjacentElement("afterend", plaque);
+      }
+
       if (!plaque) {
         plaque = document.createElement("aside");
         plaque.className = "release4ReigningChampion";
@@ -49,7 +56,7 @@ export default function Release4HistoryPrestige() {
 
         copy.append(eyebrow, name, note);
         plaque.append(copy, trophyWrap);
-        heading.appendChild(plaque);
+        heading.insertAdjacentElement("afterend", plaque);
       }
 
       const eyebrow = plaque.querySelector(".release4ReigningChampionEyebrow");
