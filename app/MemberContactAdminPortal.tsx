@@ -116,7 +116,17 @@ export default function MemberContactAdminPortal(){
 
   async function savePhoto(user:UserRow){
     const file=files[user.id]; if(!file) return; setImageSavingId(user.id); setMessages((c)=>({...c,[user.id]:""}));
-    try{ const crop=await portraitBlob(file,zoom[user.id] ?? 1.15,focusX[user.id] ?? 50,focusY[user.id] ?? 45); const form=new FormData(); form.append("profileId",user.id); form.append("original",file,file.name || "original.jpg"); form.append("portrait",new File([crop],"portrait.jpg",{type:"image/jpeg"})); const response=await fetch("/api/admin/profile-image",{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`},body:form}); const json=await response.json(); if(!response.ok) throw new Error(json.error ?? "Could not save profile picture."); setSavedPortraitUrls((c)=>({...c,[user.id]:`${json.portraitUrl}?v=${Date.now()}`})); setMessages((c)=>({...c,[user.id]:"Profile picture saved. Original stored privately."})); }
+    try{
+      const crop=await portraitBlob(file,zoom[user.id] ?? 1.15,focusX[user.id] ?? 50,focusY[user.id] ?? 45);
+      const form=new FormData();
+      const originalName=file.type==="image/png"?"original.png":file.type==="image/webp"?"original.webp":"original.jpg";
+      form.append("profileId",user.id);
+      form.append("original",file,originalName);
+      form.append("portrait",new File([crop],"portrait.jpg",{type:"image/jpeg"}),"portrait.jpg");
+      const response=await fetch("/api/admin/profile-image",{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`},body:form});
+      const json=await response.json(); if(!response.ok) throw new Error(json.error ?? "Could not save profile picture.");
+      setSavedPortraitUrls((c)=>({...c,[user.id]:`${json.portraitUrl}?v=${Date.now()}`})); setMessages((c)=>({...c,[user.id]:"Profile picture saved. Original stored privately."}));
+    }
     catch(error){ setMessages((c)=>({...c,[user.id]:error instanceof Error?error.message:"Could not save profile picture."})); }
     finally{ setImageSavingId(null); }
   }
