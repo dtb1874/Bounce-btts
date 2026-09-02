@@ -84,24 +84,62 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
     }
   }
 
+  async function removeGameweek() {
+    const later = gameweeks.filter((gw) => gw.number > activeAnchor.number).length;
+    const consequence = later > 0
+      ? `GW${activeAnchor.number + 1} will become GW${activeAnchor.number}, and every later gameweek will move down one number.`
+      : "This is the final scheduled gameweek, so no later numbers need to move.";
+    if (!window.confirm(`Remove GW${activeAnchor.number}? ${consequence}\n\nThis is only allowed before the gameweek opens and when it has no player selections or score adjustments. Imported fixtures for the removed round will also be deleted.`)) return;
+
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/gameweek", {
+        method: "DELETE",
+        headers: { "content-type": "application/json", authorization: `Bearer ${await accessToken()}` },
+        body: JSON.stringify({ id: activeAnchor.id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Could not remove gameweek.");
+      setMessage(`GW${payload.result?.removedNumber ?? activeAnchor.number} removed. ${payload.result?.shiftedGameweeks ?? later} later gameweek(s) renumbered. Reloading…`);
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not remove gameweek.");
+      setBusy(false);
+    }
+  }
+
   return createPortal(
     <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid rgba(112,66,77,.55)" }}>
       <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: "#d9b85f", marginBottom: 8 }}>ONE-OFF / MIDWEEK GAMEWEEK</div>
-      <p style={{ margin: "0 0 14px", color: "#cbbfc4", lineHeight: 1.45 }}>
+      <p style={{ margin: "0 0 8px", color: "#cbbfc4", lineHeight: 1.45 }}>
         Insert an extra gameweek after GW {activeAnchor.number}. The existing next Saturday round and every later round keep their dates, fixtures and data; only their GW numbers move up by one.
       </p>
+      <p style={{ margin: "0 0 14px", color: "#d9b85f", fontSize: 12, lineHeight: 1.45 }}>
+        Times are entered as UK local time. Use the clock time players will see in the UK; GMT/BST changes are handled by the dated timestamp rather than by manually adding or subtracting an hour.
+      </p>
       <div style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 6 }}><strong>Opens</strong><input type="datetime-local" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} /></label>
-        <label style={{ display: "grid", gap: 6 }}><strong>Deadline</strong><input type="datetime-local" value={locksAt} onChange={(e) => setLocksAt(e.target.value)} /></label>
+        <label style={{ display: "grid", gap: 6 }}><strong>Opens (UK time)</strong><input type="datetime-local" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} /></label>
+        <label style={{ display: "grid", gap: 6 }}><strong>Deadline (UK time)</strong><input type="datetime-local" value={locksAt} onChange={(e) => setLocksAt(e.target.value)} /></label>
         <label style={{ display: "grid", gap: 6 }}><strong>Eligible fixture day</strong><select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>{weekdays.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label style={{ display: "grid", gap: 6 }}><strong>Kick-offs from</strong><input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} /></label>
           <label style={{ display: "grid", gap: 6 }}><strong>Kick-offs to</strong><input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} /></label>
         </div>
-        <small style={{ color: "#bcaeb4", lineHeight: 1.4 }}>The range is inclusive. For one exact kick-off, set From and To to the same time.</small>
+        <small style={{ color: "#bcaeb4", lineHeight: 1.4 }}>The range is inclusive and uses UK fixture times. For one exact kick-off, set From and To to the same time.</small>
         {message && <div style={{ border: "1px solid rgba(217,184,95,.5)", borderRadius: 9, padding: 10, color: "#f4e5d6", background: "rgba(217,184,95,.08)" }}>{message}</div>}
         <button type="button" disabled={busy} onClick={insertOneOff} style={{ border: 0, borderRadius: 10, padding: "13px 15px", background: "#9b254b", color: "#fff4e8", fontWeight: 900, fontSize: 16 }}>
-          {busy ? "Inserting…" : `Insert one-off gameweek after GW ${activeAnchor.number}`}
+          {busy ? "Working…" : `Insert one-off gameweek after GW ${activeAnchor.number}`}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid rgba(176,77,77,.45)" }}>
+        <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: "#e58d8d", marginBottom: 8 }}>REMOVE FUTURE GAMEWEEK</div>
+        <p style={{ margin: "0 0 12px", color: "#cbbfc4", lineHeight: 1.45 }}>
+          Remove selected GW {activeAnchor.number} only if it has not opened and has no player selections or score adjustments. Later rounds keep their IDs, dates and data and move down one GW number.
+        </p>
+        <button type="button" disabled={busy} onClick={removeGameweek} style={{ width: "100%", border: "1px solid rgba(229,141,141,.65)", borderRadius: 10, padding: "12px 15px", background: "rgba(126,35,45,.22)", color: "#ffd9d9", fontWeight: 900, fontSize: 15 }}>
+          {busy ? "Working…" : `Remove GW ${activeAnchor.number}`}
         </button>
       </div>
     </div>,
