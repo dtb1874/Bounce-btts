@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -22,6 +24,29 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+
+      - name: Require release info update
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)"
+          if ! grep -qx 'lib/release-info.ts' <<<"$changed"; then
+            echo "Every production PR must update lib/release-info.ts."
+            echo "Add the release version/date, a short summary, and user-facing changes before merge."
+            exit 1
+          fi
+
+      - name: Validate canonical release info
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s lib/release-info.ts
+          grep -q 'export const CURRENT_RELEASE' lib/release-info.ts
+          grep -q 'export const RELEASE_HISTORY_CATCHUP' lib/release-info.ts
+          grep -Eq 'version: "[0-9]+\.[0-9]+\.[0-9]+"' lib/release-info.ts
+          grep -Eq 'date: "[^"]+"' lib/release-info.ts
 
       - name: Prevent obsolete patch architecture
         shell: bash
