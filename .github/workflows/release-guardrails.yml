@@ -57,6 +57,16 @@ jobs:
             exit 1
           fi
 
+      - name: Block unsafe release DOM mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'footer\.textContent\s*=|new MutationObserver\(' app lib 2>/dev/null | grep -E 'ReleaseInfo|release-info|footer\.textContent'; then
+            echo "Unsafe release-info DOM mutation pattern detected."
+            echo "Release metadata must render through React-owned components, never by rewriting React-owned DOM."
+            exit 1
+          fi
+
       - name: Require release history update
         if: github.event_name == 'pull_request'
         shell: bash
@@ -94,3 +104,23 @@ jobs:
             git status --short --untracked-files=no
             exit 1
           fi
+
+      - name: Install Chromium for hydration smoke test
+        run: npx -y @playwright/test@1.55.0 install --with-deps chromium
+
+      - name: Start production server
+        shell: bash
+        run: |
+          npm start > /tmp/bounce-next.log 2>&1 &
+          echo $! > /tmp/bounce-next.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/bounce-next.log
+          exit 1
+
+      - name: Browser hydration smoke test
+        run: npx -y @playwright/test@1.55.0 test tests/hydration-smoke.spec.js --reporter=line
