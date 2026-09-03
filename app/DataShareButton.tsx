@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { drawShareAvatar, findSharePortrait, loadSharePortraits } from "@/lib/share-portraits";
 
 type Props = {
   title: string;
@@ -20,6 +21,7 @@ function fitText(ctx: CanvasRenderingContext2D, value: string, maxWidth: number)
 }
 
 async function createImage({ title, subtitle, columns, rows }: Pick<Props,"title"|"subtitle"|"columns"|"rows">) {
+  const portraits = await loadSharePortraits();
   const width = 1200;
   const headerHeight = 230;
   const rowHeight = 72;
@@ -58,9 +60,13 @@ async function createImage({ title, subtitle, columns, rows }: Pick<Props,"title
     const y=headerHeight+44+rowIndex*rowHeight;
     if(rowIndex%2===0){ctx.fillStyle="rgba(255,255,255,.025)";ctx.fillRect(left,y,tableWidth,rowHeight)}
     row.forEach((value,colIndex)=>{
+      const text=String(value);
+      const portrait=typeof value==="string"?findSharePortrait(portraits,null,text):null;
+      const cellX=left+colIndex*colWidth+10;
       ctx.fillStyle=colIndex===row.length-1?"#f0cfaa":"#ece4dc";
       ctx.font=colIndex===0||colIndex===row.length-1?"800 18px Arial,sans-serif":"600 18px Arial,sans-serif";
-      ctx.fillText(fitText(ctx,String(value),colWidth-18),left+colIndex*colWidth+10,y+43);
+      if(portrait){drawShareAvatar(ctx,portraits,{id:portrait.id,name:text,x:cellX+17,y:y+36,size:34,border:"#d8b76f",background:"#5d1b32"});ctx.fillText(fitText(ctx,text,colWidth-58),cellX+43,y+43)}
+      else ctx.fillText(fitText(ctx,text,colWidth-18),cellX,y+43);
     });
     ctx.strokeStyle="rgba(255,255,255,.07)";ctx.beginPath();ctx.moveTo(left,y+rowHeight);ctx.lineTo(right,y+rowHeight);ctx.stroke();
   });
@@ -74,16 +80,6 @@ async function createImage({ title, subtitle, columns, rows }: Pick<Props,"title
 
 export default function DataShareButton(props: Props){
   const [busy,setBusy]=useState(false);
-  async function share(){
-    if(busy)return;setBusy(true);
-    try{
-      const blob=await createImage(props);
-      const file=new File([blob],props.fileName,{type:"image/jpeg"});
-      const data:ShareData={title:props.title,text:`Bounce BTTS League — ${props.title}`,files:[file]};
-      const nav=navigator as Navigator & {canShare?:(data:ShareData)=>boolean};
-      if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]}))) await navigator.share(data);
-      else {const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
-    } finally {setBusy(false);}
-  }
+  async function share(){if(busy)return;setBusy(true);try{const blob=await createImage(props);const file=new File([blob],props.fileName,{type:"image/jpeg"});const data:ShareData={title:props.title,text:`Bounce BTTS League — ${props.title}`,files:[file]};const nav=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]})))await navigator.share(data);else{const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}}finally{setBusy(false)}}
   return <button type="button" className={`dataShareButton shareCompactWhatsApp ${props.compact?"compact":""}`} onClick={share} disabled={busy} aria-label={`${props.label} to WhatsApp`}>{busy?"Creating…":"Share to WhatsApp"}</button>;
 }
