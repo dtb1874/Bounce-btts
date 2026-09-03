@@ -7,7 +7,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data: profiles, error } = await admin
     .from("profiles")
-    .select("id,avatar_portrait_path")
+    .select("id,display_name,avatar_portrait_path")
     .eq("approved", true)
     .eq("active", true);
 
@@ -18,7 +18,7 @@ export async function GET() {
     const portraitUrl = path
       ? admin.storage.from("profile-images").getPublicUrl(path).data.publicUrl
       : null;
-    return { id: profile.id, portraitUrl };
+    return { id: profile.id, displayName: profile.display_name, portraitUrl };
   });
 
   return NextResponse.json({ portraits }, {
