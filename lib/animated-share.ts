@@ -1,7 +1,5 @@
 "use client";
 
-import { drawPortraitRibbon, loadSharePortraits, portraitMembers } from "@/lib/share-portraits";
-
 type AnimatedShareOptions = {
   width: number;
   height: number;
@@ -72,24 +70,11 @@ export async function createAnimatedShareFile(options: AnimatedShareOptions) {
   } = options;
   if (frameCount <= 0) throw new Error("Nothing to animate yet.");
 
-  const portraits = await loadSharePortraits();
-  const memberCount = portraitMembers(portraits).length;
-  const scale = width / 1200;
-  const perRow = width >= 900 ? 7 : 5;
-  const portraitRows = memberCount ? Math.ceil(memberCount / perRow) : 0;
-  const ribbonHeight = memberCount ? Math.round(Math.max(145 * scale, (54 + portraitRows * 74) * scale)) : 0;
-
   const canvas = document.createElement("canvas");
   canvas.width = width;
-  canvas.height = height + ribbonHeight;
+  canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create share canvas.");
-
-  const renderFrame = (index: number) => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawFrame(ctx, index);
-    if (ribbonHeight) drawPortraitRibbon(ctx, portraits, { y: height, width, height: ribbonHeight });
-  };
 
   const captureStream = (canvas as HTMLCanvasElement & { captureStream?: (fps?: number) => MediaStream }).captureStream;
   const mimeType = preferredVideoType();
@@ -106,10 +91,10 @@ export async function createAnimatedShareFile(options: AnimatedShareOptions) {
     recorder.onerror = () => reject(new Error("Could not create animated share."));
   });
 
-  renderFrame(0);
+  drawFrame(ctx, 0);
   recorder.start(200);
   for (let index = 0; index < frameCount; index += 1) {
-    renderFrame(index);
+    drawFrame(ctx, index);
     await sleep(index === frameCount - 1 ? finalHoldMs : frameDurationMs);
   }
   recorder.stop();
