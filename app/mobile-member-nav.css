@@ -130,3 +130,18 @@
     font-size: 11.5px;
   }
 }
+
+/* Tablet landscape can be desktop-wide but still vertically constrained. Keep the
+   existing desktop/sidebar presentation, but contain it to the visible viewport
+   and allow the menu itself to scroll rather than clipping the member card. */
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
+  main[class*="shell"] > aside {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  }
+}
