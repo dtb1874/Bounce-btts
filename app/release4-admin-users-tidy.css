@@ -34,18 +34,26 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     column-gap: 12px !important;
     row-gap: 10px !important;
-    padding: 52px 14px 14px !important;
+    padding: 58px 14px 14px !important;
     border-radius: 18px !important;
     box-sizing: border-box;
   }
 
+  /* Premium user-card title. Leave a protected area at the right for the disclosure control. */
   [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"]::before {
-    min-height: 40px !important;
-    padding: 8px 14px !important;
+    min-height: 46px !important;
+    padding: 9px 62px 9px 14px !important;
     align-items: center;
-    font-size: 10px !important;
-    line-height: 1.15;
-    letter-spacing: .11em;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    line-height: 1.08 !important;
+    letter-spacing: .105em !important;
+    color: #f0cfaa !important;
+    text-shadow: 0 3px 12px rgba(0,0,0,.36);
+    background:
+      linear-gradient(90deg,rgba(112,28,54,.88),rgba(77,20,39,.68) 58%,rgba(40,15,25,.86)) !important;
+    border-bottom: 1px solid rgba(232,190,111,.28) !important;
     box-sizing: border-box;
   }
 
@@ -158,6 +166,50 @@
     line-height: 1 !important;
     white-space: nowrap;
   }
+
+  /* Member contact/profile portal is appended in the DOM, but on mobile it belongs directly under the card header. */
+  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] > [data-member-profile-host="true"] {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    order: -10 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  [class*="adminPage"] [data-member-profile-host="true"] > details {
+    margin: 0 !important;
+  }
+
+  /* Override the portal's inline summary geometry so it lives wholly inside the title bar. */
+  [class*="adminPage"] [data-member-profile-host="true"] > details > summary {
+    top: -52px !important;
+    right: 0 !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 11px !important;
+    border-color: rgba(240,207,170,.48) !important;
+    background: linear-gradient(180deg,rgba(40,23,29,.96),rgba(17,13,17,.98)) !important;
+    color: #f0cfaa !important;
+    box-shadow: 0 5px 14px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+    font-size: 18px !important;
+    z-index: 8 !important;
+  }
+
+  /* When opened, the contact/photo controls become the first full-width content block. */
+  [class*="adminPage"] [data-member-profile-host="true"] > details[open] > div {
+    margin: 0 0 4px !important;
+    padding: 14px 12px 13px !important;
+    border: 1px solid rgba(216,183,111,.22) !important;
+    border-top: 2px solid rgba(216,183,111,.56) !important;
+    border-radius: 13px !important;
+    background:
+      radial-gradient(circle at 92% 8%,rgba(240,207,170,.07),transparent 8rem),
+      linear-gradient(145deg,rgba(33,17,24,.96),rgba(14,12,16,.98));
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  }
 }
 
 @media (max-width: 390px) {
@@ -177,6 +229,13 @@
     padding-right: 11px !important;
   }
 
+  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"]::before {
+    padding-left: 12px !important;
+    padding-right: 56px !important;
+    font-size: 13px !important;
+    letter-spacing: .095em !important;
+  }
+
   [class*="adminPage"] [class*="adminUserField"] input,
   [class*="adminPage"] [class*="adminUserField"] select {
     padding: 0 9px !important;
@@ -190,5 +249,10 @@
   [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] > * {
     min-height: 52px !important;
     height: 52px !important;
+  }
+
+  [class*="adminPage"] [data-member-profile-host="true"] > details[open] > div {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
   }
 }
