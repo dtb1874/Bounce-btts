@@ -62,4 +62,13 @@ if (source.includes(releaseRenderAnchor)) {
   throw new Error("Could not place Release History catch-up entries");
 }
 
+// Stage 2: align the existing React-rendered current version/date with the newest
+// release entry. This is a build-time source replacement only; no browser runtime code.
+const oldReleaseVersion = 'const RELEASE_VERSION = "1.6.3";';
+const oldReleaseDate = 'const RELEASE_DATE = "20 Aug 2026";';
+if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.11.1";');
+else if (!source.includes('const RELEASE_VERSION = "1.11.1";')) throw new Error("Could not align release version");
+if (source.includes(oldReleaseDate)) source = source.replace(oldReleaseDate, 'const RELEASE_DATE = "3 Sep 2026";');
+else if (!source.includes('const RELEASE_DATE = "3 Sep 2026";')) throw new Error("Could not align release date");
+
 fs.writeFileSync(path, source);
