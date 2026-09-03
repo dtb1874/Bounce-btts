@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -54,6 +56,30 @@ jobs:
             echo "Historical release patch directory detected at repository root"
             exit 1
           fi
+
+      - name: Require release history update
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          # Emergency rollback PRs must never be blocked by release-note bookkeeping.
+          if [[ "$HEAD_REF" == rollback/* ]]; then
+            echo "Rollback branch detected; release-history update requirement waived."
+            exit 0
+          fi
+
+          if git diff --quiet "$BASE_SHA"...HEAD -- scripts/apply-reminder-history.mjs; then
+            echo "Release History was not updated."
+            echo "Every normal PR to main must update scripts/apply-reminder-history.mjs with the release entry/version metadata."
+            echo "Emergency rollback branches named rollback/* are exempt."
+            exit 1
+          fi
+
+          echo "Release History update detected."
 
       - name: Production build
         run: npm run build
