@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 type Portrait = { id: string; displayName?: string; portraitUrl?: string | null };
-
 type Identity = { name: string; portraitUrl: string | null };
 
 function normalise(value: string) {
@@ -21,6 +20,12 @@ export default function MobileSidebarPortrait() {
     let cancelled = false;
     let observer: MutationObserver | null = null;
     let resolving = false;
+    let timer = 0;
+
+    const setResolvedIdentity = (next: Identity) => {
+      if (cancelled) return;
+      setIdentity((current) => current?.name === next.name && current.portraitUrl === next.portraitUrl ? current : next);
+    };
 
     const resolvePortrait = async () => {
       if (resolving) return;
@@ -34,23 +39,27 @@ export default function MobileSidebarPortrait() {
         const rows = (data.portraits ?? []).filter((row) => row.displayName);
         const drawerText = normalise(aside.textContent ?? "");
         const match = rows.find((row) => drawerText.includes(normalise(row.displayName ?? "")));
-        if (!cancelled) {
-          const name = match?.displayName?.trim() || "Member";
-          setIdentity({ name, portraitUrl: match?.portraitUrl ?? null });
-        }
+        const name = match?.displayName?.trim() || "Member";
+        setResolvedIdentity({ name, portraitUrl: match?.portraitUrl ?? null });
       } catch {
-        if (!cancelled) setIdentity((current) => current ?? { name: "Member", portraitUrl: null });
+        setResolvedIdentity({ name: "Member", portraitUrl: null });
       } finally {
         resolving = false;
       }
     };
 
-    void resolvePortrait();
-    observer = new MutationObserver(() => void resolvePortrait());
+    const scheduleResolve = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void resolvePortrait(), 80);
+    };
+
+    scheduleResolve();
+    observer = new MutationObserver(scheduleResolve);
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
       observer?.disconnect();
     };
   }, []);
