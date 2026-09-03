@@ -144,4 +144,12 @@
     -webkit-overflow-scrolling: touch;
     padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
   }
+
+  main[class*="shell"] > aside [class*="sidebarEgg"] {
+    min-height: 72px !important;
+    height: 72px !important;
+    max-height: 72px !important;
+    margin-top: 6px !important;
+    overflow: hidden !important;
+  }
 }
