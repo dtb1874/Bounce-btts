@@ -130,3 +130,162 @@
     font-size: 11.5px;
   }
 }
+
+/* iPad/tablet landscape: preserve the actual mobile off-canvas drawer mechanics
+   as well as the mobile visual treatment. Without these overrides, widths above
+   900px inherit the desktop fixed-sidebar layout and leave the menu permanently open. */
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
+  main[class*="shell"] > aside {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    transform: translateX(-100%) !important;
+    transition: transform .18s ease !important;
+    z-index: 30 !important;
+    width: 340px !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    box-sizing: border-box;
+    padding: 18px 14px max(14px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main[class*="shell"] > aside[class*="open"] {
+    transform: none !important;
+  }
+
+  main[class*="shell"] > [class*="main"] {
+    margin-left: 0 !important;
+  }
+
+  main[class*="shell"] > button[class*="mobileMenu"] {
+    display: block !important;
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 50 !important;
+    border: 1px solid #65414b !important;
+    background: #120f14 !important;
+    color: #fff !important;
+    border-radius: 9px !important;
+    padding: 9px 11px !important;
+  }
+
+  main[class*="shell"] > button[class*="scrim"] {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, .56) !important;
+    z-index: 25 !important;
+    border: 0 !important;
+  }
+
+  .mobileSidebarPortraitHost {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    z-index: 3;
+    background: radial-gradient(circle at 35% 28%, rgba(104, 31, 52, .95), rgba(23, 13, 18, .98) 72%);
+    border: 2px solid rgba(216, 183, 111, .9);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(92, 25, 43, .36);
+  }
+
+  .mobileSidebarPortraitImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .mobileSidebarPortraitInitials {
+    color: #f4e8dd;
+    font: 900 24px/1 Arial, sans-serif;
+    letter-spacing: .04em;
+  }
+
+  main[class*="shell"] > aside nav {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+  }
+
+  main[class*="shell"] > aside nav::before,
+  main[class*="shell"] > aside nav::after {
+    grid-column: 1 / -1;
+    color: #c7af95;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    padding: 2px 4px 0;
+  }
+
+  main[class*="shell"] > aside nav::before {
+    content: "QUICK ACCESS";
+    order: 0;
+  }
+
+  main[class*="shell"] > aside nav::after {
+    content: "MORE";
+    order: 5;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(199, 175, 149, .15);
+  }
+
+  main[class*="shell"] > aside nav button {
+    min-height: 46px;
+    padding: 10px !important;
+    font-size: 12px;
+    line-height: 1.2;
+    border: 1px solid rgba(199, 175, 149, .12) !important;
+    background: rgba(24, 18, 22, .72) !important;
+  }
+
+  main[class*="shell"] > aside nav button:nth-child(1) { order: 1; }
+  main[class*="shell"] > aside nav button:nth-child(2) { order: 2; }
+  main[class*="shell"] > aside nav button:nth-child(4) { order: 3; }
+  main[class*="shell"] > aside nav button:nth-child(5) { order: 4; }
+  main[class*="shell"] > aside nav button:nth-child(3) { order: 6; }
+  main[class*="shell"] > aside nav button:nth-child(6) { order: 7; }
+  main[class*="shell"] > aside nav button:nth-child(7) { order: 8; }
+  main[class*="shell"] > aside nav button:nth-child(8) { order: 9; }
+  main[class*="shell"] > aside nav button:nth-child(9) { order: 10; }
+  main[class*="shell"] > aside nav button:nth-child(10) { order: 11; }
+
+  main[class*="shell"] > aside nav button:nth-child(1),
+  main[class*="shell"] > aside nav button:nth-child(2),
+  main[class*="shell"] > aside nav button:nth-child(4),
+  main[class*="shell"] > aside nav button:nth-child(5) {
+    border-color: rgba(199, 175, 149, .3) !important;
+    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
+  }
+
+  main[class*="shell"] > aside nav button:nth-child(4)::after,
+  main[class*="shell"] > aside nav button:nth-child(5)::after {
+    display: block;
+    margin-top: 3px;
+    color: #b99f8a;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .05em;
+  }
+
+  main[class*="shell"] > aside nav button:nth-child(4)::after { content: "Stat Centre"; }
+  main[class*="shell"] > aside nav button:nth-child(5)::after { content: "All picks"; }
+
+  main[class*="shell"] > aside [class*="sidebarEgg"] {
+    min-height: 64px !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    margin: 6px -8px 8px !important;
+    width: calc(100% + 16px) !important;
+    overflow: hidden !important;
+  }
+}
