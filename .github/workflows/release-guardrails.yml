@@ -12,6 +12,9 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
         with:
@@ -108,9 +111,11 @@ jobs:
       - name: Install Chromium for hydration smoke test
         run: npx -y @playwright/test@1.55.0 install --with-deps chromium
 
-      - name: Start production server
+      - name: Start CI auth mock and production server
         shell: bash
         run: |
+          node -e 'const http=require("http");http.createServer((req,res)=>{res.writeHead(401,{"content-type":"application/json"});res.end(JSON.stringify({message:"CI unauthenticated"}));}).listen(54321,"127.0.0.1");' > /tmp/bounce-auth-mock.log 2>&1 &
+          echo $! > /tmp/bounce-auth-mock.pid
           npm start > /tmp/bounce-next.log 2>&1 &
           echo $! > /tmp/bounce-next.pid
           for i in {1..30}; do
@@ -119,6 +124,7 @@ jobs:
             fi
             sleep 1
           done
+          cat /tmp/bounce-auth-mock.log
           cat /tmp/bounce-next.log
           exit 1
 
