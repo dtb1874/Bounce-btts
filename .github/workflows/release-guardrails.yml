@@ -12,8 +12,13 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -55,6 +60,40 @@ jobs:
             exit 1
           fi
 
+      - name: Block unsafe release DOM mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'footer\.textContent\s*=|new MutationObserver\(' app lib 2>/dev/null | grep -E 'ReleaseInfo|release-info|footer\.textContent'; then
+            echo "Unsafe release-info DOM mutation pattern detected."
+            echo "Release metadata must render through React-owned components, never by rewriting React-owned DOM."
+            exit 1
+          fi
+
+      - name: Require release history update
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          # Emergency rollback PRs must never be blocked by release-note bookkeeping.
+          if [[ "$HEAD_REF" == rollback/* ]]; then
+            echo "Rollback branch detected; release-history update requirement waived."
+            exit 0
+          fi
+
+          if git diff --quiet "$BASE_SHA"...HEAD -- scripts/apply-reminder-history.mjs; then
+            echo "Release History was not updated."
+            echo "Every normal PR to main must update scripts/apply-reminder-history.mjs with the release entry/version metadata."
+            echo "Emergency rollback branches named rollback/* are exempt."
+            exit 1
+          fi
+
+          echo "Release History update detected."
+
       - name: Production build
         run: npm run build
 
@@ -68,3 +107,29 @@ jobs:
             git status --short --untracked-files=no
             exit 1
           fi
+
+      - name: Install Playwright test runner for CI only
+        run: npm install --no-save --ignore-scripts @playwright/test@1.55.0
+
+      - name: Install Chromium for hydration smoke test
+        run: npx playwright install --with-deps chromium
+
+      - name: Start CI auth mock and production server
+        shell: bash
+        run: |
+          node -e 'const http=require("http");http.createServer((req,res)=>{res.writeHead(401,{"content-type":"application/json"});res.end(JSON.stringify({message:"CI unauthenticated"}));}).listen(54321,"127.0.0.1");' > /tmp/bounce-auth-mock.log 2>&1 &
+          echo $! > /tmp/bounce-auth-mock.pid
+          npm start > /tmp/bounce-next.log 2>&1 &
+          echo $! > /tmp/bounce-next.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/bounce-auth-mock.log
+          cat /tmp/bounce-next.log
+          exit 1
+
+      - name: Browser hydration smoke test
+        run: npx playwright test tests/hydration-smoke.spec.js --reporter=line
