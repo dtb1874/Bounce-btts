@@ -49,10 +49,13 @@ function rounded(value: number, digits = 1) {
 }
 
 function leader(rows: Row[], metric: (row: Row) => number | null, direction: "high" | "low" = "high") {
-  const scored = rows.map((row) => ({ row, value: metric(row) })).filter((item): item is { row: Row; value: number } => item.value != null && Number.isFinite(item.value));
+  const scored = rows
+    .map((row) => ({ row, value: metric(row) }))
+    .filter((item): item is { row: Row; value: number } => item.value != null && Number.isFinite(item.value))
+    .map((item) => ({ ...item, displayedValue: rounded(item.value) }));
   if (!scored.length) return null;
-  const target = direction === "high" ? Math.max(...scored.map((item) => item.value)) : Math.min(...scored.map((item) => item.value));
-  const names = scored.filter((item) => Math.abs(item.value - target) < 0.0001).map((item) => item.row.name).sort((a, b) => a.localeCompare(b));
+  const target = direction === "high" ? Math.max(...scored.map((item) => item.displayedValue)) : Math.min(...scored.map((item) => item.displayedValue));
+  const names = scored.filter((item) => item.displayedValue === target).map((item) => item.row.name).sort((a, b) => a.localeCompare(b));
   return { names, value: target };
 }
 
