@@ -13,6 +13,7 @@
 *:has(>.shotStatsReplacement)>small{display:none!important}
 .shotStatsReplacement{width:100%;display:grid;gap:5px;text-align:left}
 .shotStatsEyebrow{color:#d9b85f;font-size:10px;font-weight:900;letter-spacing:.12em}
+.shotStatsCoverageNote{margin-left:4px;color:#8f8589;font-size:8px;font-weight:500;letter-spacing:.02em;text-transform:none;font-style:italic}
 .shotStatsLead{color:#f4e5d6;font-size:20px;line-height:1.05}
 .shotStatsLeadDetail{color:#a99ba0;font-size:10px;line-height:1.4}
 .shotStatsToggle,.shotStatsRefresh,.shotStatsMobileOpen{margin-top:4px;width:100%;border:1px solid rgba(217,184,95,.34);background:rgba(217,184,95,.07);color:#d9b85f;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:900;letter-spacing:.04em;cursor:pointer}
@@ -61,6 +62,7 @@
   .shotStatsAwards{grid-template-columns:1fr}
   .shotStatsAwards article:last-child{grid-column:auto}
   .shotStatsLead{font-size:18px}
+  .shotStatsCoverageNote{font-size:7px}
   .shotStatsTableWrap{display:none}
   .shotStatsMobileOpen{display:block}
   .shotStatsAwards article{padding:10px 11px}
