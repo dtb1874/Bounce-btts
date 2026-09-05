@@ -14,30 +14,57 @@
 .shotStatsReplacement{width:100%;display:grid;gap:5px;text-align:left}
 .shotStatsEyebrow{color:#d9b85f;font-size:10px;font-weight:900;letter-spacing:.12em}
 .shotStatsLead{color:#f4e5d6;font-size:20px;line-height:1.05}
-.shotStatsLeadDetail{color:#a99ba0;font-size:10px}
-.shotStatsToggle,.shotStatsRefresh{margin-top:4px;width:100%;border:1px solid rgba(217,184,95,.34);background:rgba(217,184,95,.07);color:#d9b85f;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:900;letter-spacing:.04em;cursor:pointer}
+.shotStatsLeadDetail{color:#a99ba0;font-size:10px;line-height:1.4}
+.shotStatsToggle,.shotStatsRefresh,.shotStatsMobileOpen{margin-top:4px;width:100%;border:1px solid rgba(217,184,95,.34);background:rgba(217,184,95,.07);color:#d9b85f;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:900;letter-spacing:.04em;cursor:pointer}
 .shotStatsRefresh{width:auto;padding:7px 10px;margin-top:2px}
+.shotStatsMobileOpen{display:none}
 .shotStatsToggle:disabled,.shotStatsRefresh:disabled{opacity:.55;cursor:default}
 .shotStatsBody{margin-top:6px;display:grid;gap:12px}
-.shotStatsExplainer{display:grid;gap:5px;padding:10px;border:1px solid rgba(217,184,95,.18);border-radius:10px;background:rgba(255,255,255,.025)}
+.shotStatsExplainer{display:grid;gap:6px;padding:11px;border:1px solid rgba(217,184,95,.18);border-radius:10px;background:rgba(255,255,255,.025)}
 .shotStatsExplainer strong{color:#f4e5d6;font-size:12px}
-.shotStatsExplainer small{color:#a99ba0;font-size:10px;line-height:1.45}
+.shotStatsExplainer small{color:#a99ba0;font-size:10px;line-height:1.5}
+.shotStatsExplainer small b{color:#d8c1ad}
 .shotStatsError{color:#ee8993!important}
 .shotStatsAwards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.shotStatsAwards article{min-width:0;border:1px solid rgba(217,184,95,.17);border-radius:10px;padding:9px;background:rgba(102,27,53,.12);display:grid;gap:3px}
+.shotStatsAwards article{min-width:0;border:1px solid rgba(217,184,95,.17);border-radius:10px;padding:9px;background:rgba(102,27,53,.12);display:grid;gap:4px}
 .shotStatsAwards span{color:#d9b85f;font-size:8px;font-weight:900;letter-spacing:.09em}
 .shotStatsAwards strong{color:#f4e5d6;font-size:12px;overflow:hidden;text-overflow:ellipsis}
-.shotStatsAwards small{color:#a99ba0;font-size:9px;line-height:1.3}
+.shotStatsAwards small{color:#d8c1ad;font-size:9px;line-height:1.3}
+.shotStatsAwards em{color:#8f8589;font-size:8px;line-height:1.35;font-style:normal}
 .shotStatsTableWrap{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px}
-.shotStatsTableHead,.shotStatsTableRow{display:grid;grid-template-columns:minmax(130px,1.5fr) repeat(5,minmax(68px,.7fr));gap:8px;align-items:center;min-width:560px;padding:8px 10px}
+.shotStatsTableHead,.shotStatsTableRow{display:grid;grid-template-columns:minmax(130px,1.5fr) repeat(5,minmax(78px,.7fr));gap:8px;align-items:center;min-width:610px;padding:8px 10px}
 .shotStatsTableHead{background:rgba(217,184,95,.08);color:#d9b85f;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 .shotStatsTableRow{border-top:1px solid rgba(255,255,255,.06);color:#f4e5d6;font-size:10px}
 .shotStatsTableRow>span{min-width:0}
 .shotStatsTableRow strong{display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shotStatsTableRow small{display:block;color:#8f8589;font-size:8px;margin-top:2px}
 .shotStatsEmpty{display:block;padding:12px;color:#a99ba0}
+.shotStatsOverlay{position:fixed;inset:0;z-index:10000;background:rgba(7,6,8,.88);backdrop-filter:blur(8px);display:flex;align-items:stretch;justify-content:center;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))}
+.shotStatsOverlayCard{width:min(760px,100%);height:100%;overflow-y:auto;border:1px solid rgba(217,184,95,.35);border-radius:18px;background:linear-gradient(180deg,#1a1015 0%,#0e0b0e 100%);box-shadow:0 20px 60px rgba(0,0,0,.5);padding:14px;display:grid;align-content:start;gap:12px}
+.shotStatsOverlayCard>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:sticky;top:-14px;background:#1a1015;padding:14px 0 10px;z-index:2;border-bottom:1px solid rgba(217,184,95,.18)}
+.shotStatsOverlayCard>header span{color:#d9b85f;font-size:9px;font-weight:900;letter-spacing:.12em}
+.shotStatsOverlayCard>header h2{margin:2px 0;color:#f4e5d6;font-size:22px}
+.shotStatsOverlayCard>header small{color:#9c9095;font-size:9px}
+.shotStatsOverlayCard>header button{border:1px solid rgba(217,184,95,.35);background:rgba(217,184,95,.08);color:#f4e5d6;border-radius:999px;width:38px;height:38px;font-size:24px;line-height:1;cursor:pointer;flex:0 0 auto}
+.shotStatsOverlayKey{border:1px solid rgba(217,184,95,.16);border-radius:10px;padding:9px 10px;background:rgba(217,184,95,.04)}
+.shotStatsOverlayKey small{color:#a99ba0;font-size:10px;line-height:1.45}.shotStatsOverlayKey b{color:#d8c1ad}
+.shotStatsMobileRows{display:grid;gap:9px}
+.shotStatsMobileRow{border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden}
+.shotStatsMobileMember{padding:10px 11px;border-bottom:1px solid rgba(217,184,95,.12);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.shotStatsMobileMember strong{color:#f4e5d6;font-size:14px}.shotStatsMobileMember small{color:#9c9095;font-size:9px}
+.shotStatsMobileMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.shotStatsMobileMetrics span{padding:9px 11px;display:grid;gap:3px;border-top:1px solid rgba(255,255,255,.045)}
+.shotStatsMobileMetrics span:nth-child(odd){border-right:1px solid rgba(255,255,255,.045)}
+.shotStatsMobileMetrics small{color:#9c9095;font-size:7px;font-weight:800;letter-spacing:.06em}
+.shotStatsMobileMetrics b{color:#f4e5d6;font-size:13px}
 @media(max-width:900px){
-  .shotStatsAwards{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .shotStatsAwards article:last-child{grid-column:1/-1}
+  .shotStatsAwards{grid-template-columns:1fr}
+  .shotStatsAwards article:last-child{grid-column:auto}
   .shotStatsLead{font-size:18px}
+  .shotStatsTableWrap{display:none}
+  .shotStatsMobileOpen{display:block}
+  .shotStatsAwards article{padding:10px 11px}
+  .shotStatsAwards strong{font-size:15px}
+  .shotStatsAwards small{font-size:10px}
+  .shotStatsAwards em{font-size:9px}
 }
