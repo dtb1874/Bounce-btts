@@ -8,9 +8,9 @@
 
 /* Shot performance replaces the old synthetic Value Leader card without mutating React-owned DOM. */
 *:has(>.shotStatsReplacement){grid-column:1/-1}
-*:has(>.shotStatsReplacement)>span:not(.shotStatsReplacement *),
-*:has(>.shotStatsReplacement)>strong:not(.shotStatsReplacement *),
-*:has(>.shotStatsReplacement)>small:not(.shotStatsReplacement *){display:none!important}
+*:has(>.shotStatsReplacement)>span,
+*:has(>.shotStatsReplacement)>strong,
+*:has(>.shotStatsReplacement)>small{display:none!important}
 .shotStatsReplacement{width:100%;display:grid;gap:5px;text-align:left}
 .shotStatsEyebrow{color:#d9b85f;font-size:10px;font-weight:900;letter-spacing:.12em}
 .shotStatsLead{color:#f4e5d6;font-size:20px;line-height:1.05}
