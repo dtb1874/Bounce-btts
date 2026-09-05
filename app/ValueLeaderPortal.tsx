@@ -57,9 +57,39 @@ function leader(rows: Row[], metric: (row: Row) => number | null, direction: "hi
   return { names, value: target };
 }
 
+function MemberRows({ rows, mobile = false }: { rows: Row[]; mobile?: boolean }) {
+  if (!rows.length) return <small className="shotStatsEmpty">No finished picks with complete shot statistics yet.</small>;
+  if (mobile) {
+    return <div className="shotStatsMobileRows">{rows.map((row) => (
+      <article className="shotStatsMobileRow" key={row.id}>
+        <div className="shotStatsMobileMember"><strong>{row.name}</strong><small>{row.picks} covered pick{row.picks === 1 ? "" : "s"}</small></div>
+        <div className="shotStatsMobileMetrics">
+          <span><small>AVG TOTAL SHOTS</small><b>{rounded(row.avgShots)}</b></span>
+          <span><small>AVG ON TARGET</small><b>{rounded(row.avgShotsOnTarget)}</b></span>
+          <span><small>AVG GOALS</small><b>{rounded(row.avgGoals)}</b></span>
+          <span><small>SHOT CONVERSION</small><b>{row.conversion == null ? "—" : `${rounded(row.conversion)}%`}</b></span>
+          <span><small>SHOTS / GOAL</small><b>{row.shotsPerGoal == null ? "—" : rounded(row.shotsPerGoal)}</b></span>
+          <span><small>BTTS SUCCESS</small><b>{rounded(row.bttsRate)}%</b></span>
+        </div>
+      </article>
+    ))}</div>;
+  }
+  return <>{rows.map((row) => (
+    <div className="shotStatsTableRow" key={row.id}>
+      <span><strong>{row.name}</strong><small>{row.picks} covered pick{row.picks === 1 ? "" : "s"}</small></span>
+      <span>{rounded(row.avgShots)}</span>
+      <span>{rounded(row.avgShotsOnTarget)}</span>
+      <span>{rounded(row.avgGoals)}</span>
+      <span>{row.conversion == null ? "—" : `${rounded(row.conversion)}%`}<small>{row.shotsPerGoal == null ? "—" : `${rounded(row.shotsPerGoal)} shots/goal`}</small></span>
+      <span>{rounded(row.bttsRate)}%</span>
+    </div>
+  ))}</>;
+}
+
 export default function ValueLeaderPortal({ profiles, predictions, fixtures }: { profiles: Profile[]; predictions: Prediction[]; fixtures: Fixture[] }) {
   const [target, setTarget] = useState<Element | null>(null);
   const [open, setOpen] = useState(false);
+  const [mobileTableOpen, setMobileTableOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [payload, setPayload] = useState<StatsPayload | null>(null);
   const [error, setError] = useState("");
@@ -71,6 +101,15 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!mobileTableOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMobileTableOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", onKey); };
+  }, [mobileTableOpen]);
 
   async function loadStats() {
     if (loading) return;
@@ -142,11 +181,11 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
   const finished = Number(payload?.finished ?? 0);
   const primary = chanceMagnet;
 
-  return createPortal(
+  const card = createPortal(
     <div className="shotStatsReplacement" onClick={(event) => event.stopPropagation()}>
       <span className="shotStatsEyebrow">SHOT PERFORMANCE</span>
       <strong className="shotStatsLead">{primary ? primary.names.join(", ") : "—"}</strong>
-      <small className="shotStatsLeadDetail">{primary ? `${rounded(primary.value)} avg combined shots` : "Open for direct match-stat performance"}</small>
+      <small className="shotStatsLeadDetail">{primary ? `${rounded(primary.value)} average total shots across both teams in covered picks` : "Open for direct match-stat performance"}</small>
       <button type="button" className="shotStatsToggle" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         {open ? "Hide shot stats −" : "View shot stats +"}
       </button>
@@ -154,9 +193,10 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
       {open && (
         <div className="shotStatsBody">
           <div className="shotStatsExplainer">
-            <strong>How these are calculated</strong>
-            <small>Only finished picks with API-Football shot data are included. All figures come directly from Total Shots, Shots on Goal and the final score — there is no weighted or invented value score.</small>
-            <small>Shot conversion = total goals ÷ total shots. Shots per goal = total shots ÷ total goals. BTTS rate = successful BTTS picks ÷ stat-covered finished picks.</small>
+            <strong>What you are looking at</strong>
+            <small>Every figure is based on the full match each member selected, so “shots” means the home and away teams added together. We then average those match totals across that member’s covered picks.</small>
+            <small><b>Avg total shots</b> = both teams’ shots per selected match. <b>Avg on target</b> = both teams’ shots on target. <b>Avg goals</b> = final goals in the selected match.</small>
+            <small><b>Shot conversion</b> = goals ÷ total shots. <b>Shots/goal</b> = total shots ÷ goals. <b>BTTS success</b> = BTTS wins ÷ covered finished picks.</small>
             <small>{loading ? "Loading match data…" : `${coverage}/${finished} finished selected fixtures currently have full shot coverage.`}</small>
             {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Use Refresh stats to process the next batch.</small>}
             {error && <small className="shotStatsError">Stats could not be loaded: {error}. Automatic retries have stopped; use Refresh stats to try again.</small>}
@@ -164,29 +204,34 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
           </div>
 
           <div className="shotStatsAwards">
-            <article><span>CHANCE MAGNET</span><strong>{chanceMagnet?.names.join(", ") ?? "—"}</strong><small>{chanceMagnet ? `${rounded(chanceMagnet.value)} avg combined shots` : "Awaiting data"}</small></article>
-            <article><span>SHARPSHOOTER</span><strong>{sharpshooter?.names.join(", ") ?? "—"}</strong><small>{sharpshooter ? `${rounded(sharpshooter.value)} avg shots on target` : "Awaiting data"}</small></article>
-            <article><span>CLINICAL PICKER</span><strong>{clinical?.names.join(", ") ?? "—"}</strong><small>{clinical ? `${rounded(clinical.value)}% shot conversion` : "Awaiting data"}</small></article>
-            <article><span>SHOT SHY</span><strong>{shotShy?.names.join(", ") ?? "—"}</strong><small>{shotShy ? `${rounded(shotShy.value)} avg shots on target` : "Awaiting data"}</small></article>
-            <article><span>COLDEST FINISHER</span><strong>{lowestConversion?.names.join(", ") ?? "—"}</strong><small>{lowestConversion ? `${rounded(lowestConversion.value)}% shot conversion` : "Awaiting data"}</small></article>
+            <article><span>CHANCE MAGNET</span><strong>{chanceMagnet?.names.join(", ") ?? "—"}</strong><small>{chanceMagnet ? `${rounded(chanceMagnet.value)} avg total shots` : "Awaiting data"}</small><em>Highest average total shots across both teams in selected matches.</em></article>
+            <article><span>SHARPSHOOTER</span><strong>{sharpshooter?.names.join(", ") ?? "—"}</strong><small>{sharpshooter ? `${rounded(sharpshooter.value)} avg on target` : "Awaiting data"}</small><em>Highest average shots on target across both teams.</em></article>
+            <article><span>CLINICAL PICKER</span><strong>{clinical?.names.join(", ") ?? "—"}</strong><small>{clinical ? `${rounded(clinical.value)}% conversion` : "Awaiting data"}</small><em>Highest goals-to-total-shots conversion across covered picks.</em></article>
+            <article><span>SHOT SHY</span><strong>{shotShy?.names.join(", ") ?? "—"}</strong><small>{shotShy ? `${rounded(shotShy.value)} avg on target` : "Awaiting data"}</small><em>Lowest average shots on target across both teams.</em></article>
+            <article><span>COLDEST FINISHER</span><strong>{lowestConversion?.names.join(", ") ?? "—"}</strong><small>{lowestConversion ? `${rounded(lowestConversion.value)}% conversion` : "Awaiting data"}</small><em>Lowest goals-to-total-shots conversion across covered picks.</em></article>
           </div>
 
+          <button type="button" className="shotStatsMobileOpen" onClick={() => setMobileTableOpen(true)}>View full member stats ↗</button>
           <div className="shotStatsTableWrap">
-            <div className="shotStatsTableHead"><span>Member</span><span>Shots</span><span>SoT</span><span>Goals</span><span>Conv.</span><span>BTTS</span></div>
-            {rows.length ? rows.map((row) => (
-              <div className="shotStatsTableRow" key={row.id}>
-                <span><strong>{row.name}</strong><small>{row.picks} stat-covered pick{row.picks === 1 ? "" : "s"}</small></span>
-                <span>{rounded(row.avgShots)}</span>
-                <span>{rounded(row.avgShotsOnTarget)}</span>
-                <span>{rounded(row.avgGoals)}</span>
-                <span>{row.conversion == null ? "—" : `${rounded(row.conversion)}%`}<small>{row.shotsPerGoal == null ? "—" : `${rounded(row.shotsPerGoal)} shots/goal`}</small></span>
-                <span>{rounded(row.bttsRate)}%</span>
-              </div>
-            )) : <small className="shotStatsEmpty">No finished picks with complete shot statistics yet.</small>}
+            <div className="shotStatsTableHead"><span>Member</span><span>Avg shots</span><span>Avg SoT</span><span>Avg goals</span><span>Conversion</span><span>BTTS</span></div>
+            <MemberRows rows={rows}/>
           </div>
         </div>
       )}
     </div>,
     target,
   );
+
+  const mobileOverlay = mobileTableOpen ? createPortal(
+    <div className="shotStatsOverlay" role="dialog" aria-modal="true" aria-label="Full member shot statistics" onClick={() => setMobileTableOpen(false)}>
+      <section className="shotStatsOverlayCard" onClick={(event) => event.stopPropagation()}>
+        <header><div><span>SHOT PERFORMANCE</span><h2>Member stats</h2><small>Current season · {coverage}/{finished} covered finished picks</small></div><button type="button" aria-label="Close member stats" onClick={() => setMobileTableOpen(false)}>×</button></header>
+        <div className="shotStatsOverlayKey"><small><b>All shot figures combine both teams in the selected match.</b> Conversion = goals ÷ shots. BTTS = successful BTTS picks ÷ covered picks.</small></div>
+        <MemberRows rows={rows} mobile/>
+      </section>
+    </div>,
+    document.body,
+  ) : null;
+
+  return <>{card}{mobileOverlay}</>;
 }
