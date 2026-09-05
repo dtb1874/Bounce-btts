@@ -30,7 +30,6 @@ type Row = {
   avgGoals: number;
   conversion: number | null;
   shotsPerGoal: number | null;
-  bttsRate: number;
 };
 
 async function accessToken() {
@@ -69,7 +68,6 @@ function MemberRows({ rows, mobile = false }: { rows: Row[]; mobile?: boolean })
           <span><small>AVG GOALS</small><b>{rounded(row.avgGoals)}</b></span>
           <span><small>SHOT CONVERSION</small><b>{row.conversion == null ? "—" : `${rounded(row.conversion)}%`}</b></span>
           <span><small>SHOTS / GOAL</small><b>{row.shotsPerGoal == null ? "—" : rounded(row.shotsPerGoal)}</b></span>
-          <span><small>BTTS SUCCESS</small><b>{rounded(row.bttsRate)}%</b></span>
         </div>
       </article>
     ))}</div>;
@@ -81,7 +79,6 @@ function MemberRows({ rows, mobile = false }: { rows: Row[]; mobile?: boolean })
       <span>{rounded(row.avgShotsOnTarget)}</span>
       <span>{rounded(row.avgGoals)}</span>
       <span>{row.conversion == null ? "—" : `${rounded(row.conversion)}%`}<small>{row.shotsPerGoal == null ? "—" : `${rounded(row.shotsPerGoal)} shots/goal`}</small></span>
-      <span>{rounded(row.bttsRate)}%</span>
     </div>
   ))}</>;
 }
@@ -162,7 +159,6 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
           avgGoals: picks ? goals / picks : 0,
           conversion: shots > 0 ? (goals / shots) * 100 : null,
           shotsPerGoal: goals > 0 ? shots / goals : null,
-          bttsRate: picks ? (wins / picks) * 100 : 0,
         };
       })
       .filter((row) => row.picks > 0)
@@ -196,7 +192,7 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
             <strong>What you are looking at</strong>
             <small>Every figure is based on the full match each member selected, so “shots” means the home and away teams added together. We then average those match totals across that member’s covered picks.</small>
             <small><b>Avg total shots</b> = both teams’ shots per selected match. <b>Avg on target</b> = both teams’ shots on target. <b>Avg goals</b> = final goals in the selected match.</small>
-            <small><b>Shot conversion</b> = goals ÷ total shots. <b>Shots/goal</b> = total shots ÷ goals. <b>BTTS success</b> = BTTS wins ÷ covered finished picks.</small>
+            <small><b>Shot conversion</b> = goals ÷ total shots. <b>Shots/goal</b> = total shots ÷ goals. BTTS success is deliberately kept out of this table because it is already tracked elsewhere in the league and is not a shot-performance metric.</small>
             <small>{loading ? "Loading match data…" : `${coverage}/${finished} finished selected fixtures currently have full shot coverage.`}</small>
             {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Use Refresh stats to process the next batch.</small>}
             {error && <small className="shotStatsError">Stats could not be loaded: {error}. Automatic retries have stopped; use Refresh stats to try again.</small>}
@@ -213,7 +209,7 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
 
           <button type="button" className="shotStatsMobileOpen" onClick={() => setMobileTableOpen(true)}>View full member stats ↗</button>
           <div className="shotStatsTableWrap">
-            <div className="shotStatsTableHead"><span>Member</span><span>Avg shots</span><span>Avg SoT</span><span>Avg goals</span><span>Conversion</span><span>BTTS</span></div>
+            <div className="shotStatsTableHead"><span>Member</span><span>Avg shots</span><span>Avg SoT</span><span>Avg goals</span><span>Conversion</span></div>
             <MemberRows rows={rows}/>
           </div>
         </div>
@@ -226,7 +222,7 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
     <div className="shotStatsOverlay" role="dialog" aria-modal="true" aria-label="Full member shot statistics" onClick={() => setMobileTableOpen(false)}>
       <section className="shotStatsOverlayCard" onClick={(event) => event.stopPropagation()}>
         <header><div><span>SHOT PERFORMANCE</span><h2>Member stats</h2><small>Current season · {coverage}/{finished} covered finished picks</small></div><button type="button" aria-label="Close member stats" onClick={() => setMobileTableOpen(false)}>×</button></header>
-        <div className="shotStatsOverlayKey"><small><b>All shot figures combine both teams in the selected match.</b> Conversion = goals ÷ shots. BTTS = successful BTTS picks ÷ covered picks.</small></div>
+        <div className="shotStatsOverlayKey"><small><b>All shot figures combine both teams in the selected match.</b> Conversion = goals ÷ shots. Shots/goal = total shots ÷ goals.</small></div>
         <MemberRows rows={rows} mobile/>
       </section>
     </div>,
