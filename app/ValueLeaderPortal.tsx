@@ -176,10 +176,11 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
   const coverage = Number(payload?.coverage ?? 0);
   const finished = Number(payload?.finished ?? 0);
   const primary = chanceMagnet;
+  const coverageLabel = payload && finished > 0 ? `${coverage}/${finished} GAME DATA AVAILABLE` : "PARTIAL GAME DATA";
 
   const card = createPortal(
     <div className="shotStatsReplacement" onClick={(event) => event.stopPropagation()}>
-      <span className="shotStatsEyebrow">SHOT PERFORMANCE</span>
+      <span className="shotStatsEyebrow">SHOT PERFORMANCE <b className="shotStatsCoverageBadge">{coverageLabel}</b></span>
       <strong className="shotStatsLead">{primary ? primary.names.join(", ") : "—"}</strong>
       <small className="shotStatsLeadDetail">{primary ? `${rounded(primary.value)} average total shots across both teams in covered picks` : "Open for direct match-stat performance"}</small>
       <button type="button" className="shotStatsToggle" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
