@@ -191,10 +191,11 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
         <div className="shotStatsBody">
           <div className="shotStatsExplainer">
             <strong>What you are looking at</strong>
-            <small>Every figure is based on the full match each member selected, so “shots” means the home and away teams added together. We then average those match totals across that member’s covered picks.</small>
-            <small><b>Avg total shots</b> = both teams’ shots per selected match. <b>Avg on target</b> = both teams’ shots on target. <b>Avg goals</b> = final goals in the selected match.</small>
-            <small><b>Shot conversion</b> = goals ÷ total shots. <b>Shots/goal</b> = total shots ÷ goals. BTTS success is deliberately kept out of this table because it is already tracked elsewhere in the league and is not a shot-performance metric.</small>
-            {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Use Refresh stats to process the next batch.</small>}
+            <small>Stats are based only on finished selected matches where complete shot data is available. All shot figures combine both teams in the match.</small>
+            <small><b>Avg shots</b> = total shots per selected match. <b>Avg SoT</b> = shots on target. <b>Avg goals</b> = total goals.</small>
+            <small><b>Conversion</b> = goals ÷ shots. <b>Shots/goal</b> = shots ÷ goals.</small>
+            <small className="shotStatsCoverageSummary">{loading ? "Checking game data…" : `${coverage}/${finished} finished selected games have complete shot data.`}</small>
+            {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill.</small>}
             {error && <small className="shotStatsError">Stats could not be loaded: {error}. Automatic retries have stopped; use Refresh stats to try again.</small>}
             <button type="button" className="shotStatsRefresh" onClick={() => void loadStats()} disabled={loading}>{loading ? "Refreshing…" : error ? "Try stats again" : "Refresh stats"}</button>
           </div>
