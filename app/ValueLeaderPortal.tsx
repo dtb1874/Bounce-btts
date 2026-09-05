@@ -92,8 +92,8 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
   }
 
   useEffect(() => {
-    if (open && !payload && !loading) void loadStats();
-  }, [open, payload, loading]);
+    if (open && !payload && !loading && !error) void loadStats();
+  }, [open, payload, loading, error]);
 
   const rows = useMemo<Row[]>(() => {
     const statsMap = new Map((payload?.fixtures ?? []).map((row) => [row.id, row]));
@@ -158,9 +158,9 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
             <small>Only finished picks with API-Football shot data are included. All figures come directly from Total Shots, Shots on Goal and the final score — there is no weighted or invented value score.</small>
             <small>Shot conversion = total goals ÷ total shots. Shots per goal = total shots ÷ total goals. BTTS rate = successful BTTS picks ÷ stat-covered finished picks.</small>
             <small>{loading ? "Loading match data…" : `${coverage}/${finished} finished selected fixtures currently have full shot coverage.`}</small>
-            {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Re-open later or use Refresh stats.</small>}
-            {error && <small className="shotStatsError">{error}</small>}
-            <button type="button" className="shotStatsRefresh" onClick={() => void loadStats()} disabled={loading}>{loading ? "Refreshing…" : "Refresh stats"}</button>
+            {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Use Refresh stats to process the next batch.</small>}
+            {error && <small className="shotStatsError">Stats could not be loaded: {error}. Automatic retries have stopped; use Refresh stats to try again.</small>}
+            <button type="button" className="shotStatsRefresh" onClick={() => void loadStats()} disabled={loading}>{loading ? "Refreshing…" : error ? "Try stats again" : "Refresh stats"}</button>
           </div>
 
           <div className="shotStatsAwards">
