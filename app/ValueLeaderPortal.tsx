@@ -176,11 +176,11 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
   const coverage = Number(payload?.coverage ?? 0);
   const finished = Number(payload?.finished ?? 0);
   const primary = chanceMagnet;
-  const coverageLabel = payload && finished > 0 ? `${coverage}/${finished} GAME DATA AVAILABLE` : "PARTIAL GAME DATA";
+  const coverageLabel = payload && finished > 0 ? `${coverage}/${finished} game data available` : "some game data unavailable";
 
   const card = createPortal(
     <div className="shotStatsReplacement" onClick={(event) => event.stopPropagation()}>
-      <span className="shotStatsEyebrow">SHOT PERFORMANCE <b className="shotStatsCoverageBadge">{coverageLabel}</b></span>
+      <span className="shotStatsEyebrow">SHOT PERFORMANCE <em className="shotStatsCoverageNote">({coverageLabel})</em></span>
       <strong className="shotStatsLead">{primary ? primary.names.join(", ") : "—"}</strong>
       <small className="shotStatsLeadDetail">{primary ? `${rounded(primary.value)} average total shots across both teams in covered picks` : "Open for direct match-stat performance"}</small>
       <button type="button" className="shotStatsToggle" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
@@ -194,7 +194,6 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
             <small>Every figure is based on the full match each member selected, so “shots” means the home and away teams added together. We then average those match totals across that member’s covered picks.</small>
             <small><b>Avg total shots</b> = both teams’ shots per selected match. <b>Avg on target</b> = both teams’ shots on target. <b>Avg goals</b> = final goals in the selected match.</small>
             <small><b>Shot conversion</b> = goals ÷ total shots. <b>Shots/goal</b> = total shots ÷ goals. BTTS success is deliberately kept out of this table because it is already tracked elsewhere in the league and is not a shot-performance metric.</small>
-            <small>{loading ? "Loading match data…" : `${coverage}/${finished} finished selected fixtures currently have full shot coverage.`}</small>
             {Number(payload?.pending ?? 0) > 0 && <small>{payload?.pending} older fixture{payload?.pending === 1 ? "" : "s"} still await a stats backfill. Use Refresh stats to process the next batch.</small>}
             {error && <small className="shotStatsError">Stats could not be loaded: {error}. Automatic retries have stopped; use Refresh stats to try again.</small>}
             <button type="button" className="shotStatsRefresh" onClick={() => void loadStats()} disabled={loading}>{loading ? "Refreshing…" : error ? "Try stats again" : "Refresh stats"}</button>
