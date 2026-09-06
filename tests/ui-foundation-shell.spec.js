@@ -43,12 +43,16 @@ async function openDrawerAt(page, width, height, screenshotName) {
 }
 
 test.describe('UI foundation shell candidate', () => {
-  test('desktop preserves sidebar navigation and keeps the mobile portrait hidden', async ({ page }) => {
+  test('desktop preserves sidebar navigation and shell-level sibling ownership', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
+      const shell = page.locator('main[data-ui-foundation-shell="declarative"]');
       const nav = page.getByRole('navigation', { name: 'League navigation' });
       const adminNav = nav.getByRole('button', { name: /Admin/ });
+      await expect(shell).toHaveCount(1);
+      await expect(shell.locator(':scope > section')).toHaveCount(1);
+      await expect(shell.locator(':scope > [data-ui-foundation-shell-layer="after-content"]')).toHaveCount(1);
       await expect(nav).toBeVisible();
       await expect(nav.getByRole('button', { name: 'Dashboard' })).toBeVisible();
       await expect(nav.getByText('QUICK ACCESS', { exact: true })).toBeHidden();
