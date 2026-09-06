@@ -16,17 +16,18 @@ This is the starting map for issue #61. It records where presentation is current
 `app/layout.tsx` currently imports, in order:
 
 1. `globals.css`
-2. `tynecastle-watermark.css`
-3. `league-table.css`
-4. `pre-v2-compact-restoration.css`
-5. `public-mobile-tuning.css`
-6. `league-stats.css`
-7. `dashboard-fixture-rows.css`
-8. `gameweek-recap-order.css`
-9. `mobile-member-nav.css`
-10. `release4-history.css`
-11. `release4-history-champion.css`
-12. `release4-admin-users-tidy.css`
+2. `ui-foundation.css` — additive shared tokens/primitives only; no migrated page owns this layer yet
+3. `tynecastle-watermark.css`
+4. `league-table.css`
+5. `pre-v2-compact-restoration.css`
+6. `public-mobile-tuning.css`
+7. `league-stats.css`
+8. `dashboard-fixture-rows.css`
+9. `gameweek-recap-order.css`
+10. `mobile-member-nav.css`
+11. `release4-history.css`
+12. `release4-history-champion.css`
+13. `release4-admin-users-tidy.css`
 
 This is the principal override stack to unwind. Later files can beat earlier rules by source order; broad generated-class selectors and `!important` rules mean specificity must also be audited before removal.
 
@@ -143,14 +144,15 @@ Target: centralise breakpoint intent, not necessarily force every component onto
 
 Phase 1 is documentation/inventory only and is itself the first rollback point.
 
-Phase 2 should introduce shared design tokens and the smallest behaviour-free primitives without moving page structure. Recommended first candidates:
+Phase 2 now establishes an additive foundation layer:
 
-- colour/surface/border/text tokens already repeated across scoped styles;
-- spacing/radius constants where visual equivalence can be proven;
-- non-interactive panel/section-heading primitives;
-- no nav, pick, scoring, sharing or admin behavioural components in the first primitive pass.
+- `app/ui-foundation.css` contains aliases for the existing background, surface, maroon, border, text and success colours rather than replacing their current values;
+- shared spacing, radius, shadow and display-font tokens are available for later migrations;
+- `.uiSurface` and `.uiSectionHeading` are opt-in, non-interactive primitives matching existing panel/heading geometry;
+- `app/layout.tsx` loads the foundation immediately after `globals.css`, before all legacy/specialist layers;
+- no existing page selector has been converted to the new primitives yet, so the rollback boundary remains behaviour- and layout-neutral.
 
-Only after that foundation is stable should the shell/navigation phase begin.
+The next phase is shell/navigation. Before changing its JSX or CSS, inventory `MobileSidebarPortrait`, responsive nav ownership and the relevant `LeagueApp.tsx`/`release.module.css` selectors so the desktop, phone, iPad portrait and iPad landscape contracts are explicit.
 
 ## 8. Required inventory before deleting a bridge or override
 
