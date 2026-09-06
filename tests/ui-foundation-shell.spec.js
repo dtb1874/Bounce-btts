@@ -43,7 +43,7 @@ async function openDrawerAt(page, width, height, screenshotName) {
 }
 
 test.describe('UI foundation shell candidate', () => {
-  test('desktop preserves sidebar navigation and role visibility', async ({ page }) => {
+  test('desktop preserves sidebar navigation and keeps the mobile portrait hidden', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
@@ -55,6 +55,7 @@ test.describe('UI foundation shell candidate', () => {
       await expect(nav.getByText('MORE', { exact: true })).toBeHidden();
       await expect(nav.getByText('Stat Centre', { exact: true })).toBeHidden();
       await expect(nav.getByText('All picks', { exact: true })).toBeHidden();
+      await expect(page.locator('.uiFoundationSidebarPortrait')).toBeHidden();
       await expect(adminNav).toHaveCount(0);
       await page.getByRole('button', { name: 'Show admin nav' }).click();
       await expect(adminNav).toBeVisible();
@@ -64,14 +65,37 @@ test.describe('UI foundation shell candidate', () => {
     });
   });
 
-  test('narrow phone opens and closes the drawer through the semantic mobile contract', async ({ page }) => {
+  test('narrow phone opens and closes the drawer with initials fallback', async ({ page }) => {
+    await page.route('**/api/member-portraits', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ portraits: [] }) });
+    });
     await assertNoPageErrors(page, async () => {
-      await openDrawerAt(page, 390, 844, 'phone-390x844-drawer.png');
+      const sidebar = await openDrawerAt(page, 390, 844, 'phone-390x844-drawer.png');
+      await expect(sidebar.locator('.uiFoundationSidebarPortrait')).toBeVisible();
+      await expect(sidebar.locator('.mobileSidebarPortraitInitials')).toHaveText('PM');
       const scrim = page.getByRole('button', { name: 'Close menu' });
       const scrimBox = await scrim.boundingBox();
       expect(scrimBox).not.toBeNull();
       await page.mouse.click(scrimBox.x + scrimBox.width - 8, scrimBox.y + scrimBox.height / 2);
       await expect(page.getByRole('button', { name: 'Open menu' })).toBeVisible();
+    });
+  });
+
+  test('narrow phone renders the matched member portrait when available', async ({ page }) => {
+    const portraitUrl = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22%3E%3Crect width=%2272%22 height=%2272%22 fill=%22%23742034%22/%3E%3C/svg%3E';
+    await page.route('**/api/member-portraits', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ portraits: [{ id: 'preview', displayName: 'Preview Member', portraitUrl }] }),
+      });
+    });
+    await assertNoPageErrors(page, async () => {
+      const sidebar = await openDrawerAt(page, 390, 844, 'phone-390x844-portrait.png');
+      const portrait = sidebar.locator('.uiFoundationSidebarPortrait');
+      await expect(portrait).toBeVisible();
+      await expect(portrait.locator('.mobileSidebarPortraitImage')).toHaveAttribute('src', portraitUrl);
+      await expect(portrait.locator('.mobileSidebarPortraitInitials')).toHaveCount(0);
     });
   });
 
