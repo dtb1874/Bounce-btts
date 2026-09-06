@@ -71,8 +71,9 @@ test.describe('UI foundation shell candidate', () => {
     });
     await assertNoPageErrors(page, async () => {
       const sidebar = await openDrawerAt(page, 390, 844, 'phone-390x844-drawer.png');
-      await expect(sidebar.locator('.uiFoundationSidebarPortrait')).toBeVisible();
-      await expect(sidebar.locator('.mobileSidebarPortraitInitials')).toHaveText('PM');
+      const portrait = sidebar.locator('.uiFoundationSidebarPortrait');
+      await expect(portrait).toBeVisible();
+      await expect(portrait.locator('.mobileSidebarPortraitInitials')).toHaveText('PM');
       const scrim = page.getByRole('button', { name: 'Close menu' });
       const scrimBox = await scrim.boundingBox();
       expect(scrimBox).not.toBeNull();
