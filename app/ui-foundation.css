@@ -55,7 +55,8 @@
 /* Phase-3 shell candidate only. The production LeagueApp navigation remains on
    its legacy selectors until the declarative shell is explicitly activated. */
 .uiFoundationNavGroup,
-.uiFoundationNavHelper {
+.uiFoundationNavHelper,
+.uiFoundationSidebarPortrait {
   display: none;
 }
 
