@@ -136,3 +136,12 @@ jobs:
 
       - name: UI foundation shell contract
         run: npx playwright test tests/ui-foundation-shell.spec.js --reporter=line
+
+      - name: Upload UI foundation shell screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-foundation-shell-screenshots
+          path: artifacts/ui-foundation-shell/*.png
+          if-no-files-found: ignore
+          retention-days: 7
