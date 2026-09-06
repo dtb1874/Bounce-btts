@@ -40,7 +40,7 @@ export default function SidebarMemberPortrait({ displayName }: SidebarMemberPort
   }, [displayName]);
 
   return (
-    <div className="mobileSidebarPortraitHost" aria-label={`${displayName} profile picture`}>
+    <div className="mobileSidebarPortraitHost uiFoundationSidebarPortrait" aria-label={`${displayName} profile picture`}>
       {portraitUrl ? (
         <img className="mobileSidebarPortraitImage" src={portraitUrl} alt={`${displayName} profile picture`} />
       ) : (
