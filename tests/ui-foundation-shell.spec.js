@@ -19,6 +19,20 @@ async function waitForDrawerOpen(sidebar) {
   }, { timeout: 3000 }).toBeGreaterThanOrEqual(-1);
 }
 
+async function openDrawerAt(page, width, height, screenshotName) {
+  await page.setViewportSize({ width, height });
+  await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
+  const openMenu = page.getByRole('button', { name: 'Open menu' });
+  const sidebar = page.locator('main > aside');
+  await expect(openMenu).toBeVisible();
+  await openMenu.click();
+  await waitForDrawerOpen(sidebar);
+  await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
+  await page.screenshot({ path: path.join(screenshotDir, screenshotName), fullPage: true });
+  return sidebar;
+}
+
 test.describe('UI foundation shell candidate', () => {
   test('desktop preserves sidebar navigation and role visibility', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -38,18 +52,8 @@ test.describe('UI foundation shell candidate', () => {
   });
 
   test('narrow phone opens and closes the drawer through the existing mobile contract', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
     await assertNoPageErrors(page, async () => {
-      await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
-      const openMenu = page.getByRole('button', { name: 'Open menu' });
-      const sidebar = page.locator('main > aside');
-      await expect(openMenu).toBeVisible();
-      await openMenu.click();
-      await waitForDrawerOpen(sidebar);
-      await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
-      await expect(sidebar.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
-      await page.screenshot({ path: path.join(screenshotDir, 'phone-390x844-drawer.png'), fullPage: true });
-
+      await openDrawerAt(page, 390, 844, 'phone-390x844-drawer.png');
       const scrim = page.getByRole('button', { name: 'Close menu' });
       const scrimBox = await scrim.boundingBox();
       expect(scrimBox).not.toBeNull();
@@ -58,21 +62,38 @@ test.describe('UI foundation shell candidate', () => {
     });
   });
 
-  test('iPad landscape keeps the sidebar as an off-canvas drawer', async ({ page }) => {
-    await page.setViewportSize({ width: 1180, height: 820 });
+  test('large phone keeps the full drawer within the viewport', async ({ page }) => {
     await assertNoPageErrors(page, async () => {
-      await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
-      const openMenu = page.getByRole('button', { name: 'Open menu' });
-      const sidebar = page.locator('main > aside');
-      await expect(openMenu).toBeVisible();
-      await openMenu.click();
-      await waitForDrawerOpen(sidebar);
+      const sidebar = await openDrawerAt(page, 430, 932, 'phone-430x932-drawer.png');
+      const box = await sidebar.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x).toBeGreaterThanOrEqual(-1);
+      expect(box.width).toBeLessThan(430);
+    });
+  });
+
+  test('iPad portrait uses the mobile drawer without desktop sidebar offset', async ({ page }) => {
+    await assertNoPageErrors(page, async () => {
+      const sidebar = await openDrawerAt(page, 820, 1180, 'ipad-portrait-820x1180-drawer.png');
+      const box = await sidebar.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x).toBeGreaterThanOrEqual(-1);
+      expect(box.width).toBeGreaterThanOrEqual(300);
+      expect(box.width).toBeLessThanOrEqual(340);
+      const main = page.locator('main > section').first();
+      const mainBox = await main.boundingBox();
+      expect(mainBox).not.toBeNull();
+      expect(mainBox.x).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  test('iPad landscape keeps the sidebar as an off-canvas drawer', async ({ page }) => {
+    await assertNoPageErrors(page, async () => {
+      const sidebar = await openDrawerAt(page, 1180, 820, 'ipad-landscape-1180x820-drawer.png');
       const box = await sidebar.boundingBox();
       expect(box).not.toBeNull();
       expect(box.width).toBeGreaterThanOrEqual(330);
       expect(box.width).toBeLessThanOrEqual(350);
-      await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
-      await page.screenshot({ path: path.join(screenshotDir, 'ipad-landscape-1180x820-drawer.png'), fullPage: true });
     });
   });
 });
