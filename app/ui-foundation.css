@@ -51,3 +51,112 @@
   font-weight: 700;
   letter-spacing: .08em;
 }
+
+/* Phase-3 shell candidate only. The production LeagueApp navigation remains on
+   its legacy selectors until the declarative shell is explicitly activated. */
+.uiFoundationNavGroup,
+.uiFoundationNavHelper {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .uiFoundationNav::before,
+  .uiFoundationNav::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .uiFoundationNavGroup {
+    display: block;
+    grid-column: 1 / -1;
+    color: #c7af95;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    padding: 2px 4px 0;
+  }
+
+  .uiFoundationNavGroupQuick { order: 0; }
+  .uiFoundationNavGroupMore {
+    order: 5;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(199, 175, 149, .15);
+  }
+
+  .uiFoundationNavItem-dashboard { order: 1 !important; }
+  .uiFoundationNavItem-pick { order: 2 !important; }
+  .uiFoundationNavItem-table { order: 3 !important; }
+  .uiFoundationNavItem-results { order: 4 !important; }
+  .uiFoundationNavItem-fixtures { order: 6 !important; }
+  .uiFoundationNavItem-history { order: 7 !important; }
+  .uiFoundationNavItem-players { order: 8 !important; }
+  .uiFoundationNavItem-about { order: 9 !important; }
+  .uiFoundationNavItem-alerts { order: 10 !important; }
+  .uiFoundationNavItem-admin { order: 11 !important; }
+
+  .uiFoundationNavItem-quick {
+    border-color: rgba(199, 175, 149, .3) !important;
+    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
+  }
+
+  .uiFoundationNavHelper {
+    display: block;
+    margin-top: 3px;
+    color: #b99f8a;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .05em;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
+  .uiFoundationNav::before,
+  .uiFoundationNav::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .uiFoundationNavGroup {
+    display: block;
+    grid-column: 1 / -1;
+    color: #c7af95;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    padding: 2px 4px 0;
+  }
+
+  .uiFoundationNavGroupQuick { order: 0; }
+  .uiFoundationNavGroupMore {
+    order: 5;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(199, 175, 149, .15);
+  }
+
+  .uiFoundationNavItem-dashboard { order: 1 !important; }
+  .uiFoundationNavItem-pick { order: 2 !important; }
+  .uiFoundationNavItem-table { order: 3 !important; }
+  .uiFoundationNavItem-results { order: 4 !important; }
+  .uiFoundationNavItem-fixtures { order: 6 !important; }
+  .uiFoundationNavItem-history { order: 7 !important; }
+  .uiFoundationNavItem-players { order: 8 !important; }
+  .uiFoundationNavItem-about { order: 9 !important; }
+  .uiFoundationNavItem-alerts { order: 10 !important; }
+  .uiFoundationNavItem-admin { order: 11 !important; }
+
+  .uiFoundationNavItem-quick {
+    border-color: rgba(199, 175, 149, .3) !important;
+    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
+  }
+
+  .uiFoundationNavHelper {
+    display: block;
+    margin-top: 3px;
+    color: #b99f8a;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .05em;
+  }
+}
