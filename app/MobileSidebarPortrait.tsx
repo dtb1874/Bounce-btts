@@ -31,6 +31,9 @@ export default function MobileSidebarPortrait() {
       if (resolving) return;
       const aside = document.querySelector('main[class*="shell"] > aside');
       if (!aside) return;
+      // Once the candidate shell supplies its own React-owned portrait, the
+      // legacy bridge must stand down rather than rewriting that subtree.
+      if (aside.querySelector(".uiFoundationSidebarPortrait")) return;
       resolving = true;
       try {
         const response = await fetch("/api/member-portraits", { cache: "no-store" });
@@ -67,6 +70,9 @@ export default function MobileSidebarPortrait() {
   useEffect(() => {
     const aside = document.querySelector('main[class*="shell"] > aside');
     if (!aside || !identity) return;
+    // Do not mutate a declarative candidate host. Production LeagueApp does not
+    // render this marker yet, so its legacy fallback remains unchanged.
+    if (aside.querySelector(".uiFoundationSidebarPortrait")) return;
     let host = aside.querySelector<HTMLDivElement>(".mobileSidebarPortraitHost");
     if (!host) {
       host = document.createElement("div");
