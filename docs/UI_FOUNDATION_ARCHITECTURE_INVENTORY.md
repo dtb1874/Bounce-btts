@@ -16,7 +16,7 @@ This is the starting map for issue #61. It records where presentation is current
 `app/layout.tsx` currently imports, in order:
 
 1. `globals.css`
-2. `ui-foundation.css` — additive shared tokens/primitives only; no migrated page owns this layer yet
+2. `ui-foundation.css` — additive shared token/primitives layer; no existing page selector is migrated to it yet
 3. `tynecastle-watermark.css`
 4. `league-table.css`
 5. `pre-v2-compact-restoration.css`
@@ -42,22 +42,32 @@ This is the principal override stack to unwind. Later files can beat earlier rul
 
 These are high-priority architecture dependencies because a component-only inspection can miss their output or DOM effects.
 
+Detailed replacement/removal contracts are recorded in `docs/UI_FOUNDATION_BRIDGE_CONTRACTS.md`.
+
 ### Known bridge risk
 
-`Release4HistoryPrestige` is documented as locating League History after render and attaching/synchronising the reigning-champion presentation. It should eventually become declarative React structure, but only after exact output, data source and responsive geometry are contract-tested.
+`Release4HistoryPrestige` locates League History after render and attaches/synchronises the reigning-champion presentation. It should eventually become declarative React structure, but only after exact output, data source and responsive geometry are contract-tested.
 
-`MobileSidebarPortrait` and `ShortRaceShareBridge` also need behavioural inventories before any structural migration: document target selectors, event listeners, DOM assumptions, responsive conditions and fallback behaviour first.
+`MobileSidebarPortrait` and `EasterEggDiscovery` both depend on sidebar DOM structure. A declarative portrait candidate now exists at `app/ui/SidebarMemberPortrait.tsx`; the currently active bridge stays mounted until the shell switch is visually proven.
+
+`ShortRaceShareBridge` is behavioural infrastructure rather than a visual bridge and is explicitly excluded from the first UI cleanup pass.
 
 ## 4. Page ownership map and proposed migration order
 
 ### Shell/navigation
 
 Current owner: `LeagueApp.tsx` + `release.module.css`.
-Later owners: `mobile-member-nav.css`, `pre-v2-compact-restoration.css`, plus `MobileSidebarPortrait`.
+Later owners: `mobile-member-nav.css`, `pre-v2-compact-restoration.css`, plus `MobileSidebarPortrait` and `EasterEggDiscovery`.
 
 Risk: high. Navigation order/visibility can be controlled outside JSX at responsive breakpoints.
 
 Migration target: declarative shell/nav components with explicit mobile/tablet layout ownership and no hidden CSS ordering dependency.
+
+Current migration preparation:
+- shell/navigation behaviour contract documented;
+- `app/ui/AuthenticatedShellFrame.tsx` exists as an opt-in declarative candidate using the current visual class ownership;
+- `app/ui/SidebarMemberPortrait.tsx` resolves the known member identity directly instead of scanning/mutating sidebar DOM;
+- neither candidate is active in production rendering yet, so current behaviour is unchanged.
 
 ### Dashboard
 
@@ -140,19 +150,39 @@ Target: centralise breakpoint intent, not necessarily force every component onto
 - Portal targets that depend on visible text or DOM structure.
 - Breakpoint duplication with slightly different widths.
 
-## 7. First implementation boundary
+## 7. Phase boundaries and rollback points
 
-Phase 1 is documentation/inventory only and is itself the first rollback point.
+### Phase 1 — behaviour contract + architecture inventory
 
-Phase 2 now establishes an additive foundation layer:
+Status: complete.
 
-- `app/ui-foundation.css` contains aliases for the existing background, surface, maroon, border, text and success colours rather than replacing their current values;
-- shared spacing, radius, shadow and display-font tokens are available for later migrations;
-- `.uiSurface` and `.uiSectionHeading` are opt-in, non-interactive primitives matching existing panel/heading geometry;
-- `app/layout.tsx` loads the foundation immediately after `globals.css`, before all legacy/specialist layers;
-- no existing page selector has been converted to the new primitives yet, so the rollback boundary remains behaviour- and layout-neutral.
+Rollback point: documentation-only commits.
 
-The next phase is shell/navigation. Before changing its JSX or CSS, inventory `MobileSidebarPortrait`, responsive nav ownership and the relevant `LeagueApp.tsx`/`release.module.css` selectors so the desktop, phone, iPad portrait and iPad landscape contracts are explicit.
+### Phase 2 — shared design tokens + smallest behaviour-free primitives
+
+Status: implemented, not yet used to restyle existing pages.
+
+Added:
+- `app/ui-foundation.css` with additive aliases for current colour/surface/text/spacing/radius/shadow/display-font values;
+- `.uiSurface` and `.uiSectionHeading` opt-in classes;
+- `app/ui/Surface.tsx` with `Surface` and `SectionHeading` primitives.
+
+Safety property: existing page classes remain the active visual owners, so Phase 2 should produce no intentional visual change.
+
+### Phase 3 — shell/navigation
+
+Status: preparation + declarative candidate complete; activation not yet performed.
+
+Added:
+- shell/navigation behaviour contract;
+- `app/ui/AuthenticatedShellFrame.tsx` as a structural equivalent candidate using the existing `release.module.css` classes;
+- `app/ui/SidebarMemberPortrait.tsx` as the declarative replacement candidate for the mobile portrait bridge;
+- bridge contract/removal sequencing documentation.
+
+Next Phase-3 boundary:
+- switch `LeagueApp` to the declarative shell candidate while keeping the old visual CSS and all runtime bridges temporarily active;
+- verify current member/admin navigation, mobile drawer, iPad portrait/landscape and desktop;
+- only then remove one superseded bridge at a time.
 
 ## 8. Required inventory before deleting a bridge or override
 
