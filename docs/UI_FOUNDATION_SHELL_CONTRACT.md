@@ -90,4 +90,16 @@ This is a temporary architecture dependency. The migration target is a declarati
 6. Only after equivalence, remove nth-child ordering and bridge-specific selectors in a separate rollback commit.
 7. Remove `MobileSidebarPortrait` only after its replacement is proven for image and initials fallback.
 
+## Current checkpoint
+
+The preview-only shell candidate now completes steps 1–5 without changing the active `LeagueApp` renderer:
+
+- `AuthenticatedShellFrame` owns semantic `quick` / `more` nav metadata.
+- `QUICK ACCESS`, `MORE`, `Stat Centre` and `All picks` are real React content in the candidate rather than pseudo-element-only text.
+- Candidate-only selectors in `ui-foundation.css` reproduce the current mobile visual ordering without `nth-child` coupling.
+- `SidebarMemberPortrait` provides the explicit declarative portrait/initials slot.
+- CI browser coverage checks desktop, 390×844 phone, 430×932 phone, 820×1180 iPad portrait and 1180×820 iPad landscape, including semantic group/helper visibility and role-based Admin visibility.
+
+The next boundary is activation of this candidate inside `LeagueApp` while retaining the legacy bridge/selectors as a rollback safety net. The legacy `nth-child` rules and `MobileSidebarPortrait` bridge must not be removed in the same activation commit.
+
 No shell implementation step may be combined with scoring, gameweek, pick, API or Supabase changes.
