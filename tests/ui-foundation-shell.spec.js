@@ -25,11 +25,12 @@ test.describe('UI foundation shell candidate', () => {
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
       const nav = page.getByRole('navigation', { name: 'League navigation' });
+      const adminNav = nav.getByRole('button', { name: /Admin/ });
       await expect(nav).toBeVisible();
       await expect(nav.getByRole('button', { name: 'Dashboard' })).toBeVisible();
-      await expect(nav.getByRole('button', { name: 'Admin', exact: true })).toHaveCount(0);
+      await expect(adminNav).toHaveCount(0);
       await page.getByRole('button', { name: 'Show admin nav' }).click();
-      await expect(nav.getByRole('button', { name: 'Admin', exact: true })).toBeVisible();
+      await expect(adminNav).toBeVisible();
       await nav.getByRole('button', { name: 'League Table' }).click();
       await expect(page.getByText('table', { exact: true })).toBeVisible();
       await page.screenshot({ path: path.join(screenshotDir, 'desktop-1440x900.png'), fullPage: true });
