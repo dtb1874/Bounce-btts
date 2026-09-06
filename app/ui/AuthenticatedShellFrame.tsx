@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "../release.module.css";
+import SidebarMemberPortrait from "./SidebarMemberPortrait";
 
 type NavItem = {
   id: string;
@@ -71,6 +72,8 @@ export default function AuthenticatedShellFrame({
             <small>EST 2024</small>
           </div>
         </div>
+
+        <SidebarMemberPortrait displayName={profileName} />
 
         <nav className={styles.nav} aria-label="League navigation">
           {navItems.filter((item) => !item.adminOnly || isAdmin).map((item) => (
