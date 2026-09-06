@@ -5,16 +5,16 @@ import AuthenticatedShellFrame from "../ui/AuthenticatedShellFrame";
 import styles from "../release.module.css";
 
 const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "pick", label: "Make My Pick", icon: "⚑" },
-  { id: "fixtures", label: "Fixtures", icon: "▦" },
-  { id: "table", label: "League Table", icon: "☷" },
-  { id: "results", label: "Results", icon: "✦" },
-  { id: "history", label: "League History", icon: "◷" },
-  { id: "players", label: "Players", icon: "◉" },
-  { id: "about", label: "About", icon: "?" },
-  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true },
-  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true },
+  { id: "dashboard", label: "Dashboard", icon: "⌂", group: "quick" as const },
+  { id: "pick", label: "Make My Pick", icon: "⚑", group: "quick" as const },
+  { id: "fixtures", label: "Fixtures", icon: "▦", group: "more" as const },
+  { id: "table", label: "League Table", icon: "☷", group: "quick" as const, helper: "Stat Centre" },
+  { id: "results", label: "Results", icon: "✦", group: "quick" as const, helper: "All picks" },
+  { id: "history", label: "League History", icon: "◷", group: "more" as const },
+  { id: "players", label: "Players", icon: "◉", group: "more" as const },
+  { id: "about", label: "About", icon: "?", group: "more" as const },
+  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true, group: "more" as const },
+  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true, group: "more" as const },
 ];
 
 export default function PreviewClient() {
@@ -63,7 +63,7 @@ export default function PreviewClient() {
 
           <div className={styles.panel}>
             <div className={styles.title}>VALIDATION TARGETS</div>
-            <p>Confirm sidebar width, drawer/scrim behaviour, nav ordering, profile position and member/admin visibility without changing league data or actions.</p>
+            <p>Confirm sidebar width, drawer/scrim behaviour, semantic Quick Access/More grouping, helper labels, profile position and member/admin visibility without changing league data or actions.</p>
           </div>
         </div>
       </div>
