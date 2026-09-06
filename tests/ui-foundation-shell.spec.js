@@ -19,6 +19,14 @@ async function waitForDrawerOpen(sidebar) {
   }, { timeout: 3000 }).toBeGreaterThanOrEqual(-1);
 }
 
+async function assertSemanticMobileNav(page) {
+  const nav = page.getByRole('navigation', { name: 'League navigation' });
+  await expect(nav.getByText('QUICK ACCESS', { exact: true })).toBeVisible();
+  await expect(nav.getByText('MORE', { exact: true })).toBeVisible();
+  await expect(nav.getByText('Stat Centre', { exact: true })).toBeVisible();
+  await expect(nav.getByText('All picks', { exact: true })).toBeVisible();
+}
+
 async function openDrawerAt(page, width, height, screenshotName) {
   await page.setViewportSize({ width, height });
   await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
@@ -29,6 +37,7 @@ async function openDrawerAt(page, width, height, screenshotName) {
   await waitForDrawerOpen(sidebar);
   await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
   await expect(sidebar.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
+  await assertSemanticMobileNav(page);
   await page.screenshot({ path: path.join(screenshotDir, screenshotName), fullPage: true });
   return sidebar;
 }
@@ -42,6 +51,10 @@ test.describe('UI foundation shell candidate', () => {
       const adminNav = nav.getByRole('button', { name: /Admin/ });
       await expect(nav).toBeVisible();
       await expect(nav.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+      await expect(nav.getByText('QUICK ACCESS', { exact: true })).toBeHidden();
+      await expect(nav.getByText('MORE', { exact: true })).toBeHidden();
+      await expect(nav.getByText('Stat Centre', { exact: true })).toBeHidden();
+      await expect(nav.getByText('All picks', { exact: true })).toBeHidden();
       await expect(adminNav).toHaveCount(0);
       await page.getByRole('button', { name: 'Show admin nav' }).click();
       await expect(adminNav).toBeVisible();
@@ -51,7 +64,7 @@ test.describe('UI foundation shell candidate', () => {
     });
   });
 
-  test('narrow phone opens and closes the drawer through the existing mobile contract', async ({ page }) => {
+  test('narrow phone opens and closes the drawer through the semantic mobile contract', async ({ page }) => {
     await assertNoPageErrors(page, async () => {
       await openDrawerAt(page, 390, 844, 'phone-390x844-drawer.png');
       const scrim = page.getByRole('button', { name: 'Close menu' });
@@ -87,7 +100,7 @@ test.describe('UI foundation shell candidate', () => {
     });
   });
 
-  test('iPad landscape keeps the sidebar as an off-canvas drawer', async ({ page }) => {
+  test('iPad landscape keeps the semantic sidebar as an off-canvas drawer', async ({ page }) => {
     await assertNoPageErrors(page, async () => {
       const sidebar = await openDrawerAt(page, 1180, 820, 'ipad-landscape-1180x820-drawer.png');
       const box = await sidebar.boundingBox();
