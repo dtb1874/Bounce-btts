@@ -17,6 +17,7 @@ type NavItem = {
 
 type AuthenticatedShellFrameProps = {
   children: ReactNode;
+  afterContent?: ReactNode;
   navItems: NavItem[];
   activeView: string;
   isAdmin: boolean;
@@ -33,15 +34,17 @@ type AuthenticatedShellFrameProps = {
 };
 
 /**
- * Phase-3 shell candidate.
+ * Declarative authenticated shell intended to replace the inline LeagueApp shell.
  *
- * This deliberately reproduces the current LeagueApp shell structure and class
- * ownership rather than introducing new presentation. It stays opt-in until the
- * shell checkpoint is device-tested; the existing LeagueApp markup remains the
- * production owner in the meantime.
+ * The component deliberately keeps the established release.module.css class
+ * ownership so adopting it does not become a visual redesign. `afterContent`
+ * exists for shell-level overlays/toasts that historically sit beside the main
+ * content section rather than inside it; this keeps the real-app migration
+ * structurally equivalent and gives us an immediate rollback boundary.
  */
 export default function AuthenticatedShellFrame({
   children,
+  afterContent,
   navItems,
   activeView,
   isAdmin,
@@ -59,7 +62,7 @@ export default function AuthenticatedShellFrame({
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <main className={styles.shell}>
+    <main className={styles.shell} data-ui-foundation-shell="declarative">
       {!mobileMenuOpen && (
         <button
           type="button"
@@ -122,6 +125,7 @@ export default function AuthenticatedShellFrame({
       ) : null}
 
       <section className={styles.main}>{children}</section>
+      {afterContent}
     </main>
   );
 }
