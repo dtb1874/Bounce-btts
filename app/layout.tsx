@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./ui-foundation.css";
 import "./tynecastle-watermark.css";
 import "./league-table.css";
 import "./pre-v2-compact-restoration.css";
