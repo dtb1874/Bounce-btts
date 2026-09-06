@@ -7,6 +7,7 @@ import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
 import CombinedShareButton from "./CombinedShareButton";
 import DataShareButton from "./DataShareButton";
 import CanonicalLeagueTable from "./CanonicalLeagueTable";
+import AuthenticatedShellFrame from "./ui/AuthenticatedShellFrame";
 import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
 import { outcomeLabel } from "@/lib/scoring";
 import { compareCompetitions } from "@/lib/competition-order";
@@ -40,17 +41,17 @@ type Props = {
 const finishedStatuses = ["FT", "AET", "PEN"];
 const RELEASE_VERSION = "1.6.3";
 const RELEASE_DATE = "20 Aug 2026";
-const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "pick", label: "Make My Pick", icon: "⚑" },
-  { id: "fixtures", label: "Fixtures", icon: "▦" },
-  { id: "table", label: "League Table", icon: "☷" },
-  { id: "results", label: "Results", icon: "✦" },
-  { id: "history", label: "League History", icon: "◷" },
-  { id: "players", label: "Players", icon: "◉" },
-  { id: "about", label: "About", icon: "?" },
-  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true },
-  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true },
+const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean; group: "quick" | "more"; helper?: string }> = [
+  { id: "dashboard", label: "Dashboard", icon: "⌂", group: "quick" },
+  { id: "pick", label: "Make My Pick", icon: "⚑", group: "quick" },
+  { id: "fixtures", label: "Fixtures", icon: "▦", group: "more" },
+  { id: "table", label: "League Table", icon: "☷", group: "quick", helper: "Stat Centre" },
+  { id: "results", label: "Results", icon: "✦", group: "quick", helper: "All picks" },
+  { id: "history", label: "League History", icon: "◷", group: "more" },
+  { id: "players", label: "Players", icon: "◉", group: "more" },
+  { id: "about", label: "About", icon: "?", group: "more" },
+  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true, group: "more" },
+  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true, group: "more" },
 ];
 
 
@@ -353,18 +354,34 @@ export default function LeagueApp(props: Props) {
   }
 
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/"; }
+  function triggerRousset(){
+    setRouss(true);
+    setMobileMenu(false);
+    void (async()=>{try{await fetch("/api/easter-egg/rousset",{method:"POST",headers:{authorization:`Bearer ${await token()}`}})}catch{}})();
+  }
   if (!initialProfile.active) return <main className={styles.shell}><div className={styles.panel}><h2>Account inactive</h2><button className={styles.primary} onClick={signOut}>Sign out</button></div></main>;
 
-  return <main className={styles.shell}>
-    {!mobileMenu&&<button className={`${styles.mobileMenu} mobileDashboardMenu`} onClick={()=>setMobileMenu(true)}>☰</button>}
-    <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
-      <div className={styles.brand}><img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
-      <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
-      <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false);void (async()=>{try{await fetch("/api/easter-egg/rousset",{method:"POST",headers:{authorization:`Bearer ${await token()}`}})}catch{}})()}}></button>
-      <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
-    </aside>
-    {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>} 
-    <section className={styles.main}>
+  return <AuthenticatedShellFrame
+    navItems={navItems}
+    activeView={view}
+    isAdmin={isAdmin}
+    alertsCount={alertsCount}
+    mobileMenuOpen={mobileMenu}
+    profileName={initialProfile.display_name}
+    profileMeta={isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}
+    profileInitials={initials(initialProfile.display_name)}
+    onOpenMenu={()=>setMobileMenu(true)}
+    onCloseMenu={()=>setMobileMenu(false)}
+    onNavigate={(id)=>{setView(id as View);setMobileMenu(false)}}
+    onEasterEgg={triggerRousset}
+    onSignOut={signOut}
+    afterContent={<>
+      {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
+      {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
+      {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
+      {toast && <div className={styles.toast}>{toast}</div>}
+    </>}
+  >
       {emulatedProfileId&&<div className={styles.notice} style={{margin:"10px 14px 0",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderColor:"rgba(240,207,170,.55)",background:"rgba(116,32,52,.92)"}}><span><strong>EMULATION ACTIVE</strong><br/><small>Viewing as {emulatedProfile?.display_name??"another user"} · read-only</small></span><button className={styles.primary} type="button" onClick={()=>{setEmulatedProfileId(null);setView("admin");setAdminView("users");setMobileMenu(false)}}>Exit emulation</button></div>}
       <header className={`${styles.hero} dashboardBrandHero`}><div className="dashboardBrandLockup"><img className="dashboardBrandCrest" src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel}</p><h1>BOUNCE</h1><h2>BTTS LEAGUE</h2></div></div><div className={`${styles.gwCard} dashboardGwCompact`}><label>Gameweek</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small>{isDemo&&<div className={styles.demoSwitch}><button className={demoPerspective==="member"?styles.active:""} onClick={()=>{setDemoPerspective("member");setView("dashboard")}}>Member View</button><button className={demoPerspective==="admin"?styles.active:""} onClick={()=>{setDemoPerspective("admin");setView("dashboard")}}>Admin View</button></div>}</div></header>
       <div className={styles.content}><div className={styles.page}>
@@ -384,12 +401,7 @@ export default function LeagueApp(props: Props) {
         {view==="alerts" && isAdmin && (isDemo?<DemoReadOnlyPanel title="Alerts" text="Admin alerts are intentionally hidden in Demo Mode because they can contain operational details."/>:<AlertsPage notice={notice} onCount={setAlertsCount}/>)}
         {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>} 
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE · v{RELEASE_VERSION}</footer>
-    </section>
-    {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
-    {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
-    {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
-    {toast && <div className={styles.toast}>{toast}</div>}
-  </main>;
+  </AuthenticatedShellFrame>;
 }
 
 function Heading({eyebrow,title,children,actions}:{eyebrow:string;title:string;children?:ReactNode;actions?:ReactNode}){return <div className={styles.heading}><div><span>{eyebrow}</span><h2>{title}</h2>{children}</div>{actions}</div>}
