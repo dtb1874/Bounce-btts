@@ -3,17 +3,9 @@
 import type { ReactNode } from "react";
 import styles from "../release.module.css";
 import SidebarMemberPortrait from "./SidebarMemberPortrait";
+import { authenticatedNavItems, type AuthenticatedNavItem } from "./navigation";
 
-type NavGroup = "quick" | "more";
-
-type NavItem = {
-  id: string;
-  label: string;
-  icon: string;
-  adminOnly?: boolean;
-  group?: NavGroup;
-  helper?: string;
-};
+type NavItem = Pick<AuthenticatedNavItem, "id" | "label" | "icon" | "adminOnly" | "group" | "helper">;
 
 type AuthenticatedShellFrameProps = {
   children: ReactNode;
@@ -41,6 +33,11 @@ type AuthenticatedShellFrameProps = {
  * exists for shell-level overlays/toasts that historically sit beside the main
  * content section rather than inside it; this keeps the real-app migration
  * structurally equivalent and gives us an immediate rollback boundary.
+ *
+ * User-facing nav labels are resolved from the canonical navigation contract by
+ * id. Callers may still pass the legacy metadata during migration, but they cannot
+ * silently regress a product-facing label such as Stat Centre back to an internal
+ * route/page name.
  */
 export default function AuthenticatedShellFrame({
   children,
@@ -59,7 +56,10 @@ export default function AuthenticatedShellFrame({
   onEasterEgg,
   onSignOut,
 }: AuthenticatedShellFrameProps) {
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const canonicalById = new Map(authenticatedNavItems.map((item) => [item.id, item]));
+  const visibleNavItems = navItems
+    .map((item) => canonicalById.get(item.id) ?? item)
+    .filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <main className={styles.shell} data-ui-foundation-shell="declarative">
@@ -94,12 +94,13 @@ export default function AuthenticatedShellFrame({
               type="button"
               key={item.id}
               className={`${activeView === item.id ? styles.active : ""} uiFoundationNavItem uiFoundationNavItem-${item.group ?? "more"} uiFoundationNavItem-${item.id}`}
+              data-nav-id={item.id}
               data-nav-group={item.group ?? "more"}
               aria-current={activeView === item.id ? "page" : undefined}
               onClick={() => onNavigate(item.id)}
             >
-              <span>{item.icon} </span>
-              {item.label}
+              <span aria-hidden="true">{item.icon} </span>
+              <span className="uiFoundationNavLabel">{item.label}</span>
               {item.helper ? <small className="uiFoundationNavHelper">{item.helper}</small> : null}
               {item.id === "alerts" && alertsCount > 0 ? (
                 <b className={styles.badge}>{alertsCount > 9 ? "9+" : alertsCount}</b>
