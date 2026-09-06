@@ -4,11 +4,15 @@ import type { ReactNode } from "react";
 import styles from "../release.module.css";
 import SidebarMemberPortrait from "./SidebarMemberPortrait";
 
+type NavGroup = "quick" | "more";
+
 type NavItem = {
   id: string;
   label: string;
   icon: string;
   adminOnly?: boolean;
+  group?: NavGroup;
+  helper?: string;
 };
 
 type AuthenticatedShellFrameProps = {
@@ -52,6 +56,8 @@ export default function AuthenticatedShellFrame({
   onEasterEgg,
   onSignOut,
 }: AuthenticatedShellFrameProps) {
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
   return (
     <main className={styles.shell}>
       {!mobileMenuOpen && (
@@ -77,17 +83,21 @@ export default function AuthenticatedShellFrame({
 
         <SidebarMemberPortrait displayName={profileName} />
 
-        <nav className={styles.nav} aria-label="League navigation">
-          {navItems.filter((item) => !item.adminOnly || isAdmin).map((item) => (
+        <nav className={`${styles.nav} uiFoundationNav`} aria-label="League navigation">
+          <span className="uiFoundationNavGroup uiFoundationNavGroupQuick">QUICK ACCESS</span>
+          <span className="uiFoundationNavGroup uiFoundationNavGroupMore">MORE</span>
+          {visibleNavItems.map((item) => (
             <button
               type="button"
               key={item.id}
-              className={activeView === item.id ? styles.active : ""}
+              className={`${activeView === item.id ? styles.active : ""} uiFoundationNavItem uiFoundationNavItem-${item.group ?? "more"} uiFoundationNavItem-${item.id}`}
+              data-nav-group={item.group ?? "more"}
               aria-current={activeView === item.id ? "page" : undefined}
               onClick={() => onNavigate(item.id)}
             >
               <span>{item.icon} </span>
               {item.label}
+              {item.helper ? <small className="uiFoundationNavHelper">{item.helper}</small> : null}
               {item.id === "alerts" && alertsCount > 0 ? (
                 <b className={styles.badge}>{alertsCount > 9 ? "9+" : alertsCount}</b>
               ) : null}
