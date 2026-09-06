@@ -1,0 +1,53 @@
+:root {
+  /* UI Foundation aliases: additive only. Existing styles remain the source of truth
+     until each surface is migrated and visually verified. */
+  --ui-bg: var(--bg);
+  --ui-surface: var(--surface);
+  --ui-surface-raised: var(--surface-2);
+  --ui-border: var(--line);
+  --ui-maroon: var(--maroon);
+  --ui-maroon-strong: var(--maroon-2);
+  --ui-maroon-soft: var(--maroon-soft);
+  --ui-text: #f3f1ed;
+  --ui-text-warm: var(--cream);
+  --ui-text-muted: var(--muted);
+  --ui-success: var(--green);
+
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+
+  --ui-radius-sm: 4px;
+  --ui-radius-md: 8px;
+  --ui-radius-lg: 12px;
+  --ui-radius-pill: 999px;
+
+  --ui-shadow-panel: 0 10px 28px rgba(0, 0, 0, .22);
+  --ui-font-display: Georgia, "Times New Roman", serif;
+}
+
+/* Behaviour-free primitives. These are opt-in and intentionally do not replace
+   any existing page selector until that page reaches its migration phase. */
+.uiSurface {
+  position: relative;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  background: linear-gradient(180deg, var(--ui-surface-raised), var(--ui-surface));
+  box-shadow: var(--ui-shadow-panel);
+}
+
+.uiSectionHeading {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--ui-space-5);
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-text);
+  font-size: .86rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
