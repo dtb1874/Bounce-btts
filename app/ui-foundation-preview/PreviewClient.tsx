@@ -37,6 +37,7 @@ export default function PreviewClient() {
       onNavigate={(id) => { setView(id); setMobileMenu(false); }}
       onEasterEgg={() => undefined}
       onSignOut={() => undefined}
+      afterContent={<div hidden data-ui-foundation-shell-layer="after-content" />}
     >
       <div className={styles.content}>
         <div className={styles.page}>
