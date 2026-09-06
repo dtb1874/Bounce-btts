@@ -19,12 +19,20 @@ async function waitForDrawerOpen(sidebar) {
   }, { timeout: 3000 }).toBeGreaterThanOrEqual(-1);
 }
 
+async function assertCanonicalNavLabels(nav) {
+  const table = nav.locator('[data-nav-id="table"]');
+  const results = nav.locator('[data-nav-id="results"]');
+  await expect(table.locator('.uiFoundationNavLabel')).toHaveText('Stat Centre');
+  await expect(table.locator('.uiFoundationNavHelper')).toHaveText('League Table');
+  await expect(results.locator('.uiFoundationNavLabel')).toHaveText('Results');
+  await expect(results.locator('.uiFoundationNavHelper')).toHaveText('All picks');
+}
+
 async function assertSemanticMobileNav(page) {
   const nav = page.getByRole('navigation', { name: 'League navigation' });
   await expect(nav.getByText('QUICK ACCESS', { exact: true })).toBeVisible();
   await expect(nav.getByText('MORE', { exact: true })).toBeVisible();
-  await expect(nav.getByText('Stat Centre', { exact: true })).toBeVisible();
-  await expect(nav.getByText('All picks', { exact: true })).toBeVisible();
+  await assertCanonicalNavLabels(nav);
 }
 
 async function openDrawerAt(page, width, height, screenshotName) {
@@ -36,14 +44,14 @@ async function openDrawerAt(page, width, height, screenshotName) {
   await openMenu.click();
   await waitForDrawerOpen(sidebar);
   await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
-  await expect(sidebar.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: /Make My Pick/ })).toBeVisible();
   await assertSemanticMobileNav(page);
   await page.screenshot({ path: path.join(screenshotDir, screenshotName), fullPage: true });
   return sidebar;
 }
 
 test.describe('UI foundation shell candidate', () => {
-  test('desktop preserves sidebar navigation and shell-level sibling ownership', async ({ page }) => {
+  test('desktop preserves sidebar navigation, canonical labels and shell-level sibling ownership', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
@@ -54,16 +62,17 @@ test.describe('UI foundation shell candidate', () => {
       await expect(shell.locator(':scope > section')).toHaveCount(1);
       await expect(shell.locator(':scope > [data-ui-foundation-shell-layer="after-content"]')).toHaveCount(1);
       await expect(nav).toBeVisible();
-      await expect(nav.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+      await expect(nav.getByRole('button', { name: /Dashboard/ })).toBeVisible();
+      await assertCanonicalNavLabels(nav);
       await expect(nav.getByText('QUICK ACCESS', { exact: true })).toBeHidden();
       await expect(nav.getByText('MORE', { exact: true })).toBeHidden();
-      await expect(nav.getByText('Stat Centre', { exact: true })).toBeHidden();
-      await expect(nav.getByText('All picks', { exact: true })).toBeHidden();
+      await expect(nav.locator('[data-nav-id="table"] .uiFoundationNavHelper')).toBeHidden();
+      await expect(nav.locator('[data-nav-id="results"] .uiFoundationNavHelper')).toBeHidden();
       await expect(page.locator('.uiFoundationSidebarPortrait')).toBeHidden();
       await expect(adminNav).toHaveCount(0);
       await page.getByRole('button', { name: 'Show admin nav' }).click();
       await expect(adminNav).toBeVisible();
-      await nav.getByRole('button', { name: 'League Table' }).click();
+      await nav.locator('[data-nav-id="table"]').click();
       await expect(page.getByText('table', { exact: true })).toBeVisible();
       await page.screenshot({ path: path.join(screenshotDir, 'desktop-1440x900.png'), fullPage: true });
     });
