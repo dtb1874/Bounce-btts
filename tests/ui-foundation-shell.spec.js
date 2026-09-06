@@ -12,17 +12,25 @@ async function assertNoPageErrors(page, run) {
   expect(pageErrors, `Unexpected browser errors: ${pageErrors.join(' | ')}`).toEqual([]);
 }
 
+async function waitForDrawerOpen(sidebar) {
+  await expect.poll(async () => {
+    const box = await sidebar.boundingBox();
+    return box?.x ?? -9999;
+  }, { timeout: 3000 }).toBeGreaterThanOrEqual(-1);
+}
+
 test.describe('UI foundation shell candidate', () => {
   test('desktop preserves sidebar navigation and role visibility', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
-      await expect(page.getByRole('navigation', { name: 'League navigation' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Admin' })).toHaveCount(0);
+      const nav = page.getByRole('navigation', { name: 'League navigation' });
+      await expect(nav).toBeVisible();
+      await expect(nav.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+      await expect(nav.getByRole('button', { name: 'Admin', exact: true })).toHaveCount(0);
       await page.getByRole('button', { name: 'Show admin nav' }).click();
-      await expect(page.getByRole('button', { name: 'Admin' })).toBeVisible();
-      await page.getByRole('button', { name: 'League Table' }).click();
+      await expect(nav.getByRole('button', { name: 'Admin', exact: true })).toBeVisible();
+      await nav.getByRole('button', { name: 'League Table' }).click();
       await expect(page.getByText('table', { exact: true })).toBeVisible();
       await page.screenshot({ path: path.join(screenshotDir, 'desktop-1440x900.png'), fullPage: true });
     });
@@ -33,12 +41,18 @@ test.describe('UI foundation shell candidate', () => {
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
       const openMenu = page.getByRole('button', { name: 'Open menu' });
+      const sidebar = page.locator('main > aside');
       await expect(openMenu).toBeVisible();
       await openMenu.click();
+      await waitForDrawerOpen(sidebar);
       await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
+      await expect(sidebar.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
       await page.screenshot({ path: path.join(screenshotDir, 'phone-390x844-drawer.png'), fullPage: true });
-      await page.getByRole('button', { name: 'Close menu' }).click();
+
+      const scrim = page.getByRole('button', { name: 'Close menu' });
+      const scrimBox = await scrim.boundingBox();
+      expect(scrimBox).not.toBeNull();
+      await page.mouse.click(scrimBox.x + scrimBox.width - 8, scrimBox.y + scrimBox.height / 2);
       await expect(page.getByRole('button', { name: 'Open menu' })).toBeVisible();
     });
   });
@@ -48,13 +62,12 @@ test.describe('UI foundation shell candidate', () => {
     await assertNoPageErrors(page, async () => {
       await page.goto('http://127.0.0.1:3000/ui-foundation-preview', { waitUntil: 'networkidle' });
       const openMenu = page.getByRole('button', { name: 'Open menu' });
+      const sidebar = page.locator('main > aside');
       await expect(openMenu).toBeVisible();
       await openMenu.click();
-      const sidebar = page.locator('main > aside');
-      await expect(sidebar).toBeVisible();
+      await waitForDrawerOpen(sidebar);
       const box = await sidebar.boundingBox();
       expect(box).not.toBeNull();
-      expect(box.x).toBeGreaterThanOrEqual(-1);
       expect(box.width).toBeGreaterThanOrEqual(330);
       expect(box.width).toBeLessThanOrEqual(350);
       await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
