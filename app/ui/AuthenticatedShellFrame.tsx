@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import styles from "../release.module.css";
 import SidebarMemberPortrait from "./SidebarMemberPortrait";
