@@ -96,7 +96,20 @@
   .uiFoundationNavItem-alerts { order: 10 !important; }
   .uiFoundationNavItem-admin { order: 11 !important; }
 
-  .uiFoundationNavItem-quick {
+  /* The legacy mobile stylesheet uses nth-child for quick-button styling and
+     pseudo helper labels. The semantic candidate adds real group nodes, so its
+     own marker must fully opt out of those positional rules. */
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem {
+    border-color: rgba(199, 175, 149, .12) !important;
+    background: rgba(24, 18, 22, .72) !important;
+  }
+
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem-quick {
     border-color: rgba(199, 175, 149, .3) !important;
     background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
   }
@@ -147,7 +160,17 @@
   .uiFoundationNavItem-alerts { order: 10 !important; }
   .uiFoundationNavItem-admin { order: 11 !important; }
 
-  .uiFoundationNavItem-quick {
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem {
+    border-color: rgba(199, 175, 149, .12) !important;
+    background: rgba(24, 18, 22, .72) !important;
+  }
+
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem-quick {
     border-color: rgba(199, 175, 149, .3) !important;
     background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
   }
