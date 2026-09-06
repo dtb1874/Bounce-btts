@@ -1,4 +1,9 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const { test, expect } = require('@playwright/test');
+
+const screenshotDir = path.join(process.cwd(), 'artifacts', 'ui-foundation-shell');
+fs.mkdirSync(screenshotDir, { recursive: true });
 
 async function assertNoPageErrors(page, run) {
   const pageErrors = [];
@@ -19,6 +24,7 @@ test.describe('UI foundation shell candidate', () => {
       await expect(page.getByRole('button', { name: 'Admin' })).toBeVisible();
       await page.getByRole('button', { name: 'League Table' }).click();
       await expect(page.getByText('table', { exact: true })).toBeVisible();
+      await page.screenshot({ path: path.join(screenshotDir, 'desktop-1440x900.png'), fullPage: true });
     });
   });
 
@@ -31,6 +37,7 @@ test.describe('UI foundation shell candidate', () => {
       await openMenu.click();
       await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Make My Pick' })).toBeVisible();
+      await page.screenshot({ path: path.join(screenshotDir, 'phone-390x844-drawer.png'), fullPage: true });
       await page.getByRole('button', { name: 'Close menu' }).click();
       await expect(page.getByRole('button', { name: 'Open menu' })).toBeVisible();
     });
@@ -51,6 +58,7 @@ test.describe('UI foundation shell candidate', () => {
       expect(box.width).toBeGreaterThanOrEqual(330);
       expect(box.width).toBeLessThanOrEqual(350);
       await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible();
+      await page.screenshot({ path: path.join(screenshotDir, 'ipad-landscape-1180x820-drawer.png'), fullPage: true });
     });
   });
 });
