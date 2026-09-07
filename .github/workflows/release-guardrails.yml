@@ -70,6 +70,12 @@ jobs:
             exit 1
           fi
 
+          if grep -q 'MobileSidebarPortrait' app/layout.tsx; then
+            echo "Legacy MobileSidebarPortrait bridge is mounted in RootLayout."
+            echo "The authenticated shell owns its portrait declaratively; do not restore the body-wide DOM bridge."
+            exit 1
+          fi
+
       - name: Require release history update
         if: github.event_name == 'pull_request'
         shell: bash
