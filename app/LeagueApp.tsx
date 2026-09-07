@@ -749,24 +749,24 @@ function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gamewee
   const resultDayKey=(f:Fixture)=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at));
   const ordered=[...fixtures].sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));
   const days=Array.from(new Set(ordered.map(resultDayKey)));
-  return <section>
+  return <section className="uiFoundationResultsPage" data-ui-foundation-view="results">
     <Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Results" actions={<div className={styles.headingActions}><DataShareButton title={`Gameweek ${gameweek?.number??"—"} Results`} subtitle="Selected Bounce BTTS fixtures and current outcomes" columns={["PLAYER","FIXTURE","SCORE","STATUS","PTS"]} rows={selected.map(({prediction,fixture,profile})=>[profile.display_name,`${fixture.home_team} v ${fixture.away_team}`,fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`,fixture.status,prediction.points_awarded==null?"—":prediction.points_awarded])} fileName={`bounce-btts-gw${gameweek?.number??"results"}-results.jpg`} label="Share results" compact/><button className={styles.button} onClick={onRefresh}>Refresh displayed data</button></div>}>
       <p>Selected matches first, followed by every fixture in collapsible day, country and competition groups.</p>
     </Heading>
-    <div className={styles.panel}>
+    <div className={`${styles.panel} uiFoundationResultsSelected`}>
       <details className={styles.fixtureDetails} open>
         <summary>Selected Matches<span>{selected.length} pick{selected.length===1?"":"s"}</span></summary>
-        {selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile.display_name}</strong><span>{fixture.home_team} v {fixture.away_team}</span><b className={styles.score}>{fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`}</b><span>{fixture.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}
+        {selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction.points_awarded);return <div className={`${styles.resultRow} uiFoundationResultRow`} key={prediction.id}><strong>{profile.display_name}</strong><span>{fixture.home_team} v {fixture.away_team}</span><b className={styles.score}>{fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`}</b><span>{fixture.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}
         {!selected.length&&<div className={styles.notice}>No selected matches yet.</div>}
       </details>
     </div>
-    <div className={styles.panel}>
-      <div className={styles.title}>ALL RESULTS / FIXTURES</div>
+    <div className={`${styles.panel} uiFoundationResultsAll`}>
+      <div className={`${styles.title} uiFoundationResultsTitle`}>ALL RESULTS / FIXTURES</div>
       {days.map((day,dayIndex)=>{const dayFixtures=ordered.filter(f=>resultDayKey(f)===day);const countries=Array.from(new Set(dayFixtures.map(f=>normaliseCountry(f.country))));return <details className={styles.fixtureDetails} key={day} open={dayIndex===0}>
         <summary>{new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"long",day:"numeric",month:"long"}).format(new Date(`${day}T12:00:00Z`))}<span>{dayFixtures.length} fixture{dayFixtures.length===1?"":"s"}</span></summary>
         {countries.map(country=><details className={styles.fixtureDetailsNested} key={country}><summary>{country}</summary>
           {Array.from(new Set(dayFixtures.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(competition=><details className={styles.fixtureDetailsLeague} key={competition}><summary>{competition}</summary>
-            {dayFixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={styles.resultRow} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}
+            {dayFixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={`${styles.resultRow} uiFoundationResultRow`} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}
           </details>)}
         </details>)}
       </details>})}
@@ -830,11 +830,11 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
   }));
   const visibleHistoricFormRows=historicFormPlayer==="combined"?historicFormRows:historicFormRows.filter((player)=>player.name===historicFormPlayer);
 
-  return <section className={styles.historyPage}>
+  return <section className={`${styles.historyPage} uiFoundationHistoryPage`} data-ui-foundation-view="history">
     <Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History" actions={selected?<DataShareButton title={`${selected.label} Final Table`} subtitle={`Bounce BTTS League archive · ${selected.gameweeks} gameweeks`} columns={["POS","PLAYER","P","W","S-N","0-0","PTS"]} rows={selected.standings.map((row,index)=>[index+1,row.name,row.played,row.wins,row.oneSided??Math.max(0,row.points-(3*row.wins)+row.zeroZeroCount),row.zeroZeroCount,row.points])} fileName={`bounce-btts-${selected.label.replace("/","-")}-archive.jpg`} label="Share archive table" compact/>:undefined}>
       <p>Previous winners, archived tables and the story of the Bounce.</p>
     </Heading>
-    <div className={styles.historyHero}>
+    <div className={`${styles.historyHero} uiFoundationHistoryHero`}>
       <div>
         <span>ROLL OF HONOUR · ARCHIVE</span>
         <h3>Bounce Legacy</h3>
@@ -847,7 +847,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
       <article><span>SELECTED SEASON</span><strong>{selected?.label ?? "—"}</strong></article>
       <article><span>ARCHIVED GAMEWEEKS</span><strong>{selected?.gameweeks ?? 0}</strong></article>
     </div>
-    <div className={`${styles.panel} ${styles.honourPanel} ${historyHonoursOpen?"historyHonoursOpen":"historyHonoursCollapsed"}`}>
+    <div className={`${styles.panel} ${styles.honourPanel} uiFoundationHistoryHonours ${historyHonoursOpen?"historyHonoursOpen":"historyHonoursCollapsed"}`}>
       <div className={styles.panelHeading}>
         <div><span className={styles.eyebrow}>CHAMPIONS</span><h3>Roll of Honour</h3></div>
       </div>
@@ -879,7 +879,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
         <small>Final podium for {selected.label}</small>
       </article>
     </div>}
-    {selected&&<div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.historyTableShell}`}>
+    {selected&&<div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.historyTableShell} uiFoundationHistoryTable`}>
       <div className={`${styles.tableRow} ${styles.header}`} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(5,70px)"}}>
         <span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span>
       </div>
@@ -944,7 +944,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
   </section>
 }
 
-function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={styles.panel}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={styles.row} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{formatFixtureOddsDisplay(fx?.odds_fractional)??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
+function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section className="uiFoundationPlayersPage" data-ui-foundation-view="players"><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={`${styles.panel} uiFoundationPlayersPanel`}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={`${styles.row} uiFoundationPlayerRow`} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{formatFixtureOddsDisplay(fx?.odds_fractional)??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
 
 function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
   const [tab, setTab] = useState<"about" | "rules" | "instructions" | "members" | "releases">("about");
