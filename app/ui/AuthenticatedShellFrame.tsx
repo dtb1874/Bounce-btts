@@ -5,7 +5,7 @@ import styles from "../release.module.css";
 import SidebarMemberPortrait from "./SidebarMemberPortrait";
 import { authenticatedNavItems, type AuthenticatedNavItem } from "./navigation";
 
-type NavItem = Pick<AuthenticatedNavItem, "id" | "label" | "icon" | "adminOnly" | "group" | "helper">;
+type NavItem = Omit<AuthenticatedNavItem, "id"> & { id: string };
 
 type AuthenticatedShellFrameProps = {
   children: ReactNode;
@@ -35,9 +35,8 @@ type AuthenticatedShellFrameProps = {
  * structurally equivalent and gives us an immediate rollback boundary.
  *
  * User-facing nav labels are resolved from the canonical navigation contract by
- * id. Callers may still pass the legacy metadata during migration, but they cannot
- * silently regress a product-facing label such as Stat Centre back to an internal
- * route/page name.
+ * id. Callers may still pass legacy route metadata during migration, but canonical
+ * product-facing labels always win for known navigation ids.
  */
 export default function AuthenticatedShellFrame({
   children,
@@ -56,7 +55,7 @@ export default function AuthenticatedShellFrame({
   onEasterEgg,
   onSignOut,
 }: AuthenticatedShellFrameProps) {
-  const canonicalById = new Map(authenticatedNavItems.map((item) => [item.id, item]));
+  const canonicalById = new Map<string, AuthenticatedNavItem>(authenticatedNavItems.map((item) => [item.id, item]));
   const visibleNavItems = navItems
     .map((item) => canonicalById.get(item.id) ?? item)
     .filter((item) => !item.adminOnly || isAdmin);
