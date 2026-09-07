@@ -527,8 +527,8 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
     return {primary:`GW ${timingTarget.gameweek.number} ${timingTarget.mode}`, secondary:`${part("weekday")} ${clock} ${part("day")}/${part("month")}`};
   })() : null;
 
-  return <section className={`${styles.dashboard} compactDashboard ${isAdmin?"adminDashboard":""}`}>
-    <div className={`${styles.dashboardIntro} adminDashboardIntro mobileControlCentre`}>
+  return <section className={`${styles.dashboard} compactDashboard uiFoundationDashboard ${isAdmin?"adminDashboard":""}`} data-ui-foundation-view="dashboard">
+    <div className={`${styles.dashboardIntro} adminDashboardIntro mobileControlCentre uiFoundationDashboardIntro`}>
       <div>
         <span className={styles.eyebrow}>SEASON {seasonLabel} · {gameweek?`GAMEWEEK ${gameweek.number}`:"OVERVIEW"}</span>
         <h2>{isAdmin?"League Control Centre":"Your League Dashboard"}</h2>
@@ -541,7 +541,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
     </div>
     {honoursOpen&&<div className="dashboardHonoursPanel"><div className="dashboardHonoursHead"><span>BOUNCE CHAMPIONS</span><strong>Roll of Honour</strong></div><div className="dashboardHonoursGrid">{dashboardHonours.map((row,index)=><div className="dashboardHonourRow" key={row.season}><span>{row.season}</span><strong>{row.winner}</strong><small>{index===0?"Reigning champion":"Bounce champion"}</small></div>)}</div></div>}
 
-    <div className={`${styles.dashboardStats} adminDashboardStats`}>
+    <div className={`${styles.dashboardStats} adminDashboardStats uiFoundationDashboardStats`}>
       <article className={styles.statCard}>
         <span>YOUR POSITION</span><strong>{myStanding?`${myPosition}${myPosition===1?"st":myPosition===2?"nd":myPosition===3?"rd":"th"}`:"—"}</strong>
         <small>{myStanding?`${myStanding.points} pts · ${myStanding.wins} BTTS wins`:"No scored picks yet"}</small>
@@ -564,17 +564,17 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </article>}
     </div>
 
-    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">
+    <div className="mobileDashboardActions uiFoundationDashboardActions" aria-label="Dashboard shortcuts">
       <button onClick={()=>setView("pick")}><span>⚑</span><strong>{isOpen?"Make My Pick":"View My Pick"}</strong></button>
-      <button onClick={()=>setView("table")}><span>☷</span><strong>League Table</strong></button>
+      <button onClick={()=>setView("table")}><span>☷</span><strong>Stat Centre</strong></button>
       <button onClick={()=>document.getElementById("current-form")?.scrollIntoView({behavior:"smooth",block:"start"})}><span>↗</span><strong>Current Form</strong></button>
       <button onClick={()=>document.getElementById("weekly-picks")?.scrollIntoView({behavior:"smooth",block:"start"})}><span>◉</span><strong>All Picks</strong></button>
     </div>
 
-    <div className={`${styles.dashboardMain} mobileDashboardMain`}>
+    <div className={`${styles.dashboardMain} mobileDashboardMain uiFoundationDashboardMain`}>
       <div className={`${styles.dashboardPrimary} mobileDashboardPrimary`}>
 
-        <article id="weekly-picks" className={`${styles.panel} weeklyPicksPanel`}>
+        <article id="weekly-picks" className={`${styles.panel} weeklyPicksPanel uiFoundationDashboardPicks`}>
           <div className={styles.panelHeading}>
             <div className="weeklyPicksHeading"><div className="weeklyPicksTitleRow"><h3>Everyone at a glance</h3>{timingText&&<span className={`${styles.title} dashboardGameweekTiming`} aria-live="polite"><span>{timingText.primary}</span><span>{timingText.secondary}</span></span>}</div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">
@@ -602,10 +602,10 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </div>
 
       <aside className={`${styles.dashboardSide} mobileDashboardSide`}>
-        <article className={`${styles.panel} ${styles.tablePreview} mobileLeaguePreview`}>
+        <article className={`${styles.panel} ${styles.tablePreview} mobileLeaguePreview uiFoundationDashboardLeague`}>
           <div className={styles.tableArtwork} aria-hidden="true"><img src="/assets/bounce-cup.png" alt=""/></div>
           <div className={styles.panelHeading}>
-            <div><div className={styles.title}>LEAGUE TABLE</div><h3>Season standings</h3></div>
+            <div><div className={styles.title}>STAT CENTRE</div><h3>Season standings</h3></div>
             <div className="shareHeaderActions"><button className={styles.linkButton} onClick={()=>setView("table")}>Full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={profiles.length*entryFee}/></div>
           </div>
           <div className={styles.miniTable}>
@@ -621,7 +621,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
         <article className={`${styles.panel} mobileRedundantLinks`}>
           <div className={styles.title}>{isAdmin?"ADMIN SHORTCUTS":"QUICK LINKS"}</div>
           <div className={styles.quickLinks}>
-            <button onClick={()=>setView("table")}>☷ <span><strong>League Table</strong><small>Full standings & tie-break detail</small></span></button>
+            <button onClick={()=>setView("table")}>☷ <span><strong>Stat Centre</strong><small>League table & season stats</small></span></button>
             <button onClick={()=>setView("results")}>✦ <span><strong>Results</strong><small>Selected matches & all fixtures</small></span></button>
             <button onClick={()=>setView("players")}>◉ <span><strong>Players</strong><small>Who has picked this week</small></span></button>
             {isAdmin&&<button onClick={()=>setView("admin")}>⚙ <span><strong>Admin</strong><small>Selections, results & fixture controls</small></span></button>}
@@ -630,7 +630,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </aside>
     </div>
 
-    <article id="current-form" className={`${styles.panel} ${styles.formPanel}`}>
+    <article id="current-form" className={`${styles.panel} ${styles.formPanel} uiFoundationDashboardForm`}>
       <div className={styles.panelHeading}>
         <div><div className={styles.title}>{formRange}-WEEK FORM</div><h3>Recent league form</h3></div>
         <div className="shareHeaderActions"><select aria-label="Form range" value={formRange} onChange={e=>setFormRange(Number(e.target.value) as 6|12|18)}><option value={6}>6 weeks</option><option value={12}>12 weeks</option><option value={18}>18 weeks</option></select><button className="shareCompactWhatsApp" onClick={shareForm}>Share to WhatsApp</button></div>
@@ -662,7 +662,9 @@ function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixt
   const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
   const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.competition} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort(fixtureSort);
   const countries=Array.from(new Set(filtered.map(f=>normaliseCountry(f.country))));
-  return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team, country or competition, or browse the collapsible fixture groups."/></p></Heading><div className={styles.panel}><input className={styles.search} type="search" placeholder="Search team, country or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{countries.map(country=><details className={styles.fixtureDetailsNested} key={country} open={Boolean(q)}><summary>{country}</summary>{Array.from(new Set(filtered.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(group=><details className={styles.fixtureDetailsLeague} key={group} open={Boolean(q)}><summary>{group}</summary>{filtered.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={styles.row} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{formatFixtureOddsDisplay(f.odds_fractional)??"—"}</span><button className={styles.button} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</details>)}</details>)}</div></section>
+  const myPrediction=predictions.find(p=>p.gameweek_id===gameweek?.id&&p.member_id===myId);
+  const myFixture=fixtures.find(f=>f.id===myPrediction?.fixture_id);
+  return <section className="uiFoundationPickPage" data-ui-foundation-view="pick"><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team, country or competition, or browse the collapsible fixture groups."/></p></Heading><div className={`uiFoundationPickStatus ${myFixture?"uiFoundationPickStatusSaved":"uiFoundationPickStatusEmpty"}`}><span>{myFixture?"CURRENT PICK":isOpen?"SELECTION OPEN":"SELECTION CLOSED"}</span><strong>{myFixture?`${myFixture.home_team} v ${myFixture.away_team}`:isOpen?"No fixture selected yet":"No active selection"}</strong><small>{myFixture?`${formatKickoff(myFixture.kickoff_at)} · ${competitionDisplayName(myFixture)}${myFixture.odds_fractional?` · ${formatFixtureOddsDisplay(myFixture.odds_fractional)}`:""}`:isOpen?"Pick an available fixture below. Your saved choice will be shown here.":"You can still review the available fixtures below."}</small></div><div className={`${styles.panel} uiFoundationPickPanel`}><input className={`${styles.search} uiFoundationPickSearch`} type="search" placeholder="Search team, country or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{countries.map(country=><details className={`${styles.fixtureDetailsNested} uiFoundationPickCountry`} key={country} open={Boolean(q)}><summary>{country}</summary>{Array.from(new Set(filtered.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(group=><details className={`${styles.fixtureDetailsLeague} uiFoundationPickCompetition`} key={group} open={Boolean(q)}><summary>{group}</summary>{filtered.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={`${styles.row} uiFoundationPickFixture`} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{formatFixtureOddsDisplay(f.odds_fractional)??"—"}</span><button className={`${styles.button} uiFoundationPickAction ${owner?.id===myId?"uiFoundationPickActionSelected":owner?"uiFoundationPickActionTaken":""}`} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</details>)}</details>)}</div></section>
 }
 function FixturesPage({fixtures}:{fixtures:Fixture[]}){
   const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
