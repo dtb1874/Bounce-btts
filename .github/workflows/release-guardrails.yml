@@ -76,6 +76,24 @@ jobs:
             exit 1
           fi
 
+      - name: UI foundation experience source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'data-ui-foundation-view="dashboard"' app/LeagueApp.tsx
+          grep -q 'uiFoundationDashboardPicks' app/LeagueApp.tsx
+          grep -q 'uiFoundationDashboardLeague' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="pick"' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickStatus' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickFixture' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickActionSelected' app/LeagueApp.tsx
+          grep -q 'ui-foundation-experience.css' app/layout.tsx
+          if grep -q 'MobileSidebarPortrait' app/MobileSidebarPortrait.tsx 2>/dev/null; then
+            echo "Obsolete legacy portrait bridge file has returned."
+            exit 1
+          fi
+          echo "Dashboard, Make My Pick and portrait ownership remain on UI Foundation."
+
       - name: Require release history update
         if: github.event_name == 'pull_request'
         shell: bash
