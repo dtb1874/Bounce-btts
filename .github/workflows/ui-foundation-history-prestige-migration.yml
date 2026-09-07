@@ -1,0 +1,37 @@
+name: UI foundation history prestige migration
+
+on:
+  push:
+    branches:
+      - release/ui-foundation-architecture
+    paths:
+      - scripts/migrate-history-prestige-react.mjs
+      - .github/workflows/ui-foundation-history-prestige-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/ui-foundation-architecture
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Move history prestige into React markup
+        run: node scripts/migrate-history-prestige-react.mjs
+      - name: Commit migrated source
+        run: |
+          if git diff --quiet -- app/LeagueApp.tsx; then
+            echo "No history prestige migration change required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/LeagueApp.tsx
+          git commit -m "Render reigning champion declaratively"
+          git push origin HEAD:release/ui-foundation-architecture
