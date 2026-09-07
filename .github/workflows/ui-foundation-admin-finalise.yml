@@ -1,0 +1,37 @@
+name: UI foundation admin finalise
+
+on:
+  push:
+    branches:
+      - tmp/ui-foundation-admin-final
+    paths:
+      - scripts/finalise-ui-foundation-admin.mjs
+      - .github/workflows/ui-foundation-admin-finalise.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/ui-foundation-admin-final
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply final admin semantic migration
+        run: node scripts/finalise-ui-foundation-admin.mjs
+      - name: Commit migrated source
+        run: |
+          if git diff --quiet; then
+            echo "No admin migration changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/LeagueApp.tsx app/ui-foundation-admin.css app/layout.tsx app/release4-admin-users-tidy.css
+          git commit -m "Finish semantic Admin Users migration"
+          git push origin HEAD:tmp/ui-foundation-admin-final
