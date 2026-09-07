@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ALERT_TYPE = "gameweek_fixture_availability";
-const WARNING_THRESHOLD = 5;
+const WARNING_THRESHOLD = 12;
 
 export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
   const now = new Date();
