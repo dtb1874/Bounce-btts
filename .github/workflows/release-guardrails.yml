@@ -87,12 +87,23 @@ jobs:
           grep -q 'uiFoundationPickStatus' app/LeagueApp.tsx
           grep -q 'uiFoundationPickFixture' app/LeagueApp.tsx
           grep -q 'uiFoundationPickActionSelected' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="results"' app/LeagueApp.tsx
+          grep -q 'uiFoundationResultsSelected' app/LeagueApp.tsx
+          grep -q 'uiFoundationResultRow' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="history"' app/LeagueApp.tsx
+          grep -q 'uiFoundationHistoryTable' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="players"' app/LeagueApp.tsx
+          grep -q 'uiFoundationPlayerRow' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="table"' app/CanonicalLeagueTable.tsx
+          grep -q 'uiFoundationStatCentreTable' app/CanonicalLeagueTable.tsx
+          grep -q '<h2>Stat Centre</h2>' app/CanonicalLeagueTable.tsx
           grep -q 'ui-foundation-experience.css' app/layout.tsx
-          if grep -q 'MobileSidebarPortrait' app/MobileSidebarPortrait.tsx 2>/dev/null; then
+          grep -q 'ui-foundation-league.css' app/layout.tsx
+          if [ -e app/MobileSidebarPortrait.tsx ]; then
             echo "Obsolete legacy portrait bridge file has returned."
             exit 1
           fi
-          echo "Dashboard, Make My Pick and portrait ownership remain on UI Foundation."
+          echo "Authenticated member and league surfaces remain on semantic UI Foundation ownership."
 
       - name: Require release history update
         if: github.event_name == 'pull_request'
