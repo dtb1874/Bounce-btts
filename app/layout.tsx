@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./ui-foundation.css";
+import "./ui-foundation-shell-responsive.css";
 import "./tynecastle-watermark.css";
 import "./league-table.css";
 import "./pre-v2-compact-restoration.css";
@@ -7,7 +8,6 @@ import "./public-mobile-tuning.css";
 import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
 import "./gameweek-recap-order.css";
-import "./mobile-member-nav.css";
 import "./release4-history.css";
 import "./release4-admin-users-tidy.css";
 import "./ui-foundation-experience.css";
