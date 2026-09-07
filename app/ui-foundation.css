@@ -61,6 +61,10 @@
 }
 
 @media (max-width: 900px) {
+  .uiFoundationSidebarPortrait {
+    display: grid;
+  }
+
   .uiFoundationNav::before,
   .uiFoundationNav::after {
     content: none !important;
@@ -125,6 +129,10 @@
 }
 
 @media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
+  .uiFoundationSidebarPortrait {
+    display: grid;
+  }
+
   .uiFoundationNav::before,
   .uiFoundationNav::after {
     content: none !important;
