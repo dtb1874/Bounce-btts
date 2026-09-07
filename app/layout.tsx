@@ -11,6 +11,7 @@ import "./mobile-member-nav.css";
 import "./release4-history.css";
 import "./release4-history-champion.css";
 import "./release4-admin-users-tidy.css";
+import "./ui-foundation-experience.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
 import EasterEggDiscovery from "./EasterEggDiscovery";
