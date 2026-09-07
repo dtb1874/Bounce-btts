@@ -2,10 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ALERT_TYPE = "gameweek_fixture_availability";
 const WARNING_THRESHOLD = 12;
+const ALERT_WINDOW_DAYS = 14;
 
 export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
   const now = new Date();
-  const horizon = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString();
+  const horizon = new Date(now.getTime() + ALERT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
   if (!season?.id) return { checked: 0, alertsCreated: 0, alertsResolved: 0 };
 
@@ -53,7 +54,12 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
     const message = eligibleCount === 0
       ? "No eligible fixtures were found for this gameweek. Review the gameweek dates and selection rule before members make picks."
       : `Only ${eligibleCount} eligible fixtures were found. This may be an international or cup weekend; review the gameweek schedule if required.`;
-    const details = { eligibleCount, threshold: WARNING_THRESHOLD, checkedAt: new Date().toISOString() };
+    const details = {
+      eligibleCount,
+      threshold: WARNING_THRESHOLD,
+      alertWindowDays: ALERT_WINDOW_DAYS,
+      checkedAt: new Date().toISOString(),
+    };
 
     if (existing?.id) {
       await admin.from("admin_alerts").update({ severity, title, message, details }).eq("id", existing.id);
