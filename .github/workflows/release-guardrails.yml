@@ -37,17 +37,7 @@ jobs:
             exit 1
           fi
 
-          forbidden=(
-            LeagueApp.tsx
-            PublicLeagueTable.tsx
-            ShareTableButton.tsx
-            api-football.ts
-            public-table.ts
-            scoring.ts
-            fractional.ts
-            globals.css
-            layout.tsx
-          )
+          forbidden=(LeagueApp.tsx PublicLeagueTable.tsx ShareTableButton.tsx api-football.ts public-table.ts scoring.ts fractional.ts globals.css layout.tsx)
           for path in "${forbidden[@]}"; do
             if [ -e "$path" ]; then
               echo "Duplicate root source file detected: $path"
@@ -66,13 +56,10 @@ jobs:
           set -euo pipefail
           if grep -R -n -E 'footer\.textContent\s*=|new MutationObserver\(' app lib 2>/dev/null | grep -E 'ReleaseInfo|release-info|footer\.textContent'; then
             echo "Unsafe release-info DOM mutation pattern detected."
-            echo "Release metadata must render through React-owned components, never by rewriting React-owned DOM."
             exit 1
           fi
-
-          if grep -q 'MobileSidebarPortrait' app/layout.tsx; then
-            echo "Legacy MobileSidebarPortrait bridge is mounted in RootLayout."
-            echo "The authenticated shell owns its portrait declaratively; do not restore the body-wide DOM bridge."
+          if grep -q 'MobileSidebarPortrait\|Release4HistoryPrestige' app/layout.tsx; then
+            echo "A retired UI DOM bridge is mounted in RootLayout."
             exit 1
           fi
 
@@ -92,18 +79,29 @@ jobs:
           grep -q 'uiFoundationResultRow' app/LeagueApp.tsx
           grep -q 'data-ui-foundation-view="history"' app/LeagueApp.tsx
           grep -q 'uiFoundationHistoryTable' app/LeagueApp.tsx
+          grep -q 'uiFoundationReigningChampion' app/LeagueApp.tsx
           grep -q 'data-ui-foundation-view="players"' app/LeagueApp.tsx
           grep -q 'uiFoundationPlayerRow' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="admin"' app/LeagueApp.tsx
+          grep -q 'uiFoundationAdminTabs' app/LeagueApp.tsx
+          grep -q 'uiFoundationAdminPanel' app/LeagueApp.tsx
           grep -q 'data-ui-foundation-view="table"' app/CanonicalLeagueTable.tsx
           grep -q 'uiFoundationStatCentreTable' app/CanonicalLeagueTable.tsx
           grep -q '<h2>Stat Centre</h2>' app/CanonicalLeagueTable.tsx
           grep -q 'ui-foundation-experience.css' app/layout.tsx
           grep -q 'ui-foundation-league.css' app/layout.tsx
-          if [ -e app/MobileSidebarPortrait.tsx ]; then
-            echo "Obsolete legacy portrait bridge file has returned."
+          grep -q 'ui-foundation-admin.css' app/layout.tsx
+          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css; do
+            if [ -e "$retired" ]; then
+              echo "Retired UI bridge/override has returned: $retired"
+              exit 1
+            fi
+          done
+          if find scripts .github/workflows -maxdepth 1 -type f \( -name 'migrate-ui-foundation-*.mjs' -o -name 'ui-foundation-*-migration.yml' \) | grep -q .; then
+            echo "One-shot UI Foundation migration helper/workflow was left in the branch."
             exit 1
           fi
-          echo "Authenticated member and league surfaces remain on semantic UI Foundation ownership."
+          echo "Authenticated shell, member, league and admin surfaces remain on semantic UI Foundation ownership."
 
       - name: Require release history update
         if: github.event_name == 'pull_request'
@@ -113,20 +111,15 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-
-          # Emergency rollback PRs must never be blocked by release-note bookkeeping.
           if [[ "$HEAD_REF" == rollback/* ]]; then
             echo "Rollback branch detected; release-history update requirement waived."
             exit 0
           fi
-
           if git diff --quiet "$BASE_SHA"...HEAD -- scripts/apply-reminder-history.mjs; then
             echo "Release History was not updated."
             echo "Every normal PR to main must update scripts/apply-reminder-history.mjs with the release entry/version metadata."
-            echo "Emergency rollback branches named rollback/* are exempt."
             exit 1
           fi
-
           echo "Release History update detected."
 
       - name: Production build
