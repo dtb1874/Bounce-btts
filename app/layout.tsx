@@ -13,7 +13,6 @@ import "./release4-history-champion.css";
 import "./release4-admin-users-tidy.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
-import MobileSidebarPortrait from "./MobileSidebarPortrait";
 import EasterEggDiscovery from "./EasterEggDiscovery";
 import Release4HistoryPrestige from "./Release4HistoryPrestige";
 
@@ -32,7 +31,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body><ShortRaceShareBridge /><MobileSidebarPortrait /><EasterEggDiscovery /><Release4HistoryPrestige />{children}</body>
+      <body><ShortRaceShareBridge /><EasterEggDiscovery /><Release4HistoryPrestige />{children}</body>
     </html>
   );
 }
