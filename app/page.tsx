@@ -110,6 +110,16 @@ export default async function HomePage() {
         .order("home_team")
     : Promise.resolve({ data: [] as any[] });
 
+  const selectedGameweekFixturesPromise = gameweek?.id
+    ? supabase
+        .from("fixtures")
+        .select("*")
+        .eq("gameweek_id", gameweek.id)
+        .order("kickoff_at")
+        .order("competition")
+        .order("home_team")
+    : Promise.resolve({ data: [] as any[] });
+
   const predictionsPromise = currentGameweekIds.length
     ? supabase
         .from("predictions")
@@ -124,13 +134,21 @@ export default async function HomePage() {
         .in("gameweek_id", currentGameweekIds)
     : Promise.resolve({ data: [] as ScoreAdjustmentRow[] });
 
-  const [currentFixturesResponse, predictionResponse, adjustmentResponse] = await Promise.all([
+  const [currentFixturesResponse, selectedGameweekFixturesResponse, predictionResponse, adjustmentResponse] = await Promise.all([
     currentFixturesPromise,
+    selectedGameweekFixturesPromise,
     predictionsPromise,
     adjustmentsPromise,
   ]);
 
-  const fixtures = currentFixturesResponse.data ?? [];
+  const fixtureMap = new Map<string, any>();
+  for (const fixture of currentFixturesResponse.data ?? []) fixtureMap.set(fixture.id, fixture);
+  for (const fixture of selectedGameweekFixturesResponse.data ?? []) fixtureMap.set(fixture.id, fixture);
+  const fixtures = Array.from(fixtureMap.values()).sort((a, b) =>
+    String(a.kickoff_at).localeCompare(String(b.kickoff_at)) ||
+    String(a.competition).localeCompare(String(b.competition)) ||
+    String(a.home_team).localeCompare(String(b.home_team))
+  );
   const allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
   const allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
 
