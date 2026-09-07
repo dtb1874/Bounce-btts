@@ -1,0 +1,231 @@
+/* UI Foundation — migrated authenticated member experience.
+   Phase 4 Dashboard + Phase 5 Make My Pick.
+   These semantic classes are intentionally independent of generated CSS-module names. */
+
+.uiFoundationDashboard,
+.uiFoundationPickPage {
+  --ui-member-gap: var(--ui-space-4, 16px);
+  --ui-member-compact-gap: var(--ui-space-3, 12px);
+}
+
+.uiFoundationDashboardIntro {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 78%, #d7b27a 22%);
+}
+
+.uiFoundationDashboardStats {
+  gap: var(--ui-member-compact-gap);
+}
+
+.uiFoundationDashboardPicks,
+.uiFoundationDashboardLeague,
+.uiFoundationDashboardForm,
+.uiFoundationPickPanel {
+  border-color: color-mix(in srgb, var(--ui-border) 84%, #caa56c 16%) !important;
+}
+
+.uiFoundationDashboardActions button {
+  min-width: 0;
+}
+
+.uiFoundationPickPage {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.uiFoundationPickStatus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md, 12px);
+  background: linear-gradient(135deg, rgba(34, 24, 30, .96), rgba(15, 15, 19, .98));
+  box-shadow: var(--ui-panel-shadow);
+}
+
+.uiFoundationPickStatus > span {
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.uiFoundationPickStatus > strong {
+  grid-column: 1 / -1;
+  color: var(--ui-text);
+  font-family: var(--ui-font-display);
+  font-size: 18px;
+}
+
+.uiFoundationPickStatus > small {
+  grid-column: 1 / -1;
+  color: var(--ui-text-muted);
+  line-height: 1.35;
+}
+
+.uiFoundationPickStatusSaved {
+  border-color: rgba(126, 176, 143, .46);
+  background: linear-gradient(135deg, rgba(24, 44, 32, .76), rgba(15, 17, 19, .98));
+}
+
+.uiFoundationPickStatusEmpty {
+  border-color: rgba(190, 145, 99, .42);
+}
+
+.uiFoundationPickPanel {
+  padding: 16px !important;
+}
+
+.uiFoundationPickSearch {
+  min-height: 46px;
+  margin-top: 0 !important;
+}
+
+.uiFoundationPickCountry,
+.uiFoundationPickCompetition {
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .012);
+  overflow: clip;
+}
+
+.uiFoundationPickCountry + .uiFoundationPickCountry {
+  margin-top: 9px;
+}
+
+.uiFoundationPickCountry > summary,
+.uiFoundationPickCompetition > summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.uiFoundationPickCountry > summary::-webkit-details-marker,
+.uiFoundationPickCompetition > summary::-webkit-details-marker {
+  display: none;
+}
+
+.uiFoundationPickCountry > summary {
+  padding: 12px 13px;
+  color: #efd7bd;
+  font-weight: 900;
+  letter-spacing: .035em;
+}
+
+.uiFoundationPickCompetition {
+  margin: 0 9px 9px;
+  background: rgba(7, 8, 11, .42);
+}
+
+.uiFoundationPickCompetition > summary {
+  padding: 10px 11px;
+  color: #cdb79f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.uiFoundationPickFixture {
+  margin: 0 10px;
+  padding: 11px 4px !important;
+}
+
+.uiFoundationPickAction {
+  min-height: 40px;
+  white-space: normal;
+}
+
+.uiFoundationPickActionSelected {
+  border-color: rgba(118, 182, 140, .7) !important;
+  background: rgba(49, 104, 69, .25) !important;
+  color: #b9ebc8 !important;
+}
+
+.uiFoundationPickActionTaken {
+  opacity: .72;
+}
+
+@media (max-width: 650px) {
+  .uiFoundationDashboard {
+    gap: 10px !important;
+  }
+
+  .uiFoundationDashboardIntro {
+    min-height: 0;
+  }
+
+  .uiFoundationDashboardStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .uiFoundationDashboardActions {
+    gap: 7px !important;
+  }
+
+  .uiFoundationDashboardActions button {
+    min-height: 54px;
+  }
+
+  .uiFoundationDashboardPicks,
+  .uiFoundationDashboardLeague,
+  .uiFoundationDashboardForm {
+    margin-bottom: 10px !important;
+  }
+
+  .uiFoundationPickPage {
+    max-width: none;
+  }
+
+  .uiFoundationPickStatus {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .uiFoundationPickPanel {
+    padding: 11px !important;
+  }
+
+  .uiFoundationPickCountry > summary {
+    padding: 11px;
+  }
+
+  .uiFoundationPickCompetition {
+    margin: 0 6px 7px;
+  }
+
+  .uiFoundationPickFixture {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 5px 10px !important;
+    margin: 0 7px;
+    padding: 10px 2px !important;
+  }
+
+  .uiFoundationPickFixture > span:first-child,
+  .uiFoundationPickFixture > span:nth-child(3) {
+    font-size: 10px;
+    color: var(--ui-text-muted);
+  }
+
+  .uiFoundationPickFixture > strong {
+    grid-column: 1;
+    grid-row: 2;
+    line-height: 1.25;
+  }
+
+  .uiFoundationPickFixture > span:nth-child(3) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .uiFoundationPickAction {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: stretch;
+    width: min(34vw, 138px);
+    padding: 8px 9px !important;
+    line-height: 1.15;
+  }
+}
