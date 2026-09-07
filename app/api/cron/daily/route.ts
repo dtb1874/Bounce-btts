@@ -3,6 +3,7 @@ import { runFootballImport } from "@/lib/api-football";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyMissedPickPenalties } from "@/lib/missed-picks";
 import { captureDeadlineOdds } from "@/lib/deadline-odds";
+import { checkGameweekFixtureHealth } from "@/lib/gameweek-health";
 
 function authorised(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -21,8 +22,9 @@ export async function GET(request: NextRequest) {
   const penaltiesApplied = await applyMissedPickPenalties(admin).catch(() => 0);
   try {
     const result = await runFootballImport("cron");
+    const fixtureHealth = await checkGameweekFixtureHealth(admin);
     const deadlineOdds = await captureDeadlineOdds(admin);
-    return NextResponse.json({ penaltiesApplied, ...result, deadlineOdds });
+    return NextResponse.json({ penaltiesApplied, ...result, fixtureHealth, deadlineOdds });
   }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Import failed", penaltiesApplied }, { status: 500 }); }
 }
