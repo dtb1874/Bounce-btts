@@ -97,21 +97,26 @@ jobs:
           grep -q 'data-ui-foundation-view="players"' app/LeagueApp.tsx
           grep -q 'uiFoundationPlayerRow' app/LeagueApp.tsx
           grep -q 'data-ui-foundation-view="admin"' app/LeagueApp.tsx
-          grep -q 'uiFoundationAdminTabs' app/LeagueApp.tsx
-          grep -q 'uiFoundationAdminPanel' app/LeagueApp.tsx
+          for hook in uiFoundationAdminTabs uiFoundationAdminPanel uiFoundationAdminUsers uiFoundationAdminUserRow uiFoundationAdminUserField uiFoundationAdminRCount uiFoundationAdminUserActions uiFoundationAdminShareGold; do
+            grep -q "$hook" app/LeagueApp.tsx
+          done
+          if grep -q '\[class\*=' app/ui-foundation-admin.css; then
+            echo "Admin UI Foundation CSS must use stable semantic hooks, not generated-class substring selectors."
+            exit 1
+          fi
           grep -q 'data-ui-foundation-view="table"' app/CanonicalLeagueTable.tsx
           grep -q 'uiFoundationStatCentreTable' app/CanonicalLeagueTable.tsx
           grep -q '<h2>Stat Centre</h2>' app/CanonicalLeagueTable.tsx
           grep -q 'ui-foundation-experience.css' app/layout.tsx
           grep -q 'ui-foundation-league.css' app/layout.tsx
           grep -q 'ui-foundation-admin.css' app/layout.tsx
-          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css app/mobile-member-nav.css; do
+          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css app/release4-admin-users-tidy.css app/mobile-member-nav.css; do
             if [ -e "$retired" ]; then
               echo "Retired UI bridge/override has returned: $retired"
               exit 1
             fi
           done
-          if find scripts .github/workflows -maxdepth 1 -type f \( -name 'migrate-ui-foundation-*.mjs' -o -name 'ui-foundation-*-migration.yml' \) | grep -q .; then
+          if find scripts .github/workflows -maxdepth 1 -type f \( -name 'migrate-ui-foundation-*.mjs' -o -name 'finalise-ui-foundation-*.mjs' -o -name 'ui-foundation-*-migration.yml' -o -name 'ui-foundation-*-finalise.yml' \) | grep -q .; then
             echo "One-shot UI Foundation migration helper/workflow was left in the branch."
             exit 1
           fi
