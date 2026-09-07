@@ -67,6 +67,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          grep -q 'data-ui-foundation-shell="declarative"' app/ui/AuthenticatedShellFrame.tsx
+          for hook in uiFoundationShell uiFoundationSidebar uiFoundationSidebarOpen uiFoundationMobileMenu uiFoundationScrim uiFoundationMain; do
+            grep -q "$hook" app/ui/AuthenticatedShellFrame.tsx
+          done
+          grep -q 'ui-foundation-shell-responsive.css' app/layout.tsx
+          if grep -q 'mobile-member-nav.css' app/layout.tsx; then
+            echo "Legacy mobile member nav stylesheet is still imported."
+            exit 1
+          fi
+          if grep -q '\[class\*=' app/ui-foundation-shell-responsive.css; then
+            echo "Responsive shell CSS must use stable semantic hooks, not generated-class substring selectors."
+            exit 1
+          fi
+
           grep -q 'data-ui-foundation-view="dashboard"' app/LeagueApp.tsx
           grep -q 'uiFoundationDashboardPicks' app/LeagueApp.tsx
           grep -q 'uiFoundationDashboardLeague' app/LeagueApp.tsx
@@ -91,7 +105,7 @@ jobs:
           grep -q 'ui-foundation-experience.css' app/layout.tsx
           grep -q 'ui-foundation-league.css' app/layout.tsx
           grep -q 'ui-foundation-admin.css' app/layout.tsx
-          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css; do
+          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css app/mobile-member-nav.css; do
             if [ -e "$retired" ]; then
               echo "Retired UI bridge/override has returned: $retired"
               exit 1
