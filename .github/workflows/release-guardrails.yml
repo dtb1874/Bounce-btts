@@ -37,17 +37,7 @@ jobs:
             exit 1
           fi
 
-          forbidden=(
-            LeagueApp.tsx
-            PublicLeagueTable.tsx
-            ShareTableButton.tsx
-            api-football.ts
-            public-table.ts
-            scoring.ts
-            fractional.ts
-            globals.css
-            layout.tsx
-          )
+          forbidden=(LeagueApp.tsx PublicLeagueTable.tsx ShareTableButton.tsx api-football.ts public-table.ts scoring.ts fractional.ts globals.css layout.tsx)
           for path in "${forbidden[@]}"; do
             if [ -e "$path" ]; then
               echo "Duplicate root source file detected: $path"
@@ -66,9 +56,71 @@ jobs:
           set -euo pipefail
           if grep -R -n -E 'footer\.textContent\s*=|new MutationObserver\(' app lib 2>/dev/null | grep -E 'ReleaseInfo|release-info|footer\.textContent'; then
             echo "Unsafe release-info DOM mutation pattern detected."
-            echo "Release metadata must render through React-owned components, never by rewriting React-owned DOM."
             exit 1
           fi
+          if grep -q 'MobileSidebarPortrait\|Release4HistoryPrestige' app/layout.tsx; then
+            echo "A retired UI DOM bridge is mounted in RootLayout."
+            exit 1
+          fi
+
+      - name: UI foundation experience source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'data-ui-foundation-shell="declarative"' app/ui/AuthenticatedShellFrame.tsx
+          for hook in uiFoundationShell uiFoundationSidebar uiFoundationSidebarOpen uiFoundationMobileMenu uiFoundationScrim uiFoundationMain; do
+            grep -q "$hook" app/ui/AuthenticatedShellFrame.tsx
+          done
+          grep -q 'ui-foundation-shell-responsive.css' app/layout.tsx
+          if grep -q 'mobile-member-nav.css' app/layout.tsx; then
+            echo "Legacy mobile member nav stylesheet is still imported."
+            exit 1
+          fi
+          if grep -q '\[class\*=' app/ui-foundation-shell-responsive.css; then
+            echo "Responsive shell CSS must use stable semantic hooks, not generated-class substring selectors."
+            exit 1
+          fi
+
+          grep -q 'data-ui-foundation-view="dashboard"' app/LeagueApp.tsx
+          grep -q 'uiFoundationDashboardPicks' app/LeagueApp.tsx
+          grep -q 'uiFoundationDashboardLeague' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="pick"' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickStatus' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickFixture' app/LeagueApp.tsx
+          grep -q 'uiFoundationPickActionSelected' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="results"' app/LeagueApp.tsx
+          grep -q 'uiFoundationResultsSelected' app/LeagueApp.tsx
+          grep -q 'uiFoundationResultRow' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="history"' app/LeagueApp.tsx
+          grep -q 'uiFoundationHistoryTable' app/LeagueApp.tsx
+          grep -q 'uiFoundationReigningChampion' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="players"' app/LeagueApp.tsx
+          grep -q 'uiFoundationPlayerRow' app/LeagueApp.tsx
+          grep -q 'data-ui-foundation-view="admin"' app/LeagueApp.tsx
+          for hook in uiFoundationAdminTabs uiFoundationAdminPanel uiFoundationAdminUsers uiFoundationAdminUserRow uiFoundationAdminUserField uiFoundationAdminRCount uiFoundationAdminUserActions uiFoundationAdminShareGold; do
+            grep -q "$hook" app/LeagueApp.tsx
+          done
+          if grep -q '\[class\*=' app/ui-foundation-admin.css; then
+            echo "Admin UI Foundation CSS must use stable semantic hooks, not generated-class substring selectors."
+            exit 1
+          fi
+          grep -q 'data-ui-foundation-view="table"' app/CanonicalLeagueTable.tsx
+          grep -q 'uiFoundationStatCentreTable' app/CanonicalLeagueTable.tsx
+          grep -q '<h2>Stat Centre</h2>' app/CanonicalLeagueTable.tsx
+          grep -q 'ui-foundation-experience.css' app/layout.tsx
+          grep -q 'ui-foundation-league.css' app/layout.tsx
+          grep -q 'ui-foundation-admin.css' app/layout.tsx
+          for retired in app/MobileSidebarPortrait.tsx app/Release4HistoryPrestige.tsx app/release4-history-champion.css app/release4-admin-users-tidy.css app/mobile-member-nav.css; do
+            if [ -e "$retired" ]; then
+              echo "Retired UI bridge/override has returned: $retired"
+              exit 1
+            fi
+          done
+          if find scripts .github/workflows -maxdepth 1 -type f \( -name 'migrate-ui-foundation-*.mjs' -o -name 'finalise-ui-foundation-*.mjs' -o -name 'ui-foundation-*-migration.yml' -o -name 'ui-foundation-*-finalise.yml' \) | grep -q .; then
+            echo "One-shot UI Foundation migration helper/workflow was left in the branch."
+            exit 1
+          fi
+          echo "Authenticated shell, member, league and admin surfaces remain on semantic UI Foundation ownership."
 
       - name: Require release history update
         if: github.event_name == 'pull_request'
@@ -78,20 +130,15 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-
-          # Emergency rollback PRs must never be blocked by release-note bookkeeping.
           if [[ "$HEAD_REF" == rollback/* ]]; then
             echo "Rollback branch detected; release-history update requirement waived."
             exit 0
           fi
-
           if git diff --quiet "$BASE_SHA"...HEAD -- scripts/apply-reminder-history.mjs; then
             echo "Release History was not updated."
             echo "Every normal PR to main must update scripts/apply-reminder-history.mjs with the release entry/version metadata."
-            echo "Emergency rollback branches named rollback/* are exempt."
             exit 1
           fi
-
           echo "Release History update detected."
 
       - name: Production build
@@ -133,3 +180,15 @@ jobs:
 
       - name: Browser hydration smoke test
         run: npx playwright test tests/hydration-smoke.spec.js --reporter=line
+
+      - name: UI foundation shell contract
+        run: npx playwright test tests/ui-foundation-shell.spec.js --reporter=line
+
+      - name: Upload UI foundation shell screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-foundation-shell-screenshots
+          path: artifacts/ui-foundation-shell/*.png
+          if-no-files-found: ignore
+          retention-days: 7

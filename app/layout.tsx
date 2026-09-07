@@ -1,4 +1,6 @@
 import "./globals.css";
+import "./ui-foundation.css";
+import "./ui-foundation-shell-responsive.css";
 import "./tynecastle-watermark.css";
 import "./league-table.css";
 import "./pre-v2-compact-restoration.css";
@@ -6,15 +8,13 @@ import "./public-mobile-tuning.css";
 import "./league-stats.css";
 import "./dashboard-fixture-rows.css";
 import "./gameweek-recap-order.css";
-import "./mobile-member-nav.css";
 import "./release4-history.css";
-import "./release4-history-champion.css";
-import "./release4-admin-users-tidy.css";
+import "./ui-foundation-experience.css";
+import "./ui-foundation-league.css";
+import "./ui-foundation-admin.css";
 import type { Metadata, Viewport } from "next";
 import ShortRaceShareBridge from "./ShortRaceShareBridge";
-import MobileSidebarPortrait from "./MobileSidebarPortrait";
 import EasterEggDiscovery from "./EasterEggDiscovery";
-import Release4HistoryPrestige from "./Release4HistoryPrestige";
 
 export const metadata: Metadata = {
   title: "Bounce BTTS League",
@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body><ShortRaceShareBridge /><MobileSidebarPortrait /><EasterEggDiscovery /><Release4HistoryPrestige />{children}</body>
+      <body><ShortRaceShareBridge /><EasterEggDiscovery />{children}</body>
     </html>
   );
 }

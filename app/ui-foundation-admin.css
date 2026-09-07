@@ -1,9 +1,73 @@
-/* Release 4 — Admin > Users final mobile tidy-up.
-   Presentation only. Intentionally scoped to the Admin Users view so existing admin behaviour is untouched.
-   This layer is temporary technical debt to be removed during the scheduled UI Foundation migration. */
+/* UI Foundation — admin presentation ownership.
+   Phase 9 keeps every existing admin action and data path intact. */
 
+.uiFoundationAdminPage {
+  position: relative;
+}
+
+.uiFoundationAdminTabs {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.uiFoundationAdminTabs button {
+  min-height: 40px;
+}
+
+.uiFoundationAdminPanel {
+  border-color: color-mix(in srgb, var(--ui-border) 82%, #caa56c 18%) !important;
+}
+
+.uiFoundationAdminPanel fieldset {
+  min-width: 0;
+}
+
+.uiFoundationAdminPage input,
+.uiFoundationAdminPage select,
+.uiFoundationAdminPage textarea,
+.uiFoundationAdminPage button {
+  max-width: 100%;
+}
+
+@media (max-width: 650px) {
+  .uiFoundationAdminPage {
+    overflow: clip;
+  }
+
+  .uiFoundationAdminTabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px 0 9px;
+    background: linear-gradient(180deg, rgba(16,16,20,.98) 78%, rgba(16,16,20,0));
+  }
+
+  .uiFoundationAdminTabs button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px 7px !important;
+    white-space: normal;
+  }
+
+  .uiFoundationAdminPanel {
+    padding: 11px !important;
+  }
+
+  .uiFoundationAdminPage .adminUserRow,
+  .uiFoundationAdminPage .adminResultRow {
+    min-width: 0;
+  }
+}
+
+/* Final UI Foundation ownership — Admin > Users mobile presentation. */
 @media (max-width: 700px) {
-  [class*="adminPage"] [class*="adminTabs"] {
+  .uiFoundationAdminPage .uiFoundationAdminTabs {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 8px !important;
@@ -11,7 +75,7 @@
     margin-bottom: 14px !important;
   }
 
-  [class*="adminPage"] [class*="adminTabs"] button {
+  .uiFoundationAdminPage .uiFoundationAdminTabs button {
     width: 100%;
     min-width: 0;
     min-height: 46px;
@@ -26,11 +90,11 @@
     box-sizing: border-box;
   }
 
-  [class*="adminPage"] [class*="adminUsers"] {
+  .uiFoundationAdminPage .uiFoundationAdminUsers {
     gap: 18px !important;
   }
 
-  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] {
+  .uiFoundationAdminPage .uiFoundationAdminUsers .uiFoundationAdminUserRow {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     column-gap: 12px !important;
     row-gap: 10px !important;
@@ -40,7 +104,7 @@
   }
 
   /* Premium user-card title. Leave a protected area at the right for the disclosure control. */
-  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"]::before {
+  .uiFoundationAdminPage .uiFoundationAdminUsers .uiFoundationAdminUserRow::before {
     min-height: 46px !important;
     padding: 9px 62px 9px 14px !important;
     align-items: center;
@@ -57,7 +121,7 @@
     box-sizing: border-box;
   }
 
-  [class*="adminPage"] [class*="adminUserField"] {
+  .uiFoundationAdminPage .uiFoundationAdminUserField {
     display: grid !important;
     grid-template-rows: 14px 48px;
     gap: 5px !important;
@@ -65,7 +129,7 @@
     align-content: start;
   }
 
-  [class*="adminPage"] [class*="adminUserField"] > span {
+  .uiFoundationAdminPage .uiFoundationAdminUserField > span {
     display: flex;
     align-items: end;
     min-height: 14px;
@@ -74,8 +138,8 @@
     letter-spacing: .09em !important;
   }
 
-  [class*="adminPage"] [class*="adminUserField"] input,
-  [class*="adminPage"] [class*="adminUserField"] select {
+  .uiFoundationAdminPage .uiFoundationAdminUserField input,
+  .uiFoundationAdminPage .uiFoundationAdminUserField select {
     width: 100% !important;
     height: 48px !important;
     min-height: 48px !important;
@@ -86,7 +150,7 @@
     box-sizing: border-box !important;
   }
 
-  [class*="adminPage"] [class*="adminRCount"] {
+  .uiFoundationAdminPage .uiFoundationAdminRCount {
     grid-column: 1 / -1 !important;
     justify-self: start !important;
     width: auto !important;
@@ -98,7 +162,7 @@
     font-size: 11px !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions {
     grid-column: 1 / -1 !important;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -109,7 +173,7 @@
     align-items: stretch !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] > * {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions > * {
     width: 100% !important;
     min-width: 0 !important;
     min-height: 54px !important;
@@ -120,8 +184,8 @@
     box-sizing: border-box !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] button,
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [role="button"] {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions button,
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions [role="button"] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -132,7 +196,7 @@
     white-space: normal !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions .uiFoundationAdminShareGold {
     display: grid !important;
     grid-template-columns: 24px minmax(0, 1fr) !important;
     grid-template-rows: auto auto !important;
@@ -143,7 +207,7 @@
     text-align: left !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > span {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions .uiFoundationAdminShareGold > span {
     grid-row: 1 / 3 !important;
     align-self: center !important;
     margin: 0 !important;
@@ -151,7 +215,7 @@
     line-height: 1 !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > strong {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions .uiFoundationAdminShareGold > strong {
     align-self: end !important;
     margin: 0 !important;
     font-size: 12px !important;
@@ -159,7 +223,7 @@
     white-space: nowrap;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] [class*="shareGold"] > small {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions .uiFoundationAdminShareGold > small {
     align-self: start !important;
     margin: 2px 0 0 !important;
     font-size: 9px !important;
@@ -168,7 +232,7 @@
   }
 
   /* Member contact/profile portal is appended in the DOM, but on mobile it belongs directly under the card header. */
-  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] > [data-member-profile-host="true"] {
+  .uiFoundationAdminPage .uiFoundationAdminUsers .uiFoundationAdminUserRow > [data-member-profile-host="true"] {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
     order: -10 !important;
@@ -179,12 +243,12 @@
     z-index: 5;
   }
 
-  [class*="adminPage"] [data-member-profile-host="true"] > details {
+  .uiFoundationAdminPage [data-member-profile-host="true"] > details {
     margin: 0 !important;
   }
 
   /* Override the portal's inline summary geometry so it lives wholly inside the title bar. */
-  [class*="adminPage"] [data-member-profile-host="true"] > details > summary {
+  .uiFoundationAdminPage [data-member-profile-host="true"] > details > summary {
     top: -52px !important;
     right: 0 !important;
     width: 40px !important;
@@ -199,7 +263,7 @@
   }
 
   /* When opened, the contact/photo controls become the first full-width content block. */
-  [class*="adminPage"] [data-member-profile-host="true"] > details[open] > div {
+  .uiFoundationAdminPage [data-member-profile-host="true"] > details[open] > div {
     margin: 0 0 4px !important;
     padding: 14px 12px 13px !important;
     border: 1px solid rgba(216,183,111,.22) !important;
@@ -213,45 +277,45 @@
 }
 
 @media (max-width: 390px) {
-  [class*="adminPage"] [class*="adminTabs"] {
+  .uiFoundationAdminPage .uiFoundationAdminTabs {
     gap: 6px !important;
   }
 
-  [class*="adminPage"] [class*="adminTabs"] button {
+  .uiFoundationAdminPage .uiFoundationAdminTabs button {
     min-height: 44px;
     padding: 7px 4px !important;
     font-size: 10px;
   }
 
-  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"] {
+  .uiFoundationAdminPage .uiFoundationAdminUsers .uiFoundationAdminUserRow {
     column-gap: 9px !important;
     padding-left: 11px !important;
     padding-right: 11px !important;
   }
 
-  [class*="adminPage"] [class*="adminUsers"] [class*="adminUserRow"]::before {
+  .uiFoundationAdminPage .uiFoundationAdminUsers .uiFoundationAdminUserRow::before {
     padding-left: 12px !important;
     padding-right: 56px !important;
     font-size: 13px !important;
     letter-spacing: .095em !important;
   }
 
-  [class*="adminPage"] [class*="adminUserField"] input,
-  [class*="adminPage"] [class*="adminUserField"] select {
+  .uiFoundationAdminPage .uiFoundationAdminUserField input,
+  .uiFoundationAdminPage .uiFoundationAdminUserField select {
     padding: 0 9px !important;
     font-size: 13px !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions {
     gap: 8px !important;
   }
 
-  [class*="adminPage"] [class*="adminUserRow"] [class*="buttonRow"] > * {
+  .uiFoundationAdminPage .uiFoundationAdminUserRow .uiFoundationAdminUserActions > * {
     min-height: 52px !important;
     height: 52px !important;
   }
 
-  [class*="adminPage"] [data-member-profile-host="true"] > details[open] > div {
+  .uiFoundationAdminPage [data-member-profile-host="true"] > details[open] > div {
     padding-left: 10px !important;
     padding-right: 10px !important;
   }

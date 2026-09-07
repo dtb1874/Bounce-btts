@@ -7,6 +7,7 @@ import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
 import CombinedShareButton from "./CombinedShareButton";
 import DataShareButton from "./DataShareButton";
 import CanonicalLeagueTable from "./CanonicalLeagueTable";
+import AuthenticatedShellFrame from "./ui/AuthenticatedShellFrame";
 import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
 import { outcomeLabel } from "@/lib/scoring";
 import { compareCompetitions } from "@/lib/competition-order";
@@ -40,17 +41,17 @@ type Props = {
 const finishedStatuses = ["FT", "AET", "PEN"];
 const RELEASE_VERSION = "1.6.3";
 const RELEASE_DATE = "20 Aug 2026";
-const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean }> = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "pick", label: "Make My Pick", icon: "⚑" },
-  { id: "fixtures", label: "Fixtures", icon: "▦" },
-  { id: "table", label: "League Table", icon: "☷" },
-  { id: "results", label: "Results", icon: "✦" },
-  { id: "history", label: "League History", icon: "◷" },
-  { id: "players", label: "Players", icon: "◉" },
-  { id: "about", label: "About", icon: "?" },
-  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true },
-  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true },
+const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean; group: "quick" | "more"; helper?: string }> = [
+  { id: "dashboard", label: "Dashboard", icon: "⌂", group: "quick" },
+  { id: "pick", label: "Make My Pick", icon: "⚑", group: "quick" },
+  { id: "fixtures", label: "Fixtures", icon: "▦", group: "more" },
+  { id: "table", label: "League Table", icon: "☷", group: "quick", helper: "Stat Centre" },
+  { id: "results", label: "Results", icon: "✦", group: "quick", helper: "All picks" },
+  { id: "history", label: "League History", icon: "◷", group: "more" },
+  { id: "players", label: "Players", icon: "◉", group: "more" },
+  { id: "about", label: "About", icon: "?", group: "more" },
+  { id: "alerts", label: "Alerts", icon: "!", adminOnly: true, group: "more" },
+  { id: "admin", label: "Admin", icon: "⚙", adminOnly: true, group: "more" },
 ];
 
 
@@ -353,18 +354,34 @@ export default function LeagueApp(props: Props) {
   }
 
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/"; }
+  function triggerRousset(){
+    setRouss(true);
+    setMobileMenu(false);
+    void (async()=>{try{await fetch("/api/easter-egg/rousset",{method:"POST",headers:{authorization:`Bearer ${await token()}`}})}catch{}})();
+  }
   if (!initialProfile.active) return <main className={styles.shell}><div className={styles.panel}><h2>Account inactive</h2><button className={styles.primary} onClick={signOut}>Sign out</button></div></main>;
 
-  return <main className={styles.shell}>
-    {!mobileMenu&&<button className={`${styles.mobileMenu} mobileDashboardMenu`} onClick={()=>setMobileMenu(true)}>☰</button>}
-    <aside className={`${styles.sidebar} ${mobileMenu?styles.open:""}`}>
-      <div className={styles.brand}><img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><strong>BOUNCE</strong><span>BTTS LEAGUE</span><small>EST 2024</small></div></div>
-      <nav className={styles.nav}>{navItems.filter(n=>!n.adminOnly||isAdmin).map(n=><button key={n.id} className={view===n.id?styles.active:""} onClick={()=>{setView(n.id);setMobileMenu(false)}}><span>{n.icon} </span>{n.label}{n.id==="alerts"&&alertsCount>0?<b className={styles.badge}>{alertsCount>9?"9+":alertsCount}</b>:null}</button>)}</nav>
-      <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={()=>{setRouss(true);setMobileMenu(false);void (async()=>{try{await fetch("/api/easter-egg/rousset",{method:"POST",headers:{authorization:`Bearer ${await token()}`}})}catch{}})()}}></button>
-      <button className={styles.profile} onClick={signOut}><span>{initials(initialProfile.display_name)}</span><span><strong>{initialProfile.display_name}</strong><small>{isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}</small></span><b>↪</b></button>
-    </aside>
-    {mobileMenu && <button className={styles.scrim} aria-label="Close menu" onClick={()=>setMobileMenu(false)}/>} 
-    <section className={styles.main}>
+  return <AuthenticatedShellFrame
+    navItems={navItems}
+    activeView={view}
+    isAdmin={isAdmin}
+    alertsCount={alertsCount}
+    mobileMenuOpen={mobileMenu}
+    profileName={initialProfile.display_name}
+    profileMeta={isDemo?"Demo Guest":initialProfile.role === "ultimate_admin"?"Ultimate Admin":initialProfile.role === "admin"?"League Admin":initialProfile.username}
+    profileInitials={initials(initialProfile.display_name)}
+    onOpenMenu={()=>setMobileMenu(true)}
+    onCloseMenu={()=>setMobileMenu(false)}
+    onNavigate={(id)=>{setView(id as View);setMobileMenu(false)}}
+    onEasterEgg={triggerRousset}
+    onSignOut={signOut}
+    afterContent={<>
+      {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
+      {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
+      {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
+      {toast && <div className={styles.toast}>{toast}</div>}
+    </>}
+  >
       {emulatedProfileId&&<div className={styles.notice} style={{margin:"10px 14px 0",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderColor:"rgba(240,207,170,.55)",background:"rgba(116,32,52,.92)"}}><span><strong>EMULATION ACTIVE</strong><br/><small>Viewing as {emulatedProfile?.display_name??"another user"} · read-only</small></span><button className={styles.primary} type="button" onClick={()=>{setEmulatedProfileId(null);setView("admin");setAdminView("users");setMobileMenu(false)}}>Exit emulation</button></div>}
       <header className={`${styles.hero} dashboardBrandHero`}><div className="dashboardBrandLockup"><img className="dashboardBrandCrest" src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel}</p><h1>BOUNCE</h1><h2>BTTS LEAGUE</h2></div></div><div className={`${styles.gwCard} dashboardGwCompact`}><label>Gameweek</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small>{isDemo&&<div className={styles.demoSwitch}><button className={demoPerspective==="member"?styles.active:""} onClick={()=>{setDemoPerspective("member");setView("dashboard")}}>Member View</button><button className={demoPerspective==="admin"?styles.active:""} onClick={()=>{setDemoPerspective("admin");setView("dashboard")}}>Admin View</button></div>}</div></header>
       <div className={styles.content}><div className={styles.page}>
@@ -384,12 +401,7 @@ export default function LeagueApp(props: Props) {
         {view==="alerts" && isAdmin && (isDemo?<DemoReadOnlyPanel title="Alerts" text="Admin alerts are intentionally hidden in Demo Mode because they can contain operational details."/>:<AlertsPage notice={notice} onCount={setAlertsCount}/>)}
         {view==="admin" && isAdmin && <AdminPage active={adminView} setActive={setAdminView} isUltimate={effectiveRole==="ultimate_admin"} readOnly={isReadOnly} demoMode={isDemo} onEmulate={(id)=>{if(id===initialProfile.id)return notice("You are already viewing your own account.");setEmulatedProfileId(id);setView("dashboard")}} gameweek={gameweek??null} nextGameweek={initialGameweeks.find(g=>g.number===(gameweek?.number??0)+1)??null} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} adjustments={adjustments} entryFee={entryFee} notice={notice} onChanged={()=>refreshLiveData(false)}/>} 
       </div></div><footer className={styles.footer}>♡ MADE BY THE ARTIST, FOR THE BOUNCE · v{RELEASE_VERSION}</footer>
-    </section>
-    {emulatedProfile&&<button className={styles.stopEmulating} onClick={()=>setEmulatedProfileId(null)}>✕ Stop emulating {emulatedProfile.display_name}</button>}
-    {isDemo&&<div className={styles.demoBadge}>DEMO MODE · READ ONLY</div>}
-    {rouss && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Roussetted" onClick={()=>setRouss(false)}><div className={`${styles.overlayCard} ${styles.flash}`} onClick={e=>e.stopPropagation()}><img src="https://londonhearts.com/images/ianc/images/Gilles_Rousset.jpg" alt="Gilles Rousset during his Hearts career"/><h2>You’ve just been Roussetted</h2><button className={styles.primary} onClick={()=>setRouss(false)}>Close</button></div></div>}
-    {toast && <div className={styles.toast}>{toast}</div>}
-  </main>;
+  </AuthenticatedShellFrame>;
 }
 
 function Heading({eyebrow,title,children,actions}:{eyebrow:string;title:string;children?:ReactNode;actions?:ReactNode}){return <div className={styles.heading}><div><span>{eyebrow}</span><h2>{title}</h2>{children}</div>{actions}</div>}
@@ -515,8 +527,8 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
     return {primary:`GW ${timingTarget.gameweek.number} ${timingTarget.mode}`, secondary:`${part("weekday")} ${clock} ${part("day")}/${part("month")}`};
   })() : null;
 
-  return <section className={`${styles.dashboard} compactDashboard ${isAdmin?"adminDashboard":""}`}>
-    <div className={`${styles.dashboardIntro} adminDashboardIntro mobileControlCentre`}>
+  return <section className={`${styles.dashboard} compactDashboard uiFoundationDashboard ${isAdmin?"adminDashboard":""}`} data-ui-foundation-view="dashboard">
+    <div className={`${styles.dashboardIntro} adminDashboardIntro mobileControlCentre uiFoundationDashboardIntro`}>
       <div>
         <span className={styles.eyebrow}>SEASON {seasonLabel} · {gameweek?`GAMEWEEK ${gameweek.number}`:"OVERVIEW"}</span>
         <h2>{isAdmin?"League Control Centre":"Your League Dashboard"}</h2>
@@ -529,7 +541,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
     </div>
     {honoursOpen&&<div className="dashboardHonoursPanel"><div className="dashboardHonoursHead"><span>BOUNCE CHAMPIONS</span><strong>Roll of Honour</strong></div><div className="dashboardHonoursGrid">{dashboardHonours.map((row,index)=><div className="dashboardHonourRow" key={row.season}><span>{row.season}</span><strong>{row.winner}</strong><small>{index===0?"Reigning champion":"Bounce champion"}</small></div>)}</div></div>}
 
-    <div className={`${styles.dashboardStats} adminDashboardStats`}>
+    <div className={`${styles.dashboardStats} adminDashboardStats uiFoundationDashboardStats`}>
       <article className={styles.statCard}>
         <span>YOUR POSITION</span><strong>{myStanding?`${myPosition}${myPosition===1?"st":myPosition===2?"nd":myPosition===3?"rd":"th"}`:"—"}</strong>
         <small>{myStanding?`${myStanding.points} pts · ${myStanding.wins} BTTS wins`:"No scored picks yet"}</small>
@@ -552,17 +564,17 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </article>}
     </div>
 
-    <div className="mobileDashboardActions" aria-label="Dashboard shortcuts">
+    <div className="mobileDashboardActions uiFoundationDashboardActions" aria-label="Dashboard shortcuts">
       <button onClick={()=>setView("pick")}><span>⚑</span><strong>{isOpen?"Make My Pick":"View My Pick"}</strong></button>
-      <button onClick={()=>setView("table")}><span>☷</span><strong>League Table</strong></button>
+      <button onClick={()=>setView("table")}><span>☷</span><strong>Stat Centre</strong></button>
       <button onClick={()=>document.getElementById("current-form")?.scrollIntoView({behavior:"smooth",block:"start"})}><span>↗</span><strong>Current Form</strong></button>
       <button onClick={()=>document.getElementById("weekly-picks")?.scrollIntoView({behavior:"smooth",block:"start"})}><span>◉</span><strong>All Picks</strong></button>
     </div>
 
-    <div className={`${styles.dashboardMain} mobileDashboardMain`}>
+    <div className={`${styles.dashboardMain} mobileDashboardMain uiFoundationDashboardMain`}>
       <div className={`${styles.dashboardPrimary} mobileDashboardPrimary`}>
 
-        <article id="weekly-picks" className={`${styles.panel} weeklyPicksPanel`}>
+        <article id="weekly-picks" className={`${styles.panel} weeklyPicksPanel uiFoundationDashboardPicks`}>
           <div className={styles.panelHeading}>
             <div className="weeklyPicksHeading"><div className="weeklyPicksTitleRow"><h3>Everyone at a glance</h3>{timingText&&<span className={`${styles.title} dashboardGameweekTiming`} aria-live="polite"><span>{timingText.primary}</span><span>{timingText.secondary}</span></span>}</div><div className={styles.title}>GAMEWEEK PICKS & LIVE RESULTS</div></div>
             <div className="dashboardActionGrid">
@@ -590,10 +602,10 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </div>
 
       <aside className={`${styles.dashboardSide} mobileDashboardSide`}>
-        <article className={`${styles.panel} ${styles.tablePreview} mobileLeaguePreview`}>
+        <article className={`${styles.panel} ${styles.tablePreview} mobileLeaguePreview uiFoundationDashboardLeague`}>
           <div className={styles.tableArtwork} aria-hidden="true"><img src="/assets/bounce-cup.png" alt=""/></div>
           <div className={styles.panelHeading}>
-            <div><div className={styles.title}>LEAGUE TABLE</div><h3>Season standings</h3></div>
+            <div><div className={styles.title}>STAT CENTRE</div><h3>Season standings</h3></div>
             <div className="shareHeaderActions"><button className={styles.linkButton} onClick={()=>setView("table")}>Full table →</button><ShareTableButton compact rows={standings} seasonLabel={seasonLabel} gameweekNumber={gameweek?.number??null} prizePot={profiles.length*entryFee}/></div>
           </div>
           <div className={styles.miniTable}>
@@ -609,7 +621,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
         <article className={`${styles.panel} mobileRedundantLinks`}>
           <div className={styles.title}>{isAdmin?"ADMIN SHORTCUTS":"QUICK LINKS"}</div>
           <div className={styles.quickLinks}>
-            <button onClick={()=>setView("table")}>☷ <span><strong>League Table</strong><small>Full standings & tie-break detail</small></span></button>
+            <button onClick={()=>setView("table")}>☷ <span><strong>Stat Centre</strong><small>League table & season stats</small></span></button>
             <button onClick={()=>setView("results")}>✦ <span><strong>Results</strong><small>Selected matches & all fixtures</small></span></button>
             <button onClick={()=>setView("players")}>◉ <span><strong>Players</strong><small>Who has picked this week</small></span></button>
             {isAdmin&&<button onClick={()=>setView("admin")}>⚙ <span><strong>Admin</strong><small>Selections, results & fixture controls</small></span></button>}
@@ -618,7 +630,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
       </aside>
     </div>
 
-    <article id="current-form" className={`${styles.panel} ${styles.formPanel}`}>
+    <article id="current-form" className={`${styles.panel} ${styles.formPanel} uiFoundationDashboardForm`}>
       <div className={styles.panelHeading}>
         <div><div className={styles.title}>{formRange}-WEEK FORM</div><h3>Recent league form</h3></div>
         <div className="shareHeaderActions"><select aria-label="Form range" value={formRange} onChange={e=>setFormRange(Number(e.target.value) as 6|12|18)}><option value={6}>6 weeks</option><option value={12}>12 weeks</option><option value={18}>18 weeks</option></select><button className="shareCompactWhatsApp" onClick={shareForm}>Share to WhatsApp</button></div>
@@ -650,7 +662,9 @@ function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixt
   const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
   const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.competition} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort(fixtureSort);
   const countries=Array.from(new Set(filtered.map(f=>normaliseCountry(f.country))));
-  return <section><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team, country or competition, or browse the collapsible fixture groups."/></p></Heading><div className={styles.panel}><input className={styles.search} type="search" placeholder="Search team, country or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{countries.map(country=><details className={styles.fixtureDetailsNested} key={country} open={Boolean(q)}><summary>{country}</summary>{Array.from(new Set(filtered.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(group=><details className={styles.fixtureDetailsLeague} key={group} open={Boolean(q)}><summary>{group}</summary>{filtered.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={styles.row} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{formatFixtureOddsDisplay(f.odds_fractional)??"—"}</span><button className={styles.button} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</details>)}</details>)}</div></section>
+  const myPrediction=predictions.find(p=>p.gameweek_id===gameweek?.id&&p.member_id===myId);
+  const myFixture=fixtures.find(f=>f.id===myPrediction?.fixture_id);
+  return <section className="uiFoundationPickPage" data-ui-foundation-view="pick"><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team, country or competition, or browse the collapsible fixture groups."/></p></Heading><div className={`uiFoundationPickStatus ${myFixture?"uiFoundationPickStatusSaved":"uiFoundationPickStatusEmpty"}`}><span>{myFixture?"CURRENT PICK":isOpen?"SELECTION OPEN":"SELECTION CLOSED"}</span><strong>{myFixture?`${myFixture.home_team} v ${myFixture.away_team}`:isOpen?"No fixture selected yet":"No active selection"}</strong><small>{myFixture?`${formatKickoff(myFixture.kickoff_at)} · ${competitionDisplayName(myFixture)}${myFixture.odds_fractional?` · ${formatFixtureOddsDisplay(myFixture.odds_fractional)}`:""}`:isOpen?"Pick an available fixture below. Your saved choice will be shown here.":"You can still review the available fixtures below."}</small></div><div className={`${styles.panel} uiFoundationPickPanel`}><input className={`${styles.search} uiFoundationPickSearch`} type="search" placeholder="Search team, country or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{countries.map(country=><details className={`${styles.fixtureDetailsNested} uiFoundationPickCountry`} key={country} open={Boolean(q)}><summary>{country}</summary>{Array.from(new Set(filtered.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(group=><details className={`${styles.fixtureDetailsLeague} uiFoundationPickCompetition`} key={group} open={Boolean(q)}><summary>{group}</summary>{filtered.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={`${styles.row} uiFoundationPickFixture`} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{formatFixtureOddsDisplay(f.odds_fractional)??"—"}</span><button className={`${styles.button} uiFoundationPickAction ${owner?.id===myId?"uiFoundationPickActionSelected":owner?"uiFoundationPickActionTaken":""}`} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</details>)}</details>)}</div></section>
 }
 function FixturesPage({fixtures}:{fixtures:Fixture[]}){
   const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
@@ -735,24 +749,24 @@ function ResultsPage({gameweek,fixtures,predictions,profiles,onRefresh}:{gamewee
   const resultDayKey=(f:Fixture)=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(f.kickoff_at));
   const ordered=[...fixtures].sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));
   const days=Array.from(new Set(ordered.map(resultDayKey)));
-  return <section>
+  return <section className="uiFoundationResultsPage" data-ui-foundation-view="results">
     <Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"RESULTS"} title="Results" actions={<div className={styles.headingActions}><DataShareButton title={`Gameweek ${gameweek?.number??"—"} Results`} subtitle="Selected Bounce BTTS fixtures and current outcomes" columns={["PLAYER","FIXTURE","SCORE","STATUS","PTS"]} rows={selected.map(({prediction,fixture,profile})=>[profile.display_name,`${fixture.home_team} v ${fixture.away_team}`,fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`,fixture.status,prediction.points_awarded==null?"—":prediction.points_awarded])} fileName={`bounce-btts-gw${gameweek?.number??"results"}-results.jpg`} label="Share results" compact/><button className={styles.button} onClick={onRefresh}>Refresh displayed data</button></div>}>
       <p>Selected matches first, followed by every fixture in collapsible day, country and competition groups.</p>
     </Heading>
-    <div className={styles.panel}>
+    <div className={`${styles.panel} uiFoundationResultsSelected`}>
       <details className={styles.fixtureDetails} open>
         <summary>Selected Matches<span>{selected.length} pick{selected.length===1?"":"s"}</span></summary>
-        {selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction.points_awarded);return <div className={styles.resultRow} key={prediction.id}><strong>{profile.display_name}</strong><span>{fixture.home_team} v {fixture.away_team}</span><b className={styles.score}>{fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`}</b><span>{fixture.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}
+        {selected.map(({prediction,fixture,profile})=>{const outcome=outcomeLabel(fixture.home_score,fixture.away_score,fixture.status,prediction.points_awarded);return <div className={`${styles.resultRow} uiFoundationResultRow`} key={prediction.id}><strong>{profile.display_name}</strong><span>{fixture.home_team} v {fixture.away_team}</span><b className={styles.score}>{fixture.home_score==null?"—":`${fixture.home_score}-${fixture.away_score}`}</b><span>{fixture.status}</span><span className={outcome.tone==="good"?styles.statusGood:outcome.tone==="warn"?styles.statusWarn:outcome.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome.label} {outcome.points!=null?`(${outcome.points>0?"+":""}${outcome.points})`:""}</span></div>})}
         {!selected.length&&<div className={styles.notice}>No selected matches yet.</div>}
       </details>
     </div>
-    <div className={styles.panel}>
-      <div className={styles.title}>ALL RESULTS / FIXTURES</div>
+    <div className={`${styles.panel} uiFoundationResultsAll`}>
+      <div className={`${styles.title} uiFoundationResultsTitle`}>ALL RESULTS / FIXTURES</div>
       {days.map((day,dayIndex)=>{const dayFixtures=ordered.filter(f=>resultDayKey(f)===day);const countries=Array.from(new Set(dayFixtures.map(f=>normaliseCountry(f.country))));return <details className={styles.fixtureDetails} key={day} open={dayIndex===0}>
         <summary>{new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"long",day:"numeric",month:"long"}).format(new Date(`${day}T12:00:00Z`))}<span>{dayFixtures.length} fixture{dayFixtures.length===1?"":"s"}</span></summary>
         {countries.map(country=><details className={styles.fixtureDetailsNested} key={country}><summary>{country}</summary>
           {Array.from(new Set(dayFixtures.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(competition=><details className={styles.fixtureDetailsLeague} key={competition}><summary>{competition}</summary>
-            {dayFixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={styles.resultRow} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}
+            {dayFixtures.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===competition).sort(fixtureSort).map(f=><div className={`${styles.resultRow} uiFoundationResultRow`} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><span>{f.home_team} v {f.away_team}</span><b className={styles.score}>{f.home_score==null?"—":`${f.home_score}-${f.away_score}`}</b><span>{f.status}</span><span>{predictions.some(p=>p.fixture_id===f.id)?"Selected":""}</span></div>)}
           </details>)}
         </details>)}
       </details>})}
@@ -816,11 +830,12 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
   }));
   const visibleHistoricFormRows=historicFormPlayer==="combined"?historicFormRows:historicFormRows.filter((player)=>player.name===historicFormPlayer);
 
-  return <section className={styles.historyPage}>
+  return <section className={`${styles.historyPage} uiFoundationHistoryPage`} data-ui-foundation-view="history">
     <Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History" actions={selected?<DataShareButton title={`${selected.label} Final Table`} subtitle={`Bounce BTTS League archive · ${selected.gameweeks} gameweeks`} columns={["POS","PLAYER","P","W","S-N","0-0","PTS"]} rows={selected.standings.map((row,index)=>[index+1,row.name,row.played,row.wins,row.oneSided??Math.max(0,row.points-(3*row.wins)+row.zeroZeroCount),row.zeroZeroCount,row.points])} fileName={`bounce-btts-${selected.label.replace("/","-")}-archive.jpg`} label="Share archive table" compact/>:undefined}>
       <p>Previous winners, archived tables and the story of the Bounce.</p>
     </Heading>
-    <div className={styles.historyHero}>
+    {reigningChampion&&<aside className="uiFoundationReigningChampion" aria-label="Reigning Bounce champion"><div className="uiFoundationReigningChampionCopy"><span>REIGNING CHAMPION · {reigningChampion.season}</span><strong>{reigningChampion.winner}</strong><small>Current holder of the Bounce Cup</small></div><div className="uiFoundationReigningChampionTrophy"><img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/></div></aside>}
+    <div className={`${styles.historyHero} uiFoundationHistoryHero`}>
       <div>
         <span>ROLL OF HONOUR · ARCHIVE</span>
         <h3>Bounce Legacy</h3>
@@ -833,7 +848,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
       <article><span>SELECTED SEASON</span><strong>{selected?.label ?? "—"}</strong></article>
       <article><span>ARCHIVED GAMEWEEKS</span><strong>{selected?.gameweeks ?? 0}</strong></article>
     </div>
-    <div className={`${styles.panel} ${styles.honourPanel} ${historyHonoursOpen?"historyHonoursOpen":"historyHonoursCollapsed"}`}>
+    <div className={`${styles.panel} ${styles.honourPanel} uiFoundationHistoryHonours ${historyHonoursOpen?"historyHonoursOpen":"historyHonoursCollapsed"}`}>
       <div className={styles.panelHeading}>
         <div><span className={styles.eyebrow}>CHAMPIONS</span><h3>Roll of Honour</h3></div>
       </div>
@@ -865,7 +880,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
         <small>Final podium for {selected.label}</small>
       </article>
     </div>}
-    {selected&&<div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.historyTableShell}`}>
+    {selected&&<div className={`${styles.panel} ${styles.table} ${styles.fullLeagueTable} ${styles.historyTableShell} uiFoundationHistoryTable`}>
       <div className={`${styles.tableRow} ${styles.header}`} style={{gridTemplateColumns:"55px minmax(180px,1fr) repeat(5,70px)"}}>
         <span>POS</span><span>PLAYER</span><span>P</span><span>W</span><span>S-N</span><span>0-0</span><span>PTS</span>
       </div>
@@ -930,7 +945,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
   </section>
 }
 
-function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={styles.panel}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={styles.row} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{formatFixtureOddsDisplay(fx?.odds_fractional)??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
+function PlayersPage({profiles,gameweek,fixtures,predictions,adjustments}:{profiles:Profile[];gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[]}){return <section className="uiFoundationPlayersPage" data-ui-foundation-view="players"><Heading eyebrow="LEAGUE MEMBERS" title="Players"><p>{predictions.filter(p=>p.gameweek_id===gameweek?.id).length} of {profiles.length} have submitted.</p></Heading><div className={`${styles.panel} uiFoundationPlayersPanel`}>{profiles.map(p=>{const pred=predictions.find(x=>x.member_id===p.id&&x.gameweek_id===gameweek?.id);const fx=fixtures.find(f=>f.id===pred?.fixture_id);const adj=adjustments.find(a=>a.member_id===p.id&&a.gameweek_id===gameweek?.id);return <div className={`${styles.row} uiFoundationPlayerRow`} key={p.id}><strong>{p.display_name}</strong><span>{fx?`${fx.home_team} v ${fx.away_team}`:adj?adj.reason:"Awaiting selection"}</span><span>{formatFixtureOddsDisplay(fx?.odds_fractional)??"—"}</span><b>{fx?"PICKED ✓":adj?`${adj.points} pts`:"PENDING"}</b></div>})}</div></section>}
 
 function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
   const [tab, setTab] = useState<"about" | "rules" | "instructions" | "members" | "releases">("about");
@@ -1044,7 +1059,7 @@ function ReleaseHistory(){
 }
 function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":role==="guest"?"Demo Guest":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}
 
-function AdminPage({active,setActive,isUltimate,readOnly,demoMode,onEmulate,gameweek,nextGameweek,profiles,fixtures,predictions,adjustments,entryFee,notice,onChanged}:{active:AdminView;setActive:(v:AdminView)=>void;isUltimate:boolean;readOnly:boolean;demoMode:boolean;onEmulate:(id:string)=>void;gameweek:Gameweek|null;nextGameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];entryFee:number;notice:(m:string)=>void;onChanged:()=>void}){const wrap=(node:ReactNode)=><fieldset disabled={readOnly} className={readOnly?styles.readOnlyControls:""} style={{border:0,padding:0,margin:0,minWidth:0}}>{node}</fieldset>;return <section className={styles.adminPage}><Heading eyebrow="ADMIN CONTROL" title="League Management"><p>{isUltimate?"Full league, user and security administration.":"Manage selections, fixtures, results and gameweek status."}</p></Heading><div className={styles.adminTabs}>{(["users","selections","fixtures","results","gameweek","seasons"] as AdminView[]).filter(v=>v!=="users"||isUltimate).map(v=><button key={v} className={active===v?styles.active:""} onClick={()=>setActive(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div><div className={`${styles.panel} ${styles.adminPanel}`}>{readOnly&&<div className={styles.demoNotice}>Read-only view — controls are disabled.</div>}{active==="users"&&isUltimate&&(demoMode?<DemoUsersAdmin profiles={profiles}/>:wrap(<><PaymentTracker profiles={profiles} entryFee={entryFee} notice={notice}/><UsersAdmin notice={notice} onEmulate={onEmulate}/></>))}{active==="selections"&&wrap(<SelectionsAdmin gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} notice={notice} onChanged={onChanged}/>) }{active==="fixtures"&&wrap(<FixturesAdmin gameweek={gameweek} nextGameweek={nextGameweek} notice={notice} onChanged={onChanged}/>) }{active==="results"&&wrap(<ResultsAdmin gameweek={gameweek} fixtures={fixtures} predictions={predictions} notice={notice} onChanged={onChanged}/>) }{active==="gameweek"&&wrap(<GameweekAdmin gameweek={gameweek} notice={notice} onChanged={onChanged}/>) }{active==="seasons"&&wrap(<SeasonsAdmin notice={notice} onChanged={onChanged}/>)}</div></section>}
+function AdminPage({active,setActive,isUltimate,readOnly,demoMode,onEmulate,gameweek,nextGameweek,profiles,fixtures,predictions,adjustments,entryFee,notice,onChanged}:{active:AdminView;setActive:(v:AdminView)=>void;isUltimate:boolean;readOnly:boolean;demoMode:boolean;onEmulate:(id:string)=>void;gameweek:Gameweek|null;nextGameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];entryFee:number;notice:(m:string)=>void;onChanged:()=>void}){const wrap=(node:ReactNode)=><fieldset disabled={readOnly} className={readOnly?styles.readOnlyControls:""} style={{border:0,padding:0,margin:0,minWidth:0}}>{node}</fieldset>;return <section className={`${styles.adminPage} uiFoundationAdminPage`} data-ui-foundation-view="admin"><Heading eyebrow="ADMIN CONTROL" title="League Management"><p>{isUltimate?"Full league, user and security administration.":"Manage selections, fixtures, results and gameweek status."}</p></Heading><div className={`${styles.adminTabs} uiFoundationAdminTabs`}>{(["users","selections","fixtures","results","gameweek","seasons"] as AdminView[]).filter(v=>v!=="users"||isUltimate).map(v=><button key={v} className={active===v?styles.active:""} onClick={()=>setActive(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div><div className={`${styles.panel} ${styles.adminPanel} uiFoundationAdminPanel`}>{readOnly&&<div className={styles.demoNotice}>Read-only view — controls are disabled.</div>}{active==="users"&&isUltimate&&(demoMode?<DemoUsersAdmin profiles={profiles}/>:wrap(<><PaymentTracker profiles={profiles} entryFee={entryFee} notice={notice}/><UsersAdmin notice={notice} onEmulate={onEmulate}/></>))}{active==="selections"&&wrap(<SelectionsAdmin gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} notice={notice} onChanged={onChanged}/>) }{active==="fixtures"&&wrap(<FixturesAdmin gameweek={gameweek} nextGameweek={nextGameweek} notice={notice} onChanged={onChanged}/>) }{active==="results"&&wrap(<ResultsAdmin gameweek={gameweek} fixtures={fixtures} predictions={predictions} notice={notice} onChanged={onChanged}/>) }{active==="gameweek"&&wrap(<GameweekAdmin gameweek={gameweek} notice={notice} onChanged={onChanged}/>) }{active==="seasons"&&wrap(<SeasonsAdmin notice={notice} onChanged={onChanged}/>)}</div></section>}
 
 function PaymentTracker({profiles,entryFee,notice}:{profiles:Profile[];entryFee:number;notice:(m:string)=>void}){const [seasonId,setSeasonId]=useState("");const [paid,setPaid]=useState<Record<string,boolean>>({});const [loading,setLoading]=useState(true);async function load(){const client=createClient();const season=await client.from("seasons").select("id").eq("is_current",true).maybeSingle();const id=season.data?.id??"";setSeasonId(id);if(id){const rows=await client.from("season_memberships").select("profile_id,paid").eq("season_id",id);setPaid(Object.fromEntries((rows.data??[]).map((r:any)=>[r.profile_id,Boolean(r.paid)])))}setLoading(false)}useEffect(()=>{load()},[]);async function toggle(id:string){if(!seasonId)return;const next=!paid[id];const client=createClient();const r=await client.from("season_memberships").update({paid:next,paid_at:next?new Date().toISOString():null}).eq("season_id",seasonId).eq("profile_id",id);if(r.error)return notice(r.error.message);setPaid(v=>({...v,[id]:next}));notice(next?"Entry fee marked paid":"Entry fee marked unpaid")}const active=profiles.filter(p=>p.active&&p.role!=="guest");const count=active.filter(p=>paid[p.id]).length;return <div className={styles.paymentTracker}><div className={styles.adminPaymentSummary}><article><span>ENTRY FEE</span><strong>£{entryFee.toFixed(0)}</strong><small>per member</small></article><article><span>PAID</span><strong>{count}/{active.length}</strong><small>£{(count*entryFee).toFixed(0)} received</small></article><article><span>OUTSTANDING</span><strong>£{((active.length-count)*entryFee).toFixed(0)}</strong><small>{active.length-count} member{active.length-count===1?"":"s"}</small></article></div>{loading?<div className={styles.notice}>Loading payment status…</div>:<div className={styles.paymentGrid}>{active.map(p=><button type="button" key={p.id} onClick={()=>toggle(p.id)} className={`${styles.paymentMember} ${paid[p.id]?styles.paymentPaid:styles.paymentUnpaid}`}><strong>{p.display_name}</strong><span>{paid[p.id]?"Paid ✓":`£${entryFee.toFixed(0)} unpaid`}</span></button>)}</div>}</div>}
 
@@ -1063,10 +1078,10 @@ function UsersAdmin({notice,onEmulate}:{notice:(m:string)=>void;onEmulate:(id:st
     if(!opened)window.location.href=url;
   }
   if(loading)return <div>Loading users…</div>;
-  return <div className={styles.adminUsers}><p className={styles.notice}><strong>Passwords and access controls remain Ultimate Admin only. <Help text="Use Generate to make a replacement password, Save to apply it, then WhatsApp to send the player's name, username, password and Bounce login link privately."/></strong></p>{users.map((u:any)=><div className={`${styles.row} ${styles.adminUserRow}`} key={u.id} data-user={u.display_name} data-slot={u.slot_number}><label className={styles.adminUserField}><span>Player</span><input aria-label="Player name" value={u.display_name} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,display_name:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Username</span><input aria-label="Login username" value={u.username} autoCapitalize="none" autoCorrect="off" onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,username:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Password</span><input aria-label="Password" type="text" autoComplete="off" value={u.password} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:e.target.value}:x))}/></label><label className={styles.adminUserField}><span>Role</span><select aria-label="Role" value={u.role} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,role:e.target.value}:x))}><option value="member">Member</option><option value="admin">League Admin</option><option value="guest">Demo Guest</option>{u.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><span className={styles.adminRCount} title="Rousset Easter egg presses">R {u.rousset_count??0}</span><div className={styles.buttonRow}><button className={styles.button} disabled={u.slot_number===1} aria-pressed={u.active} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,active:!x.active}:x))}>{u.active?"Active ✓":"Inactive"}</button><button className={styles.button} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:`bounce${u.slot_number}${Math.floor(10+Math.random()*90)}`}:x))}>Generate</button><button className={styles.button} onClick={()=>navigator.clipboard.writeText(`${u.display_name}\
+  return <div className={`${styles.adminUsers} uiFoundationAdminUsers`}><p className={styles.notice}><strong>Passwords and access controls remain Ultimate Admin only. <Help text="Use Generate to make a replacement password, Save to apply it, then WhatsApp to send the player's name, username, password and Bounce login link privately."/></strong></p>{users.map((u:any)=><div className={`${styles.row} ${styles.adminUserRow} uiFoundationAdminUserRow`} key={u.id} data-user={u.display_name} data-slot={u.slot_number}><label className={`${styles.adminUserField} uiFoundationAdminUserField`}><span>Player</span><input aria-label="Player name" value={u.display_name} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,display_name:e.target.value}:x))}/></label><label className={`${styles.adminUserField} uiFoundationAdminUserField`}><span>Username</span><input aria-label="Login username" value={u.username} autoCapitalize="none" autoCorrect="off" onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,username:e.target.value}:x))}/></label><label className={`${styles.adminUserField} uiFoundationAdminUserField`}><span>Password</span><input aria-label="Password" type="text" autoComplete="off" value={u.password} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:e.target.value}:x))}/></label><label className={`${styles.adminUserField} uiFoundationAdminUserField`}><span>Role</span><select aria-label="Role" value={u.role} disabled={u.slot_number===1} onChange={e=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,role:e.target.value}:x))}><option value="member">Member</option><option value="admin">League Admin</option><option value="guest">Demo Guest</option>{u.slot_number===1&&<option value="ultimate_admin">Ultimate Admin</option>}</select></label><span className={`${styles.adminRCount} uiFoundationAdminRCount`} title="Rousset Easter egg presses">R {u.rousset_count??0}</span><div className={`${styles.buttonRow} uiFoundationAdminUserActions`}><button className={styles.button} disabled={u.slot_number===1} aria-pressed={u.active} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,active:!x.active}:x))}>{u.active?"Active ✓":"Inactive"}</button><button className={styles.button} onClick={()=>setUsers(rows=>rows.map(x=>x.id===u.id?{...x,password:`bounce${u.slot_number}${Math.floor(10+Math.random()*90)}`}:x))}>Generate</button><button className={styles.button} onClick={()=>navigator.clipboard.writeText(`${u.display_name}\
 Username: ${u.username}\
 Password: ${u.password}\
-Login: https://bounce-btts.vercel.app`).then(()=>notice("Login details copied"))}>Copy</button><button className={styles.shareGold} disabled={!u.password} onClick={()=>shareLogin(u)}><span aria-hidden="true">↗</span><strong>WhatsApp login</strong><small>Share credentials</small></button><button className={styles.button} onClick={()=>onEmulate(u.id)}>Emulate</button><button className={styles.primary} onClick={()=>save(u)}>Save</button></div></div>)}</div>
+Login: https://bounce-btts.vercel.app`).then(()=>notice("Login details copied"))}>Copy</button><button className={`${styles.shareGold} uiFoundationAdminShareGold`} disabled={!u.password} onClick={()=>shareLogin(u)}><span aria-hidden="true">↗</span><strong>WhatsApp login</strong><small>Share credentials</small></button><button className={styles.button} onClick={()=>onEmulate(u.id)}>Emulate</button><button className={styles.primary} onClick={()=>save(u)}>Save</button></div></div>)}</div>
 }
 
 function SearchableFixturePicker({value,fixtures,disabled,takenBy,onChange}:{value:string;fixtures:Fixture[];disabled:boolean;takenBy:(fixtureId:string)=>string|null;onChange:(fixtureId:string)=>void}){
