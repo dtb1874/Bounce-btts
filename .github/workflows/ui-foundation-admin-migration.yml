@@ -1,0 +1,37 @@
+name: UI foundation admin migration
+
+on:
+  push:
+    branches:
+      - release/ui-foundation-architecture
+    paths:
+      - scripts/migrate-ui-foundation-admin.mjs
+      - .github/workflows/ui-foundation-admin-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/ui-foundation-architecture
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply admin presentation migration
+        run: node scripts/migrate-ui-foundation-admin.mjs
+      - name: Commit migrated source
+        run: |
+          if git diff --quiet -- app/LeagueApp.tsx; then
+            echo "No admin migration change required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/LeagueApp.tsx
+          git commit -m "Migrate admin presentation to UI foundation"
+          git push origin HEAD:release/ui-foundation-architecture
