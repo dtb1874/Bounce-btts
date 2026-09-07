@@ -14,7 +14,6 @@
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    display: grid;
     place-items: center;
     overflow: hidden;
     z-index: 3;
@@ -42,29 +41,6 @@
     gap: 8px !important;
   }
 
-  main[class*="shell"] > aside nav::before,
-  main[class*="shell"] > aside nav::after {
-    grid-column: 1 / -1;
-    color: #c7af95;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: .12em;
-    padding: 2px 4px 0;
-  }
-
-  main[class*="shell"] > aside nav::before {
-    content: "QUICK ACCESS";
-    order: 0;
-  }
-
-  main[class*="shell"] > aside nav::after {
-    content: "MORE";
-    order: 5;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(199, 175, 149, .15);
-  }
-
   main[class*="shell"] > aside nav button {
     min-height: 46px;
     padding: 10px !important;
@@ -73,38 +49,6 @@
     border: 1px solid rgba(199, 175, 149, .12) !important;
     background: rgba(24, 18, 22, .72) !important;
   }
-
-  main[class*="shell"] > aside nav button:nth-child(1) { order: 1; }
-  main[class*="shell"] > aside nav button:nth-child(2) { order: 2; }
-  main[class*="shell"] > aside nav button:nth-child(4) { order: 3; }
-  main[class*="shell"] > aside nav button:nth-child(5) { order: 4; }
-  main[class*="shell"] > aside nav button:nth-child(3) { order: 6; }
-  main[class*="shell"] > aside nav button:nth-child(6) { order: 7; }
-  main[class*="shell"] > aside nav button:nth-child(7) { order: 8; }
-  main[class*="shell"] > aside nav button:nth-child(8) { order: 9; }
-  main[class*="shell"] > aside nav button:nth-child(9) { order: 10; }
-  main[class*="shell"] > aside nav button:nth-child(10) { order: 11; }
-
-  main[class*="shell"] > aside nav button:nth-child(1),
-  main[class*="shell"] > aside nav button:nth-child(2),
-  main[class*="shell"] > aside nav button:nth-child(4),
-  main[class*="shell"] > aside nav button:nth-child(5) {
-    border-color: rgba(199, 175, 149, .3) !important;
-    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
-  }
-
-  main[class*="shell"] > aside nav button:nth-child(4)::after,
-  main[class*="shell"] > aside nav button:nth-child(5)::after {
-    display: block;
-    margin-top: 3px;
-    color: #b99f8a;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .05em;
-  }
-
-  main[class*="shell"] > aside nav button:nth-child(4)::after { content: "Stat Centre"; }
-  main[class*="shell"] > aside nav button:nth-child(5)::after { content: "All picks"; }
 
   main[class*="shell"] > aside [class*="sidebarEgg"] {
     min-height: 64px !important;
@@ -188,7 +132,6 @@
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    display: grid;
     place-items: center;
     overflow: hidden;
     z-index: 3;
@@ -216,29 +159,6 @@
     gap: 8px !important;
   }
 
-  main[class*="shell"] > aside nav::before,
-  main[class*="shell"] > aside nav::after {
-    grid-column: 1 / -1;
-    color: #c7af95;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: .12em;
-    padding: 2px 4px 0;
-  }
-
-  main[class*="shell"] > aside nav::before {
-    content: "QUICK ACCESS";
-    order: 0;
-  }
-
-  main[class*="shell"] > aside nav::after {
-    content: "MORE";
-    order: 5;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(199, 175, 149, .15);
-  }
-
   main[class*="shell"] > aside nav button {
     min-height: 46px;
     padding: 10px !important;
@@ -247,38 +167,6 @@
     border: 1px solid rgba(199, 175, 149, .12) !important;
     background: rgba(24, 18, 22, .72) !important;
   }
-
-  main[class*="shell"] > aside nav button:nth-child(1) { order: 1; }
-  main[class*="shell"] > aside nav button:nth-child(2) { order: 2; }
-  main[class*="shell"] > aside nav button:nth-child(4) { order: 3; }
-  main[class*="shell"] > aside nav button:nth-child(5) { order: 4; }
-  main[class*="shell"] > aside nav button:nth-child(3) { order: 6; }
-  main[class*="shell"] > aside nav button:nth-child(6) { order: 7; }
-  main[class*="shell"] > aside nav button:nth-child(7) { order: 8; }
-  main[class*="shell"] > aside nav button:nth-child(8) { order: 9; }
-  main[class*="shell"] > aside nav button:nth-child(9) { order: 10; }
-  main[class*="shell"] > aside nav button:nth-child(10) { order: 11; }
-
-  main[class*="shell"] > aside nav button:nth-child(1),
-  main[class*="shell"] > aside nav button:nth-child(2),
-  main[class*="shell"] > aside nav button:nth-child(4),
-  main[class*="shell"] > aside nav button:nth-child(5) {
-    border-color: rgba(199, 175, 149, .3) !important;
-    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
-  }
-
-  main[class*="shell"] > aside nav button:nth-child(4)::after,
-  main[class*="shell"] > aside nav button:nth-child(5)::after {
-    display: block;
-    margin-top: 3px;
-    color: #b99f8a;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .05em;
-  }
-
-  main[class*="shell"] > aside nav button:nth-child(4)::after { content: "Stat Centre"; }
-  main[class*="shell"] > aside nav button:nth-child(5)::after { content: "All picks"; }
 
   main[class*="shell"] > aside [class*="sidebarEgg"] {
     min-height: 64px !important;
