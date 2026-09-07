@@ -25,19 +25,7 @@ type AuthenticatedShellFrameProps = {
   onSignOut: () => void;
 };
 
-/**
- * Declarative authenticated shell intended to replace the inline LeagueApp shell.
- *
- * The component deliberately keeps the established release.module.css class
- * ownership so adopting it does not become a visual redesign. `afterContent`
- * exists for shell-level overlays/toasts that historically sit beside the main
- * content section rather than inside it; this keeps the real-app migration
- * structurally equivalent and gives us an immediate rollback boundary.
- *
- * User-facing nav labels are resolved from the canonical navigation contract by
- * id. Callers may still pass legacy route metadata during migration, but canonical
- * product-facing labels always win for known navigation ids.
- */
+/** Declarative authenticated shell with stable UI Foundation hooks independent of CSS-module names. */
 export default function AuthenticatedShellFrame({
   children,
   afterContent,
@@ -61,11 +49,11 @@ export default function AuthenticatedShellFrame({
     .filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <main className={styles.shell} data-ui-foundation-shell="declarative">
+    <main className={`${styles.shell} uiFoundationShell`} data-ui-foundation-shell="declarative">
       {!mobileMenuOpen && (
         <button
           type="button"
-          className={`${styles.mobileMenu} mobileDashboardMenu`}
+          className={`${styles.mobileMenu} mobileDashboardMenu uiFoundationMobileMenu`}
           aria-label="Open menu"
           onClick={onOpenMenu}
         >
@@ -73,7 +61,7 @@ export default function AuthenticatedShellFrame({
         </button>
       )}
 
-      <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.open : ""}`}>
+      <aside className={`${styles.sidebar} uiFoundationSidebar ${mobileMenuOpen ? `${styles.open} uiFoundationSidebarOpen` : ""}`}>
         <div className={styles.brand}>
           <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" />
           <div>
@@ -108,7 +96,7 @@ export default function AuthenticatedShellFrame({
           ))}
         </nav>
 
-        <button type="button" className={styles.sidebarEgg} aria-label=" " onClick={onEasterEgg} />
+        <button type="button" className={`${styles.sidebarEgg} uiFoundationSidebarEgg`} aria-label=" " onClick={onEasterEgg} />
 
         <button type="button" className={styles.profile} onClick={onSignOut}>
           <span>{profileInitials}</span>
@@ -121,10 +109,10 @@ export default function AuthenticatedShellFrame({
       </aside>
 
       {mobileMenuOpen ? (
-        <button type="button" className={styles.scrim} aria-label="Close menu" onClick={onCloseMenu} />
+        <button type="button" className={`${styles.scrim} uiFoundationScrim`} aria-label="Close menu" onClick={onCloseMenu} />
       ) : null}
 
-      <section className={styles.main}>{children}</section>
+      <section className={`${styles.main} uiFoundationMain`}>{children}</section>
       {afterContent}
     </main>
   );
