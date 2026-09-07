@@ -834,6 +834,7 @@ function HistoryPage({seasonHistory}:{seasonHistory:SeasonHistory[]}){
     <Heading eyebrow="EST 2024 · SEASON ARCHIVE" title="League History" actions={selected?<DataShareButton title={`${selected.label} Final Table`} subtitle={`Bounce BTTS League archive · ${selected.gameweeks} gameweeks`} columns={["POS","PLAYER","P","W","S-N","0-0","PTS"]} rows={selected.standings.map((row,index)=>[index+1,row.name,row.played,row.wins,row.oneSided??Math.max(0,row.points-(3*row.wins)+row.zeroZeroCount),row.zeroZeroCount,row.points])} fileName={`bounce-btts-${selected.label.replace("/","-")}-archive.jpg`} label="Share archive table" compact/>:undefined}>
       <p>Previous winners, archived tables and the story of the Bounce.</p>
     </Heading>
+    {reigningChampion&&<aside className="uiFoundationReigningChampion" aria-label="Reigning Bounce champion"><div className="uiFoundationReigningChampionCopy"><span>REIGNING CHAMPION · {reigningChampion.season}</span><strong>{reigningChampion.winner}</strong><small>Current holder of the Bounce Cup</small></div><div className="uiFoundationReigningChampionTrophy"><img src="/assets/bounce-cup.png" alt="" aria-hidden="true"/></div></aside>}
     <div className={`${styles.historyHero} uiFoundationHistoryHero`}>
       <div>
         <span>ROLL OF HONOUR · ARCHIVE</span>
