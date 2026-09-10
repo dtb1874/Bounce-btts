@@ -87,7 +87,7 @@ export default async function HomePage() {
 
   const currentSeason = (seasons ?? []).find((season) => season.is_current) ?? null;
   const gameweeksResponse = currentSeason?.id
-    ? await supabase.from("gameweeks").select("id,number,status,opens_at,locks_at,season_id,selection_rule_mode,selection_weekday,selection_time").eq("season_id", currentSeason.id).order("number", { ascending: true })
+    ? await supabase.from("gameweeks").select("id,number,status,opens_at,locks_at,season_id,selection_rule_mode,selection_weekday,selection_time,one_off_rule").eq("season_id", currentSeason.id).order("number", { ascending: true })
     : { data: [] };
   const seasonGameweeks = gameweeksResponse.data ?? [];
   const nowIso = new Date().toISOString();
@@ -170,7 +170,7 @@ export default async function HomePage() {
         seasonLabel={seasonLabel}
         entryFee={Number(settings?.entry_fee ?? 20)}
       />
-      {profile.role === "ultimate_admin" && <OneOffGameweekPortal gameweeks={seasonGameweeks.map(({ id, number }) => ({ id, number }))} />}
+      {profile.role === "ultimate_admin" && <OneOffGameweekPortal gameweeks={seasonGameweeks} />}
       {profile.role === "ultimate_admin" && <MemberContactAdminPortal />}
       <PositionRacePortal
         profiles={profileRows}

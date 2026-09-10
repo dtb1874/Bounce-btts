@@ -1,35 +1,57 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fixtureDateForGameweek } from "@/lib/gameweek-rules";
+import {
+  FIXTURE_HEALTH_ALERT_DAYS,
+  FIXTURE_IMPORT_LOOKBACK_DAYS,
+  fixtureDateWithinDays,
+  recentFixtureImportCutoffIso,
+} from "@/lib/fixture-import-policy";
 
 const ALERT_TYPE = "gameweek_fixture_availability";
 const WARNING_THRESHOLD = 12;
-const ALERT_WINDOW_DAYS = 14;
 
 export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
   const now = new Date();
-  const horizon = new Date(now.getTime() + ALERT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const nowMs = now.getTime();
+
   const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
-  if (!season?.id) return { checked: 0, alertsCreated: 0, alertsResolved: 0 };
+  if (!season?.id) return { checked: 0, deferred: 0, alertsCreated: 0, alertsResolved: 0 };
 
-  const { data: gameweeks, error: gameweekError } = await admin
-    .from("gameweeks")
-    .select("id,number,opens_at,locks_at,status")
-    .eq("season_id", season.id)
-    .lte("opens_at", horizon)
-    .gte("locks_at", now.toISOString())
-    .order("number");
+  const [{ data: gameweeks, error: gameweekError }, { data: recentImports, error: importError }] = await Promise.all([
+    admin
+      .from("gameweeks")
+      .select("id,number,opens_at,locks_at,status,selection_rule_mode,selection_weekday,selection_time,selection_times")
+      .eq("season_id", season.id)
+      .gte("locks_at", now.toISOString())
+      .order("number"),
+    admin
+      .from("fixture_import_runs")
+      .select("completed_at,status,details")
+      .in("status", ["success", "partial"])
+      .gte("completed_at", recentFixtureImportCutoffIso(nowMs))
+      .order("completed_at", { ascending: false })
+      .limit(12),
+  ]);
   if (gameweekError) throw gameweekError;
+  if (importError) throw importError;
 
+  const attemptedDates = new Set<string>();
+  let latestImportCompletedAt: string | null = null;
+  for (const row of recentImports ?? []) {
+    if (!latestImportCompletedAt && row.completed_at) latestImportCompletedAt = String(row.completed_at);
+    const dates = Array.isArray((row as any)?.details?.dates) ? (row as any).details.dates : [];
+    for (const value of dates) attemptedDates.add(String(value));
+  }
+
+  let checked = 0;
+  let deferred = 0;
   let alertsCreated = 0;
   let alertsResolved = 0;
-  for (const gameweek of gameweeks ?? []) {
-    const { count, error: fixtureError } = await admin
-      .from("fixtures")
-      .select("id", { count: "exact", head: true })
-      .eq("gameweek_id", gameweek.id)
-      .eq("is_eligible", true);
-    if (fixtureError) throw fixtureError;
 
-    const eligibleCount = count ?? 0;
+  for (const gameweek of gameweeks ?? []) {
+    const fixtureDate = fixtureDateForGameweek(gameweek as any);
+    if (!fixtureDateWithinDays(fixtureDate, nowMs, FIXTURE_HEALTH_ALERT_DAYS, FIXTURE_IMPORT_LOOKBACK_DAYS)) continue;
+
     const { data: existing } = await admin
       .from("admin_alerts")
       .select("id,resolved")
@@ -39,6 +61,27 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
       .limit(1)
       .maybeSingle();
 
+    // Availability is only meaningful after the provider importer has attempted
+    // this exact fixture date recently. An empty fixtures table before preload is
+    // a data-not-loaded state, not evidence that no eligible games exist.
+    if (!attemptedDates.has(fixtureDate)) {
+      deferred += 1;
+      if (existing?.id) {
+        await admin.from("admin_alerts").update({ resolved: true, resolved_at: new Date().toISOString() }).eq("id", existing.id);
+        alertsResolved += 1;
+      }
+      continue;
+    }
+
+    checked += 1;
+    const { count, error: fixtureError } = await admin
+      .from("fixtures")
+      .select("id", { count: "exact", head: true })
+      .eq("gameweek_id", gameweek.id)
+      .eq("is_eligible", true);
+    if (fixtureError) throw fixtureError;
+
+    const eligibleCount = count ?? 0;
     if (eligibleCount >= WARNING_THRESHOLD) {
       if (existing?.id) {
         await admin.from("admin_alerts").update({ resolved: true, resolved_at: new Date().toISOString() }).eq("id", existing.id);
@@ -52,12 +95,15 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
       ? `GW${gameweek.number}: no eligible fixtures`
       : `GW${gameweek.number}: low fixture availability`;
     const message = eligibleCount === 0
-      ? "No eligible fixtures were found for this gameweek. Review the gameweek dates and selection rule before members make picks."
-      : `Only ${eligibleCount} eligible fixtures were found. This may be an international or cup weekend; review the gameweek schedule if required.`;
+      ? "No eligible fixtures were found after the provider preload completed for this fixture date. Review the gameweek dates and selection rule before members make picks."
+      : `Only ${eligibleCount} eligible fixtures were found after provider preload. This may be an international or cup weekend; review the gameweek schedule if required.`;
     const details = {
       eligibleCount,
       threshold: WARNING_THRESHOLD,
-      alertWindowDays: ALERT_WINDOW_DAYS,
+      alertWindowDays: FIXTURE_HEALTH_ALERT_DAYS,
+      fixtureDate,
+      providerDateAttempted: true,
+      latestImportCompletedAt,
       checkedAt: new Date().toISOString(),
     };
 
@@ -77,5 +123,5 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
     }
   }
 
-  return { checked: (gameweeks ?? []).length, alertsCreated, alertsResolved };
+  return { checked, deferred, alertsCreated, alertsResolved };
 }
