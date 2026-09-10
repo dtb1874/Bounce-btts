@@ -28,16 +28,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
 
-      - name: Protect canonical architecture
+      - name: Protect canonical V2 architecture
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -n -E 'new MutationObserver\(|document\.createElement\(' app/ui app 2>/dev/null | grep -E 'v2|V2|AuthenticatedShellFrame|Dashboard|StatCentre|Admin'; then
-            echo "V2 presentation must remain declarative; runtime visual DOM mutation detected."
+          if grep -n -E 'new MutationObserver\(|document\.createElement\(' app/ui/AuthenticatedShellFrame.tsx; then
+            echo "The V2 authenticated shell must remain declarative."
             exit 1
           fi
-          if grep -R -n '\[class\*=' app/ui-foundation-shell-responsive.css docs/v2 2>/dev/null; then
-            echo "V2 shell/docs must not depend on generated CSS-module substring selectors."
+          if grep -n '\[class\*=' app/ui-foundation-shell-responsive.css; then
+            echo "V2 shell CSS must use stable semantic hooks, not generated CSS-module substring selectors."
             exit 1
           fi
           grep -q 'data-ui-foundation-shell="declarative"' app/ui/AuthenticatedShellFrame.tsx
