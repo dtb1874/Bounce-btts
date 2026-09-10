@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AuthenticatedShellFrame from "../ui/AuthenticatedShellFrame";
 import { authenticatedNavItems } from "../ui/navigation";
-import V2Dashboard from "../v2/V2Dashboard";
+import V2EditorialDashboard from "../v2/V2EditorialDashboard";
+import V2StatCentre from "../v2/V2StatCentre";
+import V2AdminCentre from "../v2/V2AdminCentre";
 import styles from "./V2PreviewClient.module.css";
 
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
@@ -52,8 +54,6 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const gameweek = gameweeks.find((row) => row.id === gameweekId) ?? null;
   const currentFixtures = useMemo(() => fixtures.filter((row) => row.gameweek_id === gameweekId), [fixtures, gameweekId]);
   const currentPredictions = useMemo(() => predictions.filter((row) => row.gameweek_id === gameweekId), [predictions, gameweekId]);
-  const myPrediction = currentPredictions.find((row) => row.member_id === profile.id);
-  const myFixture = currentFixtures.find((row) => row.id === myPrediction?.fixture_id);
 
   const standings = useMemo<Standing[]>(() => {
     const rows = new Map<string, Standing>(profiles.map((member) => [member.id, { id: member.id, name: member.display_name, played: 0, wins: 0, oneSided: 0, zeroZeroCount: 0, points: 0 }]));
@@ -178,13 +178,14 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       onSignOut={signOut}
     >
       <div className={styles.previewHeader}>
-        <div>
-          <span>BOUNCE 2.0 · PHASE 2 PREVIEW</span>
-          <strong>{seasonLabel}</strong>
+        <div className={styles.previewIdentity}>
+          <span>BOUNCE 2.0</span>
+          <strong>VISUAL RESET</strong>
+          <em>{seasonLabel}</em>
         </div>
-        <label>
-          <span>Gameweek</span>
-          <select value={gameweekId} onChange={(event) => { setGameweekId(event.target.value); setActiveView("dashboard"); }}>
+        <label className={styles.gameweekControl}>
+          <span>VIEWING</span>
+          <select value={gameweekId} onChange={(event) => setGameweekId(event.target.value)}>
             {gameweeks.map((row) => <option value={row.id} key={row.id}>GW {row.number}</option>)}
           </select>
         </label>
@@ -193,38 +194,50 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       {message ? <div className={styles.message}>{message}</div> : null}
 
       {activeView === "dashboard" ? (
-        <V2Dashboard
+        <V2EditorialDashboard
           gameweek={gameweek}
-          gameweeks={gameweeks}
           profiles={profiles}
           fixtures={currentFixtures}
-          allFixtures={fixtures}
           predictions={currentPredictions}
-          allPredictions={predictions}
-          allAdjustments={adjustments}
-          myFixture={myFixture}
           standings={standings}
           entryFee={entryFee}
           seasonLabel={seasonLabel}
-          seasonHistory={[]}
           isOpen={isOpen}
-          role={profile.role}
           myId={profile.id}
-          alertsCount={alertsCount}
           setView={navigate}
-          onLiveRefresh={refreshFixtures}
-          liveRefreshing={liveRefreshing}
-          onOddsRefresh={refreshOdds}
-          oddsRefreshing={oddsRefreshing}
+        />
+      ) : activeView === "table" ? (
+        <V2StatCentre
+          seasonLabel={seasonLabel}
+          profiles={profiles}
+          gameweeks={gameweeks}
+          fixtures={fixtures}
+          predictions={predictions}
+          standings={standings}
+          myId={profile.id}
+        />
+      ) : activeView === "admin" && isAdmin ? (
+        <V2AdminCentre
+          seasonLabel={seasonLabel}
+          gameweek={gameweek}
+          profiles={profiles}
+          fixtures={currentFixtures}
+          predictions={currentPredictions}
+          alertsCount={alertsCount}
         />
       ) : (
         <section className={styles.placeholder}>
-          <span>PHASE 2 PREVIEW</span>
+          <span>BOUNCE 2.0 · VISUAL RESET</span>
           <h1>{authenticatedNavItems.find((row) => row.id === activeView)?.label ?? "Bounce"}</h1>
-          <p>This preview is intentionally centred on the rebuilt Dashboard. This surface will be migrated in its own V2 slice rather than mixing unfinished page work into the Dashboard review.</p>
-          <button type="button" onClick={() => setActiveView("dashboard")}>Back to V2 Dashboard</button>
+          <p>This surface is next in the same premium redesign process. Dashboard, Stat Centre and Admin now establish the V2 visual language before the remaining product areas inherit it.</p>
+          <button type="button" onClick={() => setActiveView("dashboard")}>Return to Dashboard</button>
         </section>
       )}
+
+      <div className={styles.previewUtilities} aria-label="Preview utilities">
+        <button type="button" onClick={refreshFixtures} disabled={liveRefreshing}>{liveRefreshing ? "Refreshing…" : "Refresh live data"}</button>
+        {isAdmin ? <button type="button" onClick={refreshOdds} disabled={oddsRefreshing}>{oddsRefreshing ? "Refreshing…" : "Refresh odds"}</button> : null}
+      </div>
     </AuthenticatedShellFrame>
   );
 }
