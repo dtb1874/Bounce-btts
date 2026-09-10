@@ -6,6 +6,9 @@ import ShareTableButton from "./ShareTableButton";
 import WeeklyPicksShareButton from "./WeeklyPicksShareButton";
 import CombinedShareButton from "./CombinedShareButton";
 import DataShareButton from "./DataShareButton";
+import ReminderShareButton from "./ReminderShareButton";
+import EnhancedPickPage from "./EnhancedPickPage";
+import GameweekRecapCard from "./GameweekRecapCard";
 import CanonicalLeagueTable from "./CanonicalLeagueTable";
 import AuthenticatedShellFrame from "./ui/AuthenticatedShellFrame";
 import { historicalSeasons, rollOfHonour } from "@/lib/history-data";
@@ -39,8 +42,8 @@ type Props = {
 };
 
 const finishedStatuses = ["FT", "AET", "PEN"];
-const RELEASE_VERSION = "1.6.3";
-const RELEASE_DATE = "20 Aug 2026";
+const RELEASE_VERSION = "1.13.2";
+const RELEASE_DATE = "10 Sep 2026";
 const navItems: Array<{ id: View; label: string; icon: string; adminOnly?: boolean; group: "quick" | "more"; helper?: string }> = [
   { id: "dashboard", label: "Dashboard", icon: "⌂", group: "quick" },
   { id: "pick", label: "Make My Pick", icon: "⚑", group: "quick" },
@@ -386,7 +389,7 @@ export default function LeagueApp(props: Props) {
       {emulatedProfileId&&<div className={styles.notice} style={{margin:"10px 14px 0",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderColor:"rgba(240,207,170,.55)",background:"rgba(116,32,52,.92)"}}><span><strong>EMULATION ACTIVE</strong><br/><small>Viewing as {emulatedProfile?.display_name??"another user"} · read-only</small></span><button className={styles.primary} type="button" onClick={()=>{setEmulatedProfileId(null);setView("admin");setAdminView("users");setMobileMenu(false)}}>Exit emulation</button></div>}
       <header className={`${styles.hero} dashboardBrandHero`}><div className="dashboardBrandLockup"><img className="dashboardBrandCrest" src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt=""/><div><p className="dashboardBrandEyebrow">EST 2024 · SEASON {seasonLabel}</p><h1>BOUNCE</h1><h2>BTTS LEAGUE</h2></div></div><div className={`${styles.gwCard} dashboardGwCompact`}><label>Gameweek</label><div className={styles.gwRow}><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)<=0} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>0)setGameweekId(initialGameweeks[i-1].id)}}>‹</button><select value={gameweek?.id??""} onChange={e=>setGameweekId(e.target.value)}>{initialGameweeks.map(g=><option key={g.id} value={g.id}>GW {g.number}</option>)}</select><button disabled={initialGameweeks.findIndex(g=>g.id===gameweekId)>=initialGameweeks.length-1} onClick={()=>{const i=initialGameweeks.findIndex(g=>g.id===gameweekId);if(i>=0&&i<initialGameweeks.length-1)setGameweekId(initialGameweeks[i+1].id)}}>›</button></div><small>{gameweekStatusText(gameweek??null,now)}</small>{isDemo&&<div className={styles.demoSwitch}><button className={demoPerspective==="member"?styles.active:""} onClick={()=>{setDemoPerspective("member");setView("dashboard")}}>Member View</button><button className={demoPerspective==="admin"?styles.active:""} onClick={()=>{setDemoPerspective("admin");setView("dashboard")}}>Admin View</button></div>}</div></header>
       <div className={styles.content}><div className={styles.page}>
-        {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} seasonHistory={seasonHistory} isOpen={isOpen} role={effectiveRole} myId={viewerProfile.id} alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing} onOddsRefresh={refreshSelectedOdds} oddsRefreshing={oddsRefreshing}/>} 
+        {view==="dashboard" && <Dashboard gameweek={gameweek??null} gameweeks={initialGameweeks} profiles={profiles} fixtures={currentFixtures} allFixtures={fixtures} predictions={currentPredictions} allPredictions={predictions} allAdjustments={adjustments} adjustment={selectedAdjustment} myFixture={selectedFixture} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} seasonHistory={seasonHistory} isOpen={isOpen} role={effectiveRole} myId={viewerProfile.id} alertsCount={alertsCount} setView={setView} onLiveRefresh={()=>fastLiveRefresh(true)} liveRefreshing={liveRefreshing} onOddsRefresh={refreshSelectedOdds} oddsRefreshing={oddsRefreshing}/>} 
         {view==="pick" && <PickPage gameweek={gameweek??null} fixtures={currentFixtures.filter(f=>f.is_eligible)} predictions={currentPredictions} profiles={profiles} isOpen={isOpen} myId={viewerProfile.id} selectFixture={selectFixture}/>} 
         {view==="fixtures" && (fixturesLoading
           ? <div className={styles.notice}>Loading fixtures…</div>
@@ -408,12 +411,13 @@ export default function LeagueApp(props: Props) {
 function Heading({eyebrow,title,children,actions}:{eyebrow:string;title:string;children?:ReactNode;actions?:ReactNode}){return <div className={styles.heading}><div><span>{eyebrow}</span><h2>{title}</h2>{children}</div>{actions}</div>}
 
 function Dashboard({
-  gameweek,gameweeks,profiles,fixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,seasonHistory,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing,onOddsRefresh,oddsRefreshing
+  gameweek,gameweeks,profiles,fixtures,allFixtures,predictions,allPredictions,allAdjustments,adjustment,myFixture,standings,entryFee,seasonLabel,seasonHistory,isOpen,role,myId,alertsCount,setView,onLiveRefresh,liveRefreshing,onOddsRefresh,oddsRefreshing
 }:{
   gameweek:Gameweek|null;
   gameweeks:Gameweek[];
   profiles:Profile[];
   fixtures:Fixture[];
+  allFixtures:Fixture[];
   predictions:Prediction[];
   allPredictions:Prediction[];
   allAdjustments:ScoreAdjustment[];
@@ -439,21 +443,6 @@ function Dashboard({
     return {profile,prediction,fixture:fixtures.find(f=>f.id===prediction?.fixture_id)};
   });
   const missingPicks=picks.filter(({prediction})=>!prediction).map(({profile})=>profile);
-  function remindMissingPicks(){
-    if(!gameweek||!missingPicks.length)return;
-    const names=missingPicks.map(p=>`• ${p.display_name}`).join("\
-");
-    const message=`⚽ BOUNCE BTTS LEAGUE — PICK REMINDER\
-\
-Still to make a pick for GW ${gameweek.number}:\
-${names}\
-\
-Make your BTTS pick here:\
-https://bounce-btts.vercel.app\
-\
-Deadline: ${formatKickoff(gameweek.locks_at)}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`,"_blank","noopener,noreferrer");
-  }
   const finished=fixtures.filter(f=>finishedStatuses.includes(f.status));
   const finalResultsReady=Boolean(gameweek)&&!isOpen&&picks.length>0&&picks.every(({profile,prediction,fixture})=>prediction?Boolean(fixture&&finishedStatuses.includes(fixture.status)):allAdjustments.some(a=>a.gameweek_id===gameweek?.id&&a.member_id===profile.id));
   const finalResultRows=picks.map(({profile,prediction,fixture})=>{
@@ -584,7 +573,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
               <WeeklyPicksShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))}/>
               <button type="button" className="dashboardGoldAction" onClick={()=>setView("combined")}>Combined results</button>
               <CombinedShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))} standings={standings}/>
-              {isAdmin&&<button type="button" className="dashboardGoldAction dashboardAdminAction" onClick={remindMissingPicks} disabled={!isOpen||!missingPicks.length} aria-label={missingPicks.length?`Remind ${missingPicks.length} missing picks via WhatsApp`:"All picks are in"}>{missingPicks.length?"Remind Picks":"All Picks In ✓"}</button>}
+              {isAdmin&&gameweek&&<ReminderShareButton gameweekNumber={gameweek.number} seasonLabel={seasonLabel} deadline={gameweek.locks_at} missingNames={missingPicks.map(p=>p.display_name)} submittedPicks={picks.filter(p=>p.prediction&&p.fixture).map(p=>({name:p.profile.display_name,fixture:`${p.fixture!.home_team} v ${p.fixture!.away_team}`}))} disabled={!isOpen||!missingPicks.length}/>}
             </div>
           </div>
           <div className="weeklyCombinedOddsStrip"><span>Combined BTTS odds</span><strong>{combinedFractionalOddsFromStrings(picks.filter(p=>p.fixture).map(p=>p.fixture?.odds_fractional))??"—"}</strong></div>
@@ -600,6 +589,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
             })}
           </div>
         </article>
+        <GameweekRecapCard profiles={profiles} gameweeks={gameweeks} predictions={allPredictions} adjustments={allAdjustments} fixtures={allFixtures} seasonLabel={seasonLabel}/>
       </div>
 
       <aside className={`${styles.dashboardSide} mobileDashboardSide`}>
@@ -659,14 +649,7 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
   </section>
 }
 
-function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixture}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];isOpen:boolean;myId:string;selectFixture:(id:string)=>void}){
-  const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
-  const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.competition} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort(fixtureSort);
-  const countries=Array.from(new Set(filtered.map(f=>normaliseCountry(f.country))));
-  const myPrediction=predictions.find(p=>p.gameweek_id===gameweek?.id&&p.member_id===myId);
-  const myFixture=fixtures.find(f=>f.id===myPrediction?.fixture_id);
-  return <section className="uiFoundationPickPage" data-ui-foundation-view="pick"><Heading eyebrow={gameweek?`GAMEWEEK ${gameweek.number}`:"NO GAMEWEEK"} title="Make My Pick"><p>Choose one unique eligible fixture. <Help text="Search by team, country or competition, or browse the collapsible fixture groups."/></p></Heading><div className={`uiFoundationPickStatus ${myFixture?"uiFoundationPickStatusSaved":"uiFoundationPickStatusEmpty"}`}><span>{myFixture?"CURRENT PICK":isOpen?"SELECTION OPEN":"SELECTION CLOSED"}</span><strong>{myFixture?`${myFixture.home_team} v ${myFixture.away_team}`:isOpen?"No fixture selected yet":"No active selection"}</strong><small>{myFixture?`${formatKickoff(myFixture.kickoff_at)} · ${competitionDisplayName(myFixture)}${myFixture.odds_fractional?` · ${formatFixtureOddsDisplay(myFixture.odds_fractional)}`:""}`:isOpen?"Pick an available fixture below. Your saved choice will be shown here.":"You can still review the available fixtures below."}</small></div><div className={`${styles.panel} uiFoundationPickPanel`}><input className={`${styles.search} uiFoundationPickSearch`} type="search" placeholder="Search team, country or competition…" value={search} onChange={e=>setSearch(e.target.value)}/>{countries.map(country=><details className={`${styles.fixtureDetailsNested} uiFoundationPickCountry`} key={country} open={Boolean(q)}><summary>{country}</summary>{Array.from(new Set(filtered.filter(f=>normaliseCountry(f.country)===country).map(competitionDisplayName))).map(group=><details className={`${styles.fixtureDetailsLeague} uiFoundationPickCompetition`} key={group} open={Boolean(q)}><summary>{group}</summary>{filtered.filter(f=>normaliseCountry(f.country)===country&&competitionDisplayName(f)===group).map(f=>{const pred=predictions.find(p=>p.fixture_id===f.id&&p.gameweek_id===gameweek?.id);const owner=profiles.find(p=>p.id===pred?.member_id);return <div className={`${styles.row} uiFoundationPickFixture`} key={f.id}><span>{formatKickoff(f.kickoff_at)}</span><strong>{f.home_team} v {f.away_team}</strong><span>{formatFixtureOddsDisplay(f.odds_fractional)??"—"}</span><button className={`${styles.button} uiFoundationPickAction ${owner?.id===myId?"uiFoundationPickActionSelected":owner?"uiFoundationPickActionTaken":""}`} disabled={!isOpen||!!(owner&&owner.id!==myId)} onClick={()=>selectFixture(f.id)}>{owner?.id===myId?"Picked ✓":owner?`Taken by ${owner.display_name}`:isOpen?"Select":"Closed"}</button></div>})}</details>)}</details>)}</div></section>
-}
+function PickPage({gameweek,fixtures,predictions,profiles,isOpen,myId,selectFixture}:{gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[];profiles:Profile[];isOpen:boolean;myId:string;selectFixture:(id:string)=>void}){return <EnhancedPickPage gameweek={gameweek} fixtures={fixtures} predictions={predictions} profiles={profiles} isOpen={isOpen} myId={myId} selectFixture={selectFixture}/>;}
 function FixturesPage({fixtures}:{fixtures:Fixture[]}){
   const [search,setSearch]=useState(""); const q=search.toLowerCase().trim();
   const filtered=[...fixtures].filter(f=>!q||`${f.home_team} ${f.away_team} ${f.country} ${competitionDisplayName(f)}`.toLowerCase().includes(q)).sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||fixtureSort(a,b));
@@ -968,6 +951,21 @@ function AboutPage({ role, profiles }: { role: Role; profiles: Profile[] }) {
 function DemoReadOnlyPanel({title,text}:{title:string;text:string}){return <section><Heading eyebrow="DEMO MODE" title={title}><p>{text}</p></Heading><div className={styles.panel}><div className={styles.demoNotice}>This section is intentionally read-only in Demo Mode.</div></div></section>}
 function DemoUsersAdmin({profiles}:{profiles:Profile[]}){return <div><p className={styles.notice}><strong>Credentials are protected in Demo Mode.</strong> The real username, password and authentication values are not requested or sent to this screen.</p>{profiles.map(p=><div className={styles.demoUserRow} key={p.id}><strong>{p.display_name}</strong><span>Username: ••••••••</span><span>Password: ••••••••</span><span>{p.role==="ultimate_admin"?"Ultimate Admin":p.role==="admin"?"League Admin":"Member"}</span><button className={styles.button} disabled>Unavailable in Demo Mode</button></div>)}</div>}
 function ReleaseHistory(){
+  const catchup=[
+    {version:"1.13.2",date:"10 Sep 2026",summary:"Fixture browser follows selected gameweek",changes:["Made the two-week Fixtures view follow the global gameweek picker instead of staying pinned to the current calendar fortnight","Anchored the browser window to the selected gameweek’s canonical fixture date so future and historical gameweeks show the correct two-week catalogue","Reloaded fixture-browser data whenever the selected gameweek changes while preserving existing search, country and competition browsing"]},
+    {version:"1.13.1",date:"10 Sep 2026",summary:"Fixture preload and gameweek schedule resilience",changes:["Expanded automatic fixture preloading from 15 to 21 days while keeping availability alerts to a 14-day decision window","Prevented false no-fixture alerts until the provider importer has recently attempted the exact canonical fixture date","Made the importer cover every gameweek fixture date in the preload horizon so one-off rounds cannot crowd out a later date","Added a simple Ultimate Admin gameweek-date move control that shifts later normal rounds while preserving gameweek data"]},
+    {version:"1.13.0",date:"7 Sep 2026",summary:"UI Foundation and architecture migration",changes:["Established a behaviour contract and visual-ownership inventory before structural UI work","Added shared design tokens and small behaviour-free surface primitives","Migrated authenticated shell, Dashboard, Make My Pick, Stat Centre, Results, League History, Players and Admin presentation to semantic UI Foundation ownership","Removed superseded runtime visual bridges and legacy override layers while preserving scoring, picks, fixture, sharing and admin behaviour"]},
+    {version:"1.12.1",date:"7 Sep 2026",summary:"Gameweek calendar resilience",changes:["Added automatic warnings up to 14 days ahead when upcoming gameweeks have fewer than 12 eligible fixtures","Added critical alerting when an open or imminent gameweek has zero eligible fixtures","Made manual gameweek opening/deadline changes propagate by the exact delta to later normal gameweeks while leaving one-off rounds fixed","Strengthened protection for international and cup weekends without removing valid lower-league Saturday 3pm selections"]},
+    {version:"1.12.0",date:"5 Sep 2026",summary:"Shot performance and member finishing insights",changes:["Replaced the synthetic Value Leader ROI presentation with direct API-Football shot metrics","Added member averages for total shots, shots on target, goals, shot conversion, shots per goal and BTTS success rate","Added transparent positive and negative shot-performance callouts including Chance Magnet, Sharpshooter, Clinical Picker and Shot Shy","Added post-match shot-stat coverage and backfill support while leaving scoring and league points unchanged"]},
+    {version:"1.11.1",date:"3 Sep 2026",summary:"Member portraits across shares and mobile identity",changes:["Used saved member portraits inline beside names across fixture, table, recap and reminder share images, with initials fallback","Removed the generic portrait strip from shared media so portraits only appear where a member is represented","Added the signed-in member portrait or initials to the mobile burger-menu identity area","Kept share calculations, scoring, fixture data and admin behaviour unchanged"]},
+    {version:"1.11.0",date:"3 Sep 2026",summary:"Release 4 · visual identity and prestige presentation",changes:["Strengthened the Hearts, Edinburgh and St Giles visual identity","Promoted the reigning champion into a premium dynamic plaque with Bounce Cup artwork","Improved portrait presentation and mobile Admin Users styling","Documented visual ownership and safe-edit boundaries"]},
+    {version:"1.10.0",date:"2 Sep 2026",summary:"Release 3 · member profiles and selection UX",changes:["Added Ultimate-Admin-managed member profile and portrait data","Integrated portraits into member presentation with initials fallback","Refined mobile member navigation and selection presentation"]},
+    {version:"1.9.0",date:"2 Sep 2026",summary:"Release 2 · native iOS animated sharing",changes:["Improved native iPhone and iPad animated file sharing","Slowed animated race and sweep exports for easier viewing","Validated the native sharing path on physical iPhone and WhatsApp"]},
+    {version:"1.8.0",date:"2 Sep 2026",summary:"Release 1 · safer gameweek admin and stats",changes:["Added guarded future-gameweek removal","Expanded Value Leader qualification detail","Clarified UK local-time guidance for gameweek administration"]},
+    {version:"1.7.2",date:"29 Aug 2026",summary:"One-off and midweek gameweek controls",changes:["Added one-off gameweek insertion between scheduled rounds","Added configurable eligible kick-off windows","Exposed the controls inside the normal Admin Gameweek workflow"]},
+    {version:"1.7.1",date:"27 Aug 2026",summary:"Gameweek Recap and current-season archive",changes:["Added settled Gameweek Recap to the Dashboard","Added a fixture-level current-season Gameweek Archive in League History","Extended combined shares with recap information after settlement","Made Creature of Habit supporting detail expandable"]},
+    {version:"1.7.0",date:"22–27 Aug 2026",summary:"League race, sweep tracking and sharing reliability",changes:["Added League Position Race and Goals Away From The Sweep trackers","Added animated and public race sharing","Improved reminder sharing and recent team form","Added deadline odds snapshots for historical Stats Centre accuracy"]}
+  ];
   const latest={version:"1.6.3",date:"20 Aug 2026",summary:"League Stats consistency, expandable history and honours",changes:[
     "Aligned the public and signed-in League Stats presentation around the same headline records and tie handling",
     "Added joint Form Leader handling and the new Creature of Habit repeat-team stat with win/loss record",
@@ -1052,7 +1050,8 @@ function ReleaseHistory(){
     {version:"1.3.x",date:"10 Aug 2026",summary:"Dashboard restoration and scoring repair"}
   ];
   return <div><h3>Release History</h3><p className={styles.small}>The current production release is always shown first. Older patch-heavy legacy releases are grouped by version family so the history stays complete without overwhelming the page.</p>
-    <details className={styles.releaseItem} open><summary><span><strong>v{latest.version}</strong> · {latest.date}</span><small>{latest.summary}</small></summary><ul>{latest.changes.map(c=><li key={c}>{c}</li>)}</ul></details>
+    {catchup.map((r,index)=><details className={styles.releaseItem} key={r.version} open={index===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}
+    <details className={styles.releaseItem}><summary><span><strong>v{latest.version}</strong> · {latest.date}</span><small>{latest.summary}</small></summary><ul>{latest.changes.map(c=><li key={c}>{c}</li>)}</ul></details>
     {previous.map(r=><details className={styles.releaseItem} key={r.version}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}
     {legacyGroups.map(group=><details className={styles.releaseItem} key={group.label}><summary><span><strong>Legacy {group.label}</strong> · {group.range}</span><small>{group.summary} · {group.releases.length} releases</small></summary><div style={{display:"grid",gap:8,paddingTop:8}}>{group.releases.map(r=><div className={styles.row} style={{gridTemplateColumns:"110px 105px minmax(0,1fr)"}} key={r.version}><strong>v{r.version}</strong><span>{r.date}</span><small>{r.summary}</small></div>)}</div></details>)}
     <details className={styles.releaseItem}><summary><span><strong>Earlier releases</strong></span><small>1.4.6 and earlier</small></summary><div style={{display:"grid",gap:8,paddingTop:8}}>{earlier.map(r=><div className={styles.row} style={{gridTemplateColumns:"110px 105px minmax(0,1fr)"}} key={r.version}><strong>v{r.version}</strong><span>{r.date}</span><small>{r.summary}</small></div>)}</div></details>
