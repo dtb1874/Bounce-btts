@@ -12,11 +12,26 @@ import styles from "./V2PreviewClient.module.css";
 
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
 type Profile = { id: string; username: string; display_name: string; role: Role; active: boolean; slot_number: number | null };
-type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string; season_id: string | null; selection_rule_mode?: "exact_time" | "any_kickoff"; selection_weekday?: number; selection_time?: string };
+type Gameweek = {
+  id: string;
+  number: number;
+  status: "open" | "locked" | "complete";
+  opens_at: string | null;
+  locks_at: string;
+  season_id: string | null;
+  selection_rule_mode?: "exact_time" | "any_kickoff" | null;
+  selection_weekday?: number | null;
+  selection_time?: string | null;
+  selection_times?: string[] | null;
+  selection_time_from?: string | null;
+  selection_time_to?: string | null;
+  one_off_rule?: boolean | null;
+};
 type Fixture = { id: string; gameweek_id: string | null; competition: string; country: string; home_team: string; away_team: string; kickoff_at: string; status: string; live_elapsed?: number | null; home_score: number | null; away_score: number | null; odds_fractional: string | null; odds_checked_at: string | null; odds_deadline_fractional?: string | null; source: string; is_eligible: boolean };
 type Prediction = { id: string; gameweek_id: string; member_id: string; fixture_id: string; points_awarded: number | null; created_at: string; updated_at: string };
 type ScoreAdjustment = { id: string; gameweek_id: string; member_id: string; points: number; reason: string; source: "automatic" | "admin"; created_at: string; updated_at: string };
 type Standing = { id: string; name: string; played: number; wins: number; oneSided: number; zeroZeroCount: number; points: number };
+type FixtureBrowserState = { gameweekId: string; status: "loading" | "ready" | "error" };
 
 type Props = {
   profile: Profile;
@@ -45,6 +60,7 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const [gameweekId, setGameweekId] = useState(currentGameweekId ?? gameweeks[0]?.id ?? "");
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [browserFixtures, setBrowserFixtures] = useState<Fixture[]>([]);
+  const [fixtureBrowserState, setFixtureBrowserState] = useState<FixtureBrowserState | null>(null);
   const [predictions, setPredictions] = useState(initialPredictions);
   const [alertsCount, setAlertsCount] = useState(0);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
@@ -63,6 +79,9 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
     if (!gameweek) return rows;
     return rows.filter((row) => row.is_eligible && kickoffMatchesSelectionRule(row.kickoff_at, gameweek));
   }, [browserFixtures, currentFixtures, gameweek]);
+  const selectedFixtureState: "loading" | "ready" | "error" = fixtureBrowserState?.gameweekId === gameweekId
+    ? fixtureBrowserState.status
+    : "loading";
 
   const standings = useMemo<Standing[]>(() => {
     const rows = new Map<string, Standing>(profiles.map((member) => [member.id, { id: member.id, name: member.display_name, played: 0, wins: 0, oneSided: 0, zeroZeroCount: 0, points: 0 }]));
@@ -110,20 +129,30 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   useEffect(() => {
     if (!gameweekId) {
       setBrowserFixtures([]);
+      setFixtureBrowserState(null);
       return;
     }
     let cancelled = false;
+    const requestedGameweekId = gameweekId;
+    setBrowserFixtures([]);
+    setFixtureBrowserState({ gameweekId: requestedGameweekId, status: "loading" });
     void (async () => {
       try {
-        const response = await fetch(`/api/fixture-browser?gameweekId=${encodeURIComponent(gameweekId)}`, {
+        const response = await fetch(`/api/fixture-browser?gameweekId=${encodeURIComponent(requestedGameweekId)}`, {
           headers: { authorization: `Bearer ${await token()}` },
           cache: "no-store",
         });
-        if (!response.ok) return;
+        if (!response.ok) throw new Error("Fixture browser unavailable");
         const data = await response.json();
-        if (!cancelled) setBrowserFixtures((data.fixtures ?? []) as Fixture[]);
+        if (!cancelled) {
+          setBrowserFixtures((data.fixtures ?? []) as Fixture[]);
+          setFixtureBrowserState({ gameweekId: requestedGameweekId, status: "ready" });
+        }
       } catch {
-        if (!cancelled) setBrowserFixtures([]);
+        if (!cancelled) {
+          setBrowserFixtures([]);
+          setFixtureBrowserState({ gameweekId: requestedGameweekId, status: "error" });
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -271,6 +300,7 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
             fixtures={selectionFixtures}
             predictions={currentPredictions}
             alertsCount={alertsCount}
+            fixtureState={selectedFixtureState}
           />
         </div>
       ) : (
