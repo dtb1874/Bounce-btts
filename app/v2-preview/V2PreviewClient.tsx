@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { kickoffMatchesSelectionRule } from "@/lib/gameweek-rules";
 import AuthenticatedShellFrame from "../ui/AuthenticatedShellFrame";
@@ -66,6 +66,7 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [oddsRefreshing, setOddsRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const activeGameweekButton = useRef<HTMLButtonElement | null>(null);
 
   const profiles = useMemo(() => initialProfiles.filter((row) => row.active && row.role !== "guest"), [initialProfiles]);
   const isAdmin = profile.role === "admin" || profile.role === "ultimate_admin";
@@ -113,6 +114,10 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
     (!gameweek.opens_at || new Date(gameweek.opens_at).getTime() <= Date.now()) &&
     new Date(gameweek.locks_at).getTime() > Date.now()
   );
+
+  useEffect(() => {
+    activeGameweekButton.current?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [gameweekId]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -251,15 +256,29 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       <div className={styles.previewHeader}>
         <div className={styles.previewIdentity}>
           <span>BOUNCE 2.0</span>
-          <strong>VISUAL RESET</strong>
-          <em>{seasonLabel}</em>
+          <strong>{seasonLabel}</strong>
         </div>
-        <label className={styles.gameweekControl}>
-          <span>VIEWING</span>
-          <select value={gameweekId} onChange={(event) => setGameweekId(event.target.value)}>
-            {gameweeks.map((row) => <option value={row.id} key={row.id}>GW {row.number}</option>)}
-          </select>
-        </label>
+        <div className={styles.gameweekRailWrap}>
+          <span>GAMEWEEKS</span>
+          <div className={styles.gameweekRail} role="list" aria-label="Choose gameweek">
+            {gameweeks.map((row) => {
+              const active = row.id === gameweekId;
+              return (
+                <button
+                  type="button"
+                  role="listitem"
+                  key={row.id}
+                  ref={active ? activeGameweekButton : undefined}
+                  className={active ? styles.activeGameweek : ""}
+                  aria-current={active ? "true" : undefined}
+                  onClick={() => setGameweekId(row.id)}
+                >
+                  <span>GW</span>{row.number}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {message ? <div className={styles.message}>{message}</div> : null}
@@ -305,7 +324,7 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
         </div>
       ) : (
         <section className={styles.placeholder}>
-          <span>BOUNCE 2.0 · VISUAL RESET</span>
+          <span>BOUNCE 2.0</span>
           <h1>{authenticatedNavItems.find((row) => row.id === activeView)?.label ?? "Bounce"}</h1>
           <p>This surface is next in the same premium redesign process. Dashboard, Stat Centre and Admin now establish the V2 visual language before the remaining product areas inherit it.</p>
           <button type="button" onClick={() => setActiveView("dashboard")}>Return to Dashboard</button>
