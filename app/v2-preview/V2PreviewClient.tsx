@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { kickoffMatchesSelectionRule } from "@/lib/gameweek-rules";
 import AuthenticatedShellFrame from "../ui/AuthenticatedShellFrame";
 import { authenticatedNavItems } from "../ui/navigation";
 import V2EditorialDashboard from "../v2/V2EditorialDashboard";
@@ -43,6 +44,7 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const [activeView, setActiveView] = useState("dashboard");
   const [gameweekId, setGameweekId] = useState(currentGameweekId ?? gameweeks[0]?.id ?? "");
   const [fixtures, setFixtures] = useState(initialFixtures);
+  const [browserFixtures, setBrowserFixtures] = useState<Fixture[]>([]);
   const [predictions, setPredictions] = useState(initialPredictions);
   const [alertsCount, setAlertsCount] = useState(0);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
@@ -54,6 +56,13 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const gameweek = gameweeks.find((row) => row.id === gameweekId) ?? null;
   const currentFixtures = useMemo(() => fixtures.filter((row) => row.gameweek_id === gameweekId), [fixtures, gameweekId]);
   const currentPredictions = useMemo(() => predictions.filter((row) => row.gameweek_id === gameweekId), [predictions, gameweekId]);
+  const selectionFixtures = useMemo(() => {
+    const unique = new Map<string, Fixture>();
+    for (const row of [...currentFixtures, ...browserFixtures]) unique.set(row.id, row);
+    const rows = Array.from(unique.values());
+    if (!gameweek) return rows;
+    return rows.filter((row) => row.is_eligible && kickoffMatchesSelectionRule(row.kickoff_at, gameweek));
+  }, [browserFixtures, currentFixtures, gameweek]);
 
   const standings = useMemo<Standing[]>(() => {
     const rows = new Map<string, Standing>(profiles.map((member) => [member.id, { id: member.id, name: member.display_name, played: 0, wins: 0, oneSided: 0, zeroZeroCount: 0, points: 0 }]));
@@ -98,6 +107,28 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
     })();
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (!gameweekId) {
+      setBrowserFixtures([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/fixture-browser?gameweekId=${encodeURIComponent(gameweekId)}`, {
+          headers: { authorization: `Bearer ${await token()}` },
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setBrowserFixtures((data.fixtures ?? []) as Fixture[]);
+      } catch {
+        if (!cancelled) setBrowserFixtures([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [gameweekId]);
+
   async function reloadSelectedGameweek() {
     if (!gameweekId) return;
     const client = createClient();
@@ -105,11 +136,22 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       client.from("fixtures").select("*").eq("gameweek_id", gameweekId),
       client.from("predictions").select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at").eq("gameweek_id", gameweekId),
     ]);
-    if (!fixtureResponse.error && fixtureResponse.data) {
-      setFixtures((rows) => [...rows.filter((row) => row.gameweek_id !== gameweekId), ...(fixtureResponse.data as Fixture[])]);
+
+    let refreshedFixtures = (fixtureResponse.data ?? []) as Fixture[];
+    const refreshedPredictions = (predictionResponse.data ?? []) as Prediction[];
+    const loadedIds = new Set(refreshedFixtures.map((row) => row.id));
+    const missingFixtureIds = Array.from(new Set(refreshedPredictions.map((row) => row.fixture_id).filter((id) => id && !loadedIds.has(id))));
+    if (missingFixtureIds.length) {
+      const referencedResponse = await client.from("fixtures").select("*").in("id", missingFixtureIds);
+      if (!referencedResponse.error && referencedResponse.data) refreshedFixtures = [...refreshedFixtures, ...(referencedResponse.data as Fixture[])];
     }
-    if (!predictionResponse.error && predictionResponse.data) {
-      setPredictions((rows) => [...rows.filter((row) => row.gameweek_id !== gameweekId), ...(predictionResponse.data as Prediction[])]);
+
+    if (!fixtureResponse.error) {
+      const refreshedIds = new Set(refreshedFixtures.map((row) => row.id));
+      setFixtures((rows) => [...rows.filter((row) => row.gameweek_id !== gameweekId && !refreshedIds.has(row.id)), ...refreshedFixtures]);
+    }
+    if (!predictionResponse.error) {
+      setPredictions((rows) => [...rows.filter((row) => row.gameweek_id !== gameweekId), ...refreshedPredictions]);
     }
   }
 
@@ -194,37 +236,43 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       {message ? <div className={styles.message}>{message}</div> : null}
 
       {activeView === "dashboard" ? (
-        <V2EditorialDashboard
-          gameweek={gameweek}
-          profiles={profiles}
-          fixtures={currentFixtures}
-          predictions={currentPredictions}
-          standings={standings}
-          entryFee={entryFee}
-          seasonLabel={seasonLabel}
-          isOpen={isOpen}
-          myId={profile.id}
-          setView={navigate}
-        />
+        <div data-v2-surface="dashboard">
+          <V2EditorialDashboard
+            gameweek={gameweek}
+            profiles={profiles}
+            fixtures={fixtures}
+            predictions={currentPredictions}
+            standings={standings}
+            entryFee={entryFee}
+            seasonLabel={seasonLabel}
+            isOpen={isOpen}
+            myId={profile.id}
+            setView={navigate}
+          />
+        </div>
       ) : activeView === "table" ? (
-        <V2StatCentre
-          seasonLabel={seasonLabel}
-          profiles={profiles}
-          gameweeks={gameweeks}
-          fixtures={fixtures}
-          predictions={predictions}
-          standings={standings}
-          myId={profile.id}
-        />
+        <div data-v2-surface="stats">
+          <V2StatCentre
+            seasonLabel={seasonLabel}
+            profiles={profiles}
+            gameweeks={gameweeks}
+            fixtures={fixtures}
+            predictions={predictions}
+            standings={standings}
+            myId={profile.id}
+          />
+        </div>
       ) : activeView === "admin" && isAdmin ? (
-        <V2AdminCentre
-          seasonLabel={seasonLabel}
-          gameweek={gameweek}
-          profiles={profiles}
-          fixtures={currentFixtures}
-          predictions={currentPredictions}
-          alertsCount={alertsCount}
-        />
+        <div data-v2-surface="admin">
+          <V2AdminCentre
+            seasonLabel={seasonLabel}
+            gameweek={gameweek}
+            profiles={profiles}
+            fixtures={selectionFixtures}
+            predictions={currentPredictions}
+            alertsCount={alertsCount}
+          />
+        </div>
       ) : (
         <section className={styles.placeholder}>
           <span>BOUNCE 2.0 · VISUAL RESET</span>
