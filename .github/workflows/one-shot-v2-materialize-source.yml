@@ -1,0 +1,40 @@
+name: One-shot V2 source materialisation
+
+on:
+  push:
+    branches: [v2/phase-2-dashboard]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: contains(github.event.head_commit.message, '[v2-materialize]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v2/phase-2-dashboard
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialise the last build-time source transform
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/apply-reminder-history.mjs
+          node - <<'NODE'
+          const fs=require('fs');
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+          pkg.version='2.0.0-preview.0';
+          pkg.scripts.build='next build';
+          fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
+          NODE
+          rm scripts/apply-reminder-history.mjs
+          rm .github/workflows/one-shot-v2-materialize-source.yml
+          git config user.name "dtb1874"
+          git config user.email "dtb1874@gmail.com"
+          git add app/LeagueApp.tsx package.json scripts/apply-reminder-history.mjs .github/workflows/one-shot-v2-materialize-source.yml
+          git commit -m "V2: move final build transform into source ownership"
+          git push origin HEAD:v2/phase-2-dashboard
