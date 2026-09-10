@@ -2,136 +2,118 @@
   position: sticky;
   top: 0;
   z-index: 18;
-  min-height: 58px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 9px clamp(14px, 2.8vw, 32px);
-  border-bottom: 1px solid var(--ui-border);
-  background: rgba(9, 9, 13, .94);
-  backdrop-filter: blur(16px);
+  gap: 18px;
+  padding: 8px clamp(18px, 4vw, 52px);
+  border-bottom: 1px solid rgba(215,183,111,.2);
+  background: rgba(8,9,13,.9);
+  backdrop-filter: blur(18px);
 }
 
-.previewHeader > div,
-.previewHeader label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.previewHeader > div > span,
-.previewHeader label > span {
-  color: var(--ui-text-faint);
-  font-size: .55rem;
+.previewIdentity { display: flex; align-items: baseline; gap: 11px; min-width: 0; }
+.previewIdentity span,
+.previewIdentity strong,
+.gameweekControl > span {
+  font-size: .54rem;
   font-weight: 900;
-  letter-spacing: .13em;
+  letter-spacing: .16em;
   text-transform: uppercase;
 }
+.previewIdentity span { color: #efe4d4; }
+.previewIdentity strong { color: #d7b76f; }
+.previewIdentity em { color: #77716a; font-size: .58rem; font-style: normal; }
 
-.previewHeader > div > strong {
-  padding-left: 10px;
-  border-left: 1px solid var(--ui-border);
-  color: var(--ui-gold-bright);
-  font-size: .72rem;
-}
-
-.previewHeader select {
-  min-height: 36px;
-  padding: 0 30px 0 10px;
-  border: 1px solid var(--ui-border-strong);
-  border-radius: var(--ui-radius-sm);
-  background: var(--ui-surface);
-  color: var(--ui-text-warm);
-  font-size: .72rem;
+.gameweekControl { display: flex; align-items: center; gap: 10px; }
+.gameweekControl > span { color: #716b64; }
+.gameweekControl select {
+  min-height: 34px;
+  padding: 0 24px 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(215,183,111,.4);
+  border-radius: 0;
+  background: transparent;
+  color: #eee3d5;
+  font-size: .7rem;
   font-weight: 800;
 }
 
 .message {
-  width: min(calc(100% - 28px), 1170px);
-  margin: 12px auto -4px;
-  padding: 9px 12px;
-  border-left: 2px solid var(--ui-gold);
-  background: rgba(214, 182, 111, .055);
-  color: var(--ui-text-muted);
-  font-size: .7rem;
+  width: min(calc(100% - 36px), 1160px);
+  margin: 12px auto -6px;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid #d7b76f;
+  color: #a9a198;
+  font-size: .68rem;
 }
 
+.previewUtilities {
+  position: fixed;
+  right: 16px;
+  bottom: 14px;
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  opacity: .38;
+  transition: opacity .18s ease;
+}
+.previewUtilities:hover,
+.previewUtilities:focus-within { opacity: 1; }
+.previewUtilities button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(215,183,111,.24);
+  border-radius: 2px;
+  background: rgba(8,9,13,.88);
+  color: #bdb5ab;
+  font-size: .58rem;
+  font-weight: 780;
+}
+.previewUtilities button:disabled { opacity: .5; }
+
 .placeholder {
-  width: min(calc(100% - 28px), 880px);
-  min-height: 62vh;
-  margin: 0 auto;
-  padding: clamp(54px, 9vw, 110px) 0;
+  position: relative;
+  width: 100%;
+  min-height: 76vh;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: end;
+  padding: clamp(80px, 12vw, 150px) clamp(24px, 6vw, 86px) clamp(70px, 9vw, 110px);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(8,9,13,.98), rgba(8,9,13,.62), rgba(8,9,13,.9)),
+    url('/assets/edinburgh-skyline.jpg') center / cover no-repeat;
 }
-
-.placeholder > span {
-  color: var(--ui-gold);
-  font-size: .6rem;
-  font-weight: 900;
-  letter-spacing: .15em;
+.placeholder::after {
+  content: "";
+  position: absolute;
+  right: -5vw;
+  bottom: -18vw;
+  width: min(52vw, 620px);
+  aspect-ratio: 1;
+  background: url('/assets/st-giles-heart.jpg') center / cover no-repeat;
+  opacity: .08;
+  mix-blend-mode: screen;
+  transform: rotate(-9deg);
+  pointer-events: none;
 }
-
-.placeholder h1 {
-  margin: 10px 0 0;
-  color: var(--ui-text);
-  font: 700 clamp(2.5rem, 7vw, 5.5rem)/.94 var(--ui-font-display);
-}
-
-.placeholder p {
-  max-width: 56ch;
-  margin: 20px 0 0;
-  color: var(--ui-text-muted);
-  font-size: .88rem;
-  line-height: 1.65;
-}
-
-.placeholder button {
-  min-height: 44px;
-  margin-top: 26px;
-  padding: 0 17px;
-  border: 1px solid rgba(214, 182, 111, .34);
-  border-radius: var(--ui-radius-sm);
-  background: rgba(214, 182, 111, .08);
-  color: var(--ui-gold-bright);
-  font-size: .74rem;
-  font-weight: 850;
-}
+.placeholder > span { color: #d7b76f; font-size: .6rem; font-weight: 900; letter-spacing: .18em; }
+.placeholder h1 { max-width: 9ch; margin: 10px 0 0; color: #f1e8dc; font: 700 clamp(4rem, 9vw, 9rem)/.82 Georgia, "Times New Roman", serif; letter-spacing: -.045em; }
+.placeholder p { max-width: 55ch; margin: 24px 0 0; color: #aaa39b; font-size: .82rem; line-height: 1.68; }
+.placeholder button { min-height: 42px; margin-top: 28px; padding: 0 0 5px; border: 0; border-bottom: 1px solid rgba(215,183,111,.46); border-radius: 0; background: none; color: #e5d3ad; font-size: .7rem; font-weight: 850; }
 
 @media (max-width: 760px) {
-  .previewHeader {
-    top: var(--ui-mobile-topbar-height);
-    min-height: 52px;
-    padding: 7px 12px;
-  }
-
-  .previewHeader > div > span {
-    max-width: 116px;
-    line-height: 1.15;
-  }
-
-  .previewHeader > div > strong {
-    display: none;
-  }
-
-  .previewHeader label > span {
-    display: none;
-  }
-
-  .previewHeader select {
-    min-height: 38px;
-    min-width: 88px;
-  }
-
-  .message {
-    width: calc(100% - 20px);
-  }
-
-  .placeholder {
-    width: calc(100% - 28px);
-    padding-bottom: calc(var(--ui-mobile-nav-height) + 44px);
-  }
+  .previewHeader { top: var(--ui-mobile-topbar-height); min-height: 48px; padding: 7px 14px; }
+  .previewIdentity strong,
+  .previewIdentity em,
+  .gameweekControl > span { display: none; }
+  .gameweekControl select { min-height: 32px; }
+  .message { width: calc(100% - 28px); }
+  .previewUtilities { right: 10px; bottom: calc(var(--ui-mobile-nav-height) + 8px); }
+  .previewUtilities button { min-height: 30px; font-size: .52rem; }
+  .placeholder { min-height: 72vh; padding: 76px 18px calc(var(--ui-mobile-nav-height) + 60px); }
+  .placeholder h1 { font-size: clamp(3.8rem, 20vw, 6rem); }
 }
