@@ -1,0 +1,182 @@
+.page {
+  --ink: #08090d;
+  --paper: #f3eadf;
+  --muted: #9c958d;
+  --gold: #d7b76f;
+  --maroon: #641f35;
+  min-height: 100vh;
+  background: #08090d;
+  color: var(--paper);
+}
+
+.hero {
+  min-height: 470px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+  align-items: end;
+  gap: clamp(36px, 8vw, 120px);
+  padding: clamp(86px, 11vw, 150px) clamp(24px, 6vw, 86px) 58px;
+  border-bottom: 1px solid rgba(215,183,111,.22);
+  background:
+    linear-gradient(90deg, rgba(8,9,13,.98), rgba(8,9,13,.85) 52%, rgba(8,9,13,.42)),
+    url('/assets/st-giles-round.jpg') 88% 42% / min(52vw, 720px) auto no-repeat,
+    #08090d;
+}
+.heroCopy span,
+.heroStat span,
+.ledgerHeader span,
+.playerChooser > span,
+.playerIdentity small,
+.playerStory span,
+.recordHero span,
+.footer span {
+  color: var(--gold);
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+.heroCopy h1 {
+  max-width: 10ch;
+  margin: 13px 0 0;
+  font: 700 clamp(3.8rem, 7.6vw, 8.2rem)/.84 Georgia, "Times New Roman", serif;
+  letter-spacing: -.045em;
+}
+.heroCopy p { max-width: 58ch; margin: 24px 0 0; color: #b3aca4; line-height: 1.7; font-size: .84rem; }
+.heroStat { padding: 8px 0 8px 32px; border-left: 1px solid rgba(215,183,111,.42); }
+.heroStat strong { display: block; margin-top: 8px; font: 700 clamp(4rem, 7vw, 7rem)/.9 Georgia, "Times New Roman", serif; color: #fff4e4; }
+.heroStat small { display: block; max-width: 30ch; margin-top: 11px; color: var(--muted); line-height: 1.5; }
+
+.tabs {
+  min-height: 74px;
+  display: flex;
+  align-items: stretch;
+  gap: clamp(16px, 4vw, 48px);
+  padding: 0 clamp(24px, 6vw, 86px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button {
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  color: #857f78;
+  font-size: .72rem;
+  font-weight: 800;
+}
+.tabs button::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: transparent; }
+.tabs .activeTab { color: var(--paper); }
+.tabs .activeTab::after { background: var(--gold); }
+
+.section { padding: clamp(54px, 8vw, 100px) clamp(24px, 6vw, 86px) 90px; }
+.introGrid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); gap: clamp(40px, 8vw, 120px); align-items: end; }
+.bigStatement span { color: var(--gold); font-size: .6rem; font-weight: 900; letter-spacing: .18em; }
+.bigStatement h2 { margin: 9px 0 0; font: 700 clamp(3rem, 6vw, 6rem)/.88 Georgia, "Times New Roman", serif; letter-spacing: -.04em; }
+.bigStatement p { max-width: 48ch; margin: 19px 0 0; color: var(--muted); line-height: 1.65; }
+.statRail { margin: 0; border-top: 1px solid rgba(215,183,111,.3); }
+.statRail div { min-height: 66px; display: flex; justify-content: space-between; align-items: center; gap: 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.statRail dt { color: #807a73; font-size: .67rem; }
+.statRail dd { margin: 0; color: #e6ddd2; font: 700 .95rem Georgia, "Times New Roman", serif; text-align: right; }
+
+.ledgerHeader { margin-top: clamp(66px, 10vw, 132px); padding-bottom: 22px; border-bottom: 1px solid rgba(215,183,111,.3); }
+.ledgerHeader h2 { margin: 7px 0 0; font: 700 clamp(2.5rem, 5vw, 5rem)/.9 Georgia, "Times New Roman", serif; letter-spacing: -.04em; }
+.tableHead,
+.tableRow { display: grid; grid-template-columns: 64px minmax(180px, 1fr) 80px 80px 80px 80px; gap: 12px; align-items: center; }
+.tableHead { min-height: 50px; color: #6f6962; font-size: .56rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.tableHead span:last-child { text-align: right; }
+.tableRow { min-height: 72px; border-top: 1px solid rgba(255,255,255,.07); color: #aca59d; }
+.tableRow strong { color: #eee5d9; font: 700 1.05rem Georgia, "Times New Roman", serif; }
+.tableRow b { justify-self: end; color: #f7eddf; font: 700 1.4rem Georgia, "Times New Roman", serif; }
+.me { position: relative; }
+.me::before { content: ""; position: absolute; left: -18px; width: 2px; height: 36%; background: var(--gold); }
+
+.playerChooser { padding-bottom: 32px; border-bottom: 1px solid rgba(215,183,111,.28); }
+.playerChooser > div { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; }
+.playerChooser button { padding: 4px 0 7px; border: 0; border-bottom: 1px solid transparent; background: none; color: #7f7972; font-size: .72rem; font-weight: 750; }
+.playerChooser .selectedPlayer { border-bottom-color: var(--gold); color: var(--paper); }
+.playerProfile { padding-top: clamp(48px, 7vw, 84px); }
+.playerIdentity { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 28px; align-items: center; }
+.playerIdentity > span { width: 110px; height: 110px; display: grid; place-items: center; border: 1px solid rgba(215,183,111,.48); border-radius: 50%; font: 700 3.2rem Georgia, "Times New Roman", serif; color: #efe2d1; background: radial-gradient(circle, rgba(100,31,53,.42), transparent 68%); }
+.playerIdentity h2 { margin: 6px 0 0; font: 700 clamp(3rem, 6vw, 6rem)/.9 Georgia, "Times New Roman", serif; letter-spacing: -.04em; }
+.playerIdentity p { margin: 14px 0 0; color: var(--muted); }
+.playerNumbers { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 54px; border-top: 1px solid rgba(255,255,255,.1); border-bottom: 1px solid rgba(255,255,255,.1); }
+.playerNumbers > div { min-height: 124px; display: grid; align-content: center; gap: 6px; padding: 15px 22px; border-right: 1px solid rgba(255,255,255,.08); }
+.playerNumbers > div:last-child { border-right: 0; }
+.playerNumbers span { color: #79736c; font-size: .6rem; }
+.playerNumbers strong { font: 700 clamp(1.8rem, 3.3vw, 3rem) Georgia, "Times New Roman", serif; }
+.playerStory { max-width: 700px; margin-top: 70px; padding-left: 26px; border-left: 1px solid rgba(215,183,111,.42); }
+.playerStory h3 { margin: 9px 0 0; font: 700 clamp(2.4rem, 5vw, 4.5rem)/.9 Georgia, "Times New Roman", serif; }
+.playerStory p { margin: 13px 0 0; color: var(--muted); }
+
+.formKey { display: flex; gap: 20px; margin-top: 18px; color: #7c766f; font-size: .6rem; }
+.formKey span { display: flex; align-items: center; gap: 6px; }
+.formKey i { width: 7px; height: 7px; border-radius: 50%; }
+.winDot { background: #78c796; }
+.oneDot { background: #d8b768; }
+.nilDot { background: #ca747d; }
+.formTable { margin-top: 26px; }
+.formRow { min-height: 76px; display: grid; grid-template-columns: 44px minmax(150px, 1fr) minmax(300px, .9fr) 60px; align-items: center; gap: 16px; border-top: 1px solid rgba(255,255,255,.075); }
+.formPos { color: #6b655e; font: 700 1rem Georgia, "Times New Roman", serif; }
+.formRow strong { font: 700 1rem Georgia, "Times New Roman", serif; }
+.formRow > b { justify-self: end; color: #eadfce; }
+.formMarks { display: grid; grid-template-columns: repeat(6, 34px); justify-content: end; gap: 5px; }
+.formMarks span { width: 34px; height: 30px; display: grid; place-items: center; border-bottom: 1px solid rgba(255,255,255,.12); color: #8d867f; font-size: .6rem; font-weight: 800; }
+.formMarks .winMark { color: #83d3a0; border-bottom-color: rgba(131,211,160,.6); }
+.formMarks .oneMark { color: #dec477; border-bottom-color: rgba(222,196,119,.6); }
+.formMarks .nilMark { color: #d7838a; border-bottom-color: rgba(215,131,138,.6); }
+
+.recordsSection { min-height: 720px; display: grid; grid-template-columns: minmax(280px, .7fr) minmax(0, 1.3fr); gap: clamp(48px, 9vw, 130px); align-items: start; padding: clamp(70px, 10vw, 130px) clamp(24px, 6vw, 86px); background: linear-gradient(120deg, rgba(100,31,53,.15), transparent 45%); }
+.recordHero h2 { max-width: 8ch; margin: 12px 0 0; font: 700 clamp(3.3rem, 6vw, 6.6rem)/.87 Georgia, "Times New Roman", serif; letter-spacing: -.04em; }
+.recordLedger { border-top: 1px solid rgba(215,183,111,.35); }
+.recordLedger > div { min-height: 106px; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(180px, 1fr) 100px; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.recordLedger span { color: #79736c; font-size: .62rem; }
+.recordLedger strong { color: #eee5d8; font: 700 1.25rem Georgia, "Times New Roman", serif; }
+.recordLedger b { justify-self: end; font: 700 1.55rem Georgia, "Times New Roman", serif; color: var(--gold); }
+
+.footer { min-height: 250px; display: grid; align-content: end; gap: 8px; padding: 50px clamp(24px, 6vw, 86px); background: linear-gradient(90deg, rgba(8,9,13,.96), rgba(8,9,13,.55), rgba(8,9,13,.92)), url('/assets/edinburgh-skyline.jpg') center / cover no-repeat; }
+.footer strong { max-width: 680px; font: 700 clamp(2.6rem, 5vw, 5rem)/.9 Georgia, "Times New Roman", serif; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; min-height: 590px; }
+  .heroStat { max-width: 500px; }
+  .introGrid { grid-template-columns: 1fr; }
+  .playerNumbers { grid-template-columns: repeat(3, 1fr); }
+  .playerNumbers > div:nth-child(3) { border-right: 0; }
+  .playerNumbers > div:nth-child(-n+3) { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .recordsSection { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .hero { min-height: 600px; padding: 90px 18px 44px; background: linear-gradient(180deg, rgba(8,9,13,.68), #08090d 78%), url('/assets/st-giles-round.jpg') 95% 10% / 78vw auto no-repeat; }
+  .heroCopy h1 { font-size: clamp(3.7rem, 17vw, 5.2rem); }
+  .heroStat { padding: 19px 0 0; border-left: 0; border-top: 1px solid rgba(215,183,111,.38); }
+  .heroStat strong { font-size: 4rem; }
+  .tabs { min-height: 62px; padding: 0 18px; gap: 26px; }
+  .section { padding: 48px 18px 70px; }
+  .bigStatement h2, .ledgerHeader h2 { font-size: 3rem; }
+  .tableHead, .tableRow { grid-template-columns: 38px minmax(100px, 1fr) 44px 44px 44px 44px; gap: 4px; }
+  .tableHead { font-size: .46rem; }
+  .tableRow { min-height: 62px; font-size: .66rem; }
+  .tableRow strong { font-size: .82rem; }
+  .tableRow b { font-size: 1.1rem; }
+  .playerIdentity { grid-template-columns: 74px 1fr; gap: 16px; }
+  .playerIdentity > span { width: 70px; height: 70px; font-size: 2rem; }
+  .playerIdentity h2 { font-size: 2.9rem; }
+  .playerNumbers { grid-template-columns: repeat(2, 1fr); }
+  .playerNumbers > div { min-height: 100px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .playerNumbers > div:nth-child(2n) { border-right: 0; }
+  .playerNumbers > div:nth-child(3) { border-right: 1px solid rgba(255,255,255,.08); }
+  .formRow { grid-template-columns: 28px minmax(90px, 1fr) auto; min-height: 88px; gap: 8px; }
+  .formMarks { grid-column: 2 / 4; grid-row: 2; justify-content: start; grid-template-columns: repeat(6, 30px); }
+  .formMarks span { width: 30px; }
+  .formRow > b { grid-column: 3; grid-row: 1; }
+  .recordsSection { padding: 60px 18px 80px; }
+  .recordHero h2 { font-size: 3.4rem; }
+  .recordLedger > div { min-height: 98px; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; }
+  .recordLedger span { grid-column: 1 / 3; }
+  .recordLedger b { grid-column: 2; grid-row: 2; }
+  .footer { padding: 44px 18px; }
+}
