@@ -254,28 +254,13 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
       onSignOut={signOut}
     >
       <div className={styles.previewHeader}>
-        <div className={styles.previewIdentity}>
-          <span>BOUNCE 2.0</span>
-          <strong>{seasonLabel}</strong>
-        </div>
+        <div className={styles.previewIdentity}><span>BOUNCE 2.0</span><strong>{seasonLabel}</strong></div>
         <div className={styles.gameweekRailWrap}>
           <span>GAMEWEEKS</span>
           <div className={styles.gameweekRail} role="list" aria-label="Choose gameweek">
             {gameweeks.map((row) => {
               const active = row.id === gameweekId;
-              return (
-                <button
-                  type="button"
-                  role="listitem"
-                  key={row.id}
-                  ref={active ? activeGameweekButton : undefined}
-                  className={active ? styles.activeGameweek : ""}
-                  aria-current={active ? "true" : undefined}
-                  onClick={() => setGameweekId(row.id)}
-                >
-                  <span>GW</span>{row.number}
-                </button>
-              );
+              return <button type="button" role="listitem" key={row.id} ref={active ? activeGameweekButton : undefined} className={active ? styles.activeGameweek : ""} aria-current={active ? "true" : undefined} onClick={() => setGameweekId(row.id)}><span>GW</span>{row.number}</button>;
             })}
           </div>
         </div>
@@ -285,42 +270,15 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
 
       {activeView === "dashboard" ? (
         <div data-v2-surface="dashboard">
-          <V2EditorialDashboard
-            gameweek={gameweek}
-            profiles={profiles}
-            fixtures={fixtures}
-            predictions={currentPredictions}
-            standings={standings}
-            entryFee={entryFee}
-            seasonLabel={seasonLabel}
-            isOpen={isOpen}
-            myId={profile.id}
-            setView={navigate}
-          />
+          <V2EditorialDashboard gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={currentPredictions} standings={standings} entryFee={entryFee} seasonLabel={seasonLabel} isOpen={isOpen} myId={profile.id} setView={navigate} />
         </div>
       ) : activeView === "table" ? (
         <div data-v2-surface="stats">
-          <V2StatCentre
-            seasonLabel={seasonLabel}
-            profiles={profiles}
-            gameweeks={gameweeks}
-            fixtures={fixtures}
-            predictions={predictions}
-            standings={standings}
-            myId={profile.id}
-          />
+          <V2StatCentre seasonLabel={seasonLabel} profiles={profiles} gameweeks={gameweeks} fixtures={fixtures} predictions={predictions} adjustments={adjustments} standings={standings} myId={profile.id} entryFee={entryFee} />
         </div>
       ) : activeView === "admin" && isAdmin ? (
         <div data-v2-surface="admin">
-          <V2AdminCentre
-            seasonLabel={seasonLabel}
-            gameweek={gameweek}
-            profiles={profiles}
-            fixtures={selectionFixtures}
-            predictions={currentPredictions}
-            alertsCount={alertsCount}
-            fixtureState={selectedFixtureState}
-          />
+          <V2AdminCentre seasonLabel={seasonLabel} gameweek={gameweek} profiles={profiles} fixtures={selectionFixtures} predictions={currentPredictions} alertsCount={alertsCount} fixtureState={selectedFixtureState} entryFee={entryFee} isUltimate={profile.role === "ultimate_admin"} />
         </div>
       ) : (
         <section className={styles.placeholder}>
