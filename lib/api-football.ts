@@ -5,6 +5,11 @@ import {
   fixtureMatchesSelectionRule,
   isEligibleProviderFixture,
 } from "@/lib/gameweek-rules";
+import {
+  FIXTURE_IMPORT_LOOKBACK_DAYS,
+  FIXTURE_PRELOAD_DAYS,
+  fixtureDateWithinDays,
+} from "@/lib/fixture-import-policy";
 
 const API_BASE = "https://v3.football.api-sports.io";
 const UK_COUNTRIES = new Set(["England", "Scotland", "Wales", "Northern Ireland", "Northern-Ireland"]);
@@ -155,7 +160,16 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
   const tracker: Tracker = { used: 0, limit: null, remaining: null };
   const { data: run, error: runError } = await admin.from("fixture_import_runs").insert({ trigger_source: triggerSource, status: "running" }).select().single();
   if (runError) throw runError;
-  const summary = { fixturesAdded: 0, fixturesUpdated: 0, oddsUpdated: 0, resultsUpdated: 0, alertsCreated: 0, dates: [] as string[], errors: [] as string[] };
+  const summary = {
+    fixturesAdded: 0,
+    fixturesUpdated: 0,
+    oddsUpdated: 0,
+    resultsUpdated: 0,
+    alertsCreated: 0,
+    preloadWindowDays: FIXTURE_PRELOAD_DAYS,
+    dates: [] as string[],
+    errors: [] as string[],
+  };
   try {
     const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
     const { data: gameweeks } = season?.id
@@ -166,15 +180,15 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
       : { data: [] as any[] };
 
     const now = Date.now();
-    const upper = now + 15 * 86400000;
     const requestedIds = new Set((requestedGameweekIds ?? []).filter(Boolean));
     const targetWeeks = requestedIds.size
       ? (gameweeks ?? []).filter((gw: any) => requestedIds.has(String(gw.id)))
-      : (gameweeks ?? []).filter((gw: any) => {
-          const fixtureDate = fixtureDateForGameweek(gw);
-          const fixtureDay = Date.parse(`${fixtureDate}T12:00:00Z`);
-          return fixtureDay >= now - 2 * 86400000 && fixtureDay <= upper;
-        });
+      : (gameweeks ?? []).filter((gw: any) => fixtureDateWithinDays(
+          fixtureDateForGameweek(gw),
+          now,
+          FIXTURE_PRELOAD_DAYS,
+          FIXTURE_IMPORT_LOOKBACK_DAYS,
+        ));
 
     if (requestedIds.size && !targetWeeks.length) throw new Error("The selected gameweek could not be found in the current season.");
 
@@ -183,7 +197,10 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
       const date = fixtureDateForGameweek(gw);
       dateToGameweeks.set(date, [...(dateToGameweeks.get(date) ?? []), gw]);
     }
-    const dates = [...dateToGameweeks.keys()].sort().slice(0, 3);
+    // Process every unique gameweek fixture date within the canonical preload
+    // horizon. A fixed three-date slice made the old 15-day window fragile and
+    // could silently skip a fourth date when one-off rounds were inserted.
+    const dates = [...dateToGameweeks.keys()].sort();
     summary.dates = dates;
 
     for (const date of dates) {
