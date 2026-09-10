@@ -97,11 +97,11 @@ export default function AuthenticatedShellFrame({
           aria-label="Open navigation"
           onClick={onOpenMenu}
           style={{
-            width: 42,
-            height: 42,
+            width: 48,
+            height: 48,
             background: "rgba(255,255,255,.05)",
             border: "1px solid rgba(214,182,111,.08)",
-            fontSize: "1.12rem",
+            fontSize: "1.28rem",
           }}
         >
           <span aria-hidden="true">☰</span>
@@ -114,7 +114,7 @@ export default function AuthenticatedShellFrame({
           <img
             src="/assets/hearts-crest.png?v=gold-crest-20260817-1945"
             alt=""
-            style={{ width: 30, height: 32, filter: "drop-shadow(0 4px 9px rgba(0,0,0,.32))" }}
+            style={{ width: 38, height: 40, filter: "drop-shadow(0 4px 9px rgba(0,0,0,.32))" }}
           />
           <span>BOUNCE</span>
         </div>
