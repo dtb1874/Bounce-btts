@@ -6,6 +6,7 @@ type Gameweek = { id: string; number: number; status: "open" | "locked" | "compl
 type Profile = { id: string; display_name: string; active: boolean; role: string };
 type Fixture = { id: string; status: string; is_eligible: boolean; kickoff_at: string };
 type Prediction = { id: string; member_id: string };
+type FixtureState = "loading" | "ready" | "error";
 
 type Props = {
   seasonLabel: string;
@@ -14,7 +15,7 @@ type Props = {
   fixtures: Fixture[];
   predictions: Prediction[];
   alertsCount: number;
-  fixturesReady?: boolean;
+  fixtureState?: FixtureState;
 };
 
 function formatDate(value: string | null) {
@@ -30,18 +31,21 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixtures, predictions, alertsCount, fixturesReady = true }: Props) {
+export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixtures, predictions, alertsCount, fixtureState = "ready" }: Props) {
   const activeMembers = profiles.filter((row) => row.active && row.role !== "guest");
   const eligibleFixtures = fixtures.filter((row) => row.is_eligible).length;
   const submitted = predictions.length;
   const outstanding = Math.max(0, activeMembers.length - submitted);
+  const fixturesReady = fixtureState === "ready";
   const healthy = fixturesReady && alertsCount === 0 && Boolean(gameweek) && eligibleFixtures > 0;
-  const systemState = !fixturesReady ? "CHECKING" : healthy ? "READY" : alertsCount ? "ATTENTION" : "CHECK";
-  const systemDetail = !fixturesReady
+  const systemState = fixtureState === "loading" ? "CHECKING" : fixtureState === "error" ? "UNAVAILABLE" : healthy ? "READY" : alertsCount ? "ATTENTION" : "CHECK";
+  const systemDetail = fixtureState === "loading"
     ? "Confirming fixture cover for this gameweek"
-    : alertsCount
-      ? `${alertsCount} unresolved alert${alertsCount === 1 ? "" : "s"}`
-      : "No unresolved provider or gameweek alerts";
+    : fixtureState === "error"
+      ? "Fixture browser could not be confirmed"
+      : alertsCount
+        ? `${alertsCount} unresolved alert${alertsCount === 1 ? "" : "s"}`
+        : "No unresolved provider or gameweek alerts";
 
   return (
     <main className={styles.page}>
@@ -61,7 +65,7 @@ export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixture
       <section className={styles.commandStrip}>
         <div><span>GAMEWEEK</span><strong>{gameweek ? `GW ${gameweek.number}` : "—"}</strong><small>{gameweek?.status ?? "No active week"}</small></div>
         <div><span>SUBMISSIONS</span><strong>{submitted}/{activeMembers.length}</strong><small>{outstanding ? `${outstanding} still to pick` : "Everyone is in"}</small></div>
-        <div><span>ELIGIBLE FIXTURES</span><strong>{fixturesReady ? eligibleFixtures : "…"}</strong><small>{fixturesReady ? `${fixtures.length} loaded` : "Checking fixture browser"}</small></div>
+        <div><span>ELIGIBLE FIXTURES</span><strong>{fixturesReady ? eligibleFixtures : "…"}</strong><small>{fixtureState === "loading" ? "Checking fixture browser" : fixtureState === "error" ? "Could not confirm" : `${fixtures.length} loaded`}</small></div>
         <div><span>ALERTS</span><strong>{alertsCount}</strong><small>{alertsCount ? "Review required" : "Clear"}</small></div>
       </section>
 
