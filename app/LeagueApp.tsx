@@ -206,6 +206,7 @@ export default function LeagueApp(props: Props) {
   const [fixturesRequested,setFixturesRequested] = useState(false);
   const [fixturesLoading,setFixturesLoading] = useState(false);
   const [fixturesLoadError,setFixturesLoadError] = useState("");
+  useEffect(()=>{setFixturesRequested(false);},[gameweekId]);
   useEffect(()=>{
     if(view!=="fixtures"||fixturesRequested)return;
     setFixturesRequested(true);
@@ -213,7 +214,7 @@ export default function LeagueApp(props: Props) {
     setFixturesLoadError("");
     void (async()=>{
       try{
-        const response=await fetch("/api/fixture-browser",{headers:{authorization:`Bearer ${await token()}`}});
+        const response=await fetch(`/api/fixture-browser?gameweekId=${encodeURIComponent(gameweekId)}`,{headers:{authorization:`Bearer ${await token()}`}});
         if(!response.ok)throw new Error("fixture load failed");
         const data=await response.json();
         setAllFixtures(Array.isArray(data?.fixtures)?data.fixtures:[]);
