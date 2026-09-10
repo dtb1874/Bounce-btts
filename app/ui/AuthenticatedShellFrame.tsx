@@ -83,17 +83,39 @@ export default function AuthenticatedShellFrame({
 
   return (
     <main className="uiFoundationShell v2ShellFrame" data-ui-foundation-shell="declarative" data-v2-shell="true">
-      <header className="v2MobileTopbar">
+      <header
+        className="v2MobileTopbar"
+        style={{
+          background: "linear-gradient(90deg, rgba(28,20,24,.99), rgba(38,16,25,.99) 54%, rgba(28,19,23,.99))",
+          borderBottomColor: "rgba(214,182,111,.12)",
+          boxShadow: "0 7px 18px rgba(25,8,15,.12)",
+        }}
+      >
         <button
           type="button"
           className="uiFoundationMobileMenu v2MobileMenuButton"
           aria-label="Open navigation"
           onClick={onOpenMenu}
+          style={{
+            width: 42,
+            height: 42,
+            background: "rgba(255,255,255,.05)",
+            border: "1px solid rgba(214,182,111,.08)",
+            fontSize: "1.12rem",
+          }}
         >
           <span aria-hidden="true">☰</span>
         </button>
-        <div className="v2MobileBrand" aria-label="Bounce BTTS League">
-          <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" />
+        <div
+          className="v2MobileBrand"
+          aria-label="Bounce BTTS League"
+          style={{ gap: 8, paddingRight: 11, borderRightColor: "rgba(214,182,111,.14)" }}
+        >
+          <img
+            src="/assets/hearts-crest.png?v=gold-crest-20260817-1945"
+            alt=""
+            style={{ width: 30, height: 32, filter: "drop-shadow(0 4px 9px rgba(0,0,0,.32))" }}
+          />
           <span>BOUNCE</span>
         </div>
         <div className="v2MobileContext">
