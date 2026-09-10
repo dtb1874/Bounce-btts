@@ -50,7 +50,7 @@ function calendarDayDifference(from: string, to: string) {
   const a = from.split("-").map(Number);
   const b = to.split("-").map(Number);
   if (a.length !== 3 || b.length !== 3 || a.some(Number.isNaN) || b.some(Number.isNaN)) return null;
-  return Math.round((Date.UTC(b[0], b[1] - 1, b[2], 12) - Date.UTC(a[0], a[1] - 1, b[2], 12) + (Date.UTC(a[0], a[1] - 1, a[2], 12) - Date.UTC(a[0], a[1] - 1, b[2], 12))) / 86_400_000);
+  return Math.round((Date.UTC(b[0], b[1] - 1, b[2], 12) - Date.UTC(a[0], a[1] - 1, a[2], 12)) / 86_400_000);
 }
 
 function shiftLondonInstant(iso: string | null, days: number) {
