@@ -14,6 +14,7 @@ type Props = {
   fixtures: Fixture[];
   predictions: Prediction[];
   alertsCount: number;
+  fixturesReady?: boolean;
 };
 
 function formatDate(value: string | null) {
@@ -29,12 +30,18 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixtures, predictions, alertsCount }: Props) {
+export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixtures, predictions, alertsCount, fixturesReady = true }: Props) {
   const activeMembers = profiles.filter((row) => row.active && row.role !== "guest");
   const eligibleFixtures = fixtures.filter((row) => row.is_eligible).length;
   const submitted = predictions.length;
   const outstanding = Math.max(0, activeMembers.length - submitted);
-  const healthy = alertsCount === 0 && Boolean(gameweek) && eligibleFixtures > 0;
+  const healthy = fixturesReady && alertsCount === 0 && Boolean(gameweek) && eligibleFixtures > 0;
+  const systemState = !fixturesReady ? "CHECKING" : healthy ? "READY" : alertsCount ? "ATTENTION" : "CHECK";
+  const systemDetail = !fixturesReady
+    ? "Confirming fixture cover for this gameweek"
+    : alertsCount
+      ? `${alertsCount} unresolved alert${alertsCount === 1 ? "" : "s"}`
+      : "No unresolved provider or gameweek alerts";
 
   return (
     <main className={styles.page}>
@@ -46,15 +53,15 @@ export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixture
         </div>
         <div className={styles.statusSignal}>
           <span>SYSTEM STATE</span>
-          <strong>{healthy ? "READY" : alertsCount ? "ATTENTION" : "CHECK"}</strong>
-          <small>{alertsCount ? `${alertsCount} unresolved alert${alertsCount === 1 ? "" : "s"}` : "No unresolved provider or gameweek alerts"}</small>
+          <strong>{systemState}</strong>
+          <small>{systemDetail}</small>
         </div>
       </header>
 
       <section className={styles.commandStrip}>
         <div><span>GAMEWEEK</span><strong>{gameweek ? `GW ${gameweek.number}` : "—"}</strong><small>{gameweek?.status ?? "No active week"}</small></div>
         <div><span>SUBMISSIONS</span><strong>{submitted}/{activeMembers.length}</strong><small>{outstanding ? `${outstanding} still to pick` : "Everyone is in"}</small></div>
-        <div><span>ELIGIBLE FIXTURES</span><strong>{eligibleFixtures}</strong><small>{fixtures.length} loaded</small></div>
+        <div><span>ELIGIBLE FIXTURES</span><strong>{fixturesReady ? eligibleFixtures : "…"}</strong><small>{fixturesReady ? `${fixtures.length} loaded` : "Checking fixture browser"}</small></div>
         <div><span>ALERTS</span><strong>{alertsCount}</strong><small>{alertsCount ? "Review required" : "Clear"}</small></div>
       </section>
 
@@ -79,13 +86,13 @@ export default function V2AdminCentre({ seasonLabel, gameweek, profiles, fixture
           </article>
           <article>
             <span>FIXTURE DATA</span>
-            <strong>{fixtures.length}</strong>
+            <strong>{fixturesReady ? fixtures.length : "…"}</strong>
             <p>Review eligible matches, provider imports and odds without mixing routine work with recovery tools.</p>
             <a href="/admin-controls">Manage fixtures →</a>
           </article>
           <article>
             <span>RESULTS</span>
-            <strong>{fixtures.filter((row) => ["FT", "AET", "PEN"].includes(row.status)).length}</strong>
+            <strong>{fixturesReady ? fixtures.filter((row) => ["FT", "AET", "PEN"].includes(row.status)).length : "…"}</strong>
             <p>Check settlement, scoring and manual corrections from one controlled workflow.</p>
             <a href="/admin-controls">Manage results →</a>
           </article>
