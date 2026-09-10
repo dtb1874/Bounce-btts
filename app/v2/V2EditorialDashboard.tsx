@@ -83,36 +83,43 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
   const live = picks.filter((row) => row.state.tone === "live").length;
   const missing = Math.max(0, activeMembers.length - submitted);
   const heroTitle = !gameweek
-    ? "The league, at a glance."
+    ? "Season at a glance"
     : isOpen && !myPrediction
-      ? "Your move."
+      ? "Your pick is waiting"
       : isOpen && myPrediction
-        ? "You’re in."
+        ? "You’re in"
         : gameweek.status === "complete"
-          ? "Week settled."
+          ? "Week settled"
           : live > 0
-            ? "Matchday is moving."
-            : "The picks are locked.";
+            ? "Matchday is moving"
+            : "Picks locked";
 
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.heroWash} aria-hidden="true" />
-        <div className={styles.heroCopy}>
-          <span className={styles.kicker}>BOUNCE BTTS · {seasonLabel}</span>
-          <h1>{heroTitle}</h1>
-          <p>
-            {gameweek ? `Gameweek ${gameweek.number}` : "Season overview"}
-            {gameweek?.locks_at ? ` · ${isOpen ? "Picks close" : "Deadline"} ${formatDate(gameweek.locks_at)}` : ""}
-          </p>
+        <div className={styles.brandBlock}>
+          <span className={styles.brandEyebrow}>EDINBURGH · EST. 2024</span>
+          <div className={styles.brandTitle} aria-label={`Bounce BTTS League ${seasonLabel}`}>
+            <strong>BOUNCE</strong>
+            <span>BTTS LEAGUE</span>
+          </div>
+          <div className={styles.seasonStamp}>{seasonLabel}</div>
+        </div>
+
+        <div className={styles.weekBrief}>
+          <span className={styles.weekLabel}>{gameweek ? `GAMEWEEK ${gameweek.number}` : "SEASON"}</span>
+          <h2>{heroTitle}</h2>
+          <p>{gameweek?.locks_at ? `${isOpen ? "Picks close" : "Deadline"} ${formatDate(gameweek.locks_at)}` : "Current league status"}</p>
           {isOpen ? (
             <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
           ) : (
             <button className={styles.textAction} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
           )}
         </div>
+      </section>
 
-        <div className={styles.selectionFeature}>
+      <section className={styles.selectionBand}>
+        <div>
           <span className={styles.selectionLabel}>YOUR SELECTION</span>
           {myFixture ? (
             <>
@@ -122,10 +129,6 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
                 <strong>{myFixture.away_team}</strong>
               </div>
               <div className={styles.fixtureMeta}>{myFixture.competition} · {formatDate(myFixture.kickoff_at)}</div>
-              <div className={`${styles.outcome} ${styles[outcome(myFixture, myPrediction).tone]}`}>
-                <b>{outcome(myFixture, myPrediction).label}</b>
-                <span>{outcome(myFixture, myPrediction).detail}</span>
-              </div>
             </>
           ) : (
             <div className={styles.noSelection}>
@@ -134,6 +137,12 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
             </div>
           )}
         </div>
+        {myFixture ? (
+          <div className={`${styles.outcome} ${styles[outcome(myFixture, myPrediction).tone]}`}>
+            <b>{outcome(myFixture, myPrediction).label}</b>
+            <span>{outcome(myFixture, myPrediction).detail}</span>
+          </div>
+        ) : null}
       </section>
 
       <section className={styles.pulse} aria-label="League snapshot">
