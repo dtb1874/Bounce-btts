@@ -67,11 +67,12 @@ if (source.includes(releaseRenderAnchor)) {
 // entry at build time only; no browser runtime code.
 const oldReleaseVersion = 'const RELEASE_VERSION = "1.6.3";';
 const oldReleaseDate = 'const RELEASE_DATE = "20 Aug 2026";';
-if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.13.1";');
-else if (source.includes('const RELEASE_VERSION = "1.13.0";')) source = source.replace('const RELEASE_VERSION = "1.13.0";', 'const RELEASE_VERSION = "1.13.1";');
-else if (source.includes('const RELEASE_VERSION = "1.12.1";')) source = source.replace('const RELEASE_VERSION = "1.12.1";', 'const RELEASE_VERSION = "1.13.1";');
-else if (source.includes('const RELEASE_VERSION = "1.12.0";')) source = source.replace('const RELEASE_VERSION = "1.12.0";', 'const RELEASE_VERSION = "1.13.1";');
-else if (!source.includes('const RELEASE_VERSION = "1.13.1";')) throw new Error("Could not align release version");
+if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.13.2";');
+else if (source.includes('const RELEASE_VERSION = "1.13.1";')) source = source.replace('const RELEASE_VERSION = "1.13.1";', 'const RELEASE_VERSION = "1.13.2";');
+else if (source.includes('const RELEASE_VERSION = "1.13.0";')) source = source.replace('const RELEASE_VERSION = "1.13.0";', 'const RELEASE_VERSION = "1.13.2";');
+else if (source.includes('const RELEASE_VERSION = "1.12.1";')) source = source.replace('const RELEASE_VERSION = "1.12.1";', 'const RELEASE_VERSION = "1.13.2";');
+else if (source.includes('const RELEASE_VERSION = "1.12.0";')) source = source.replace('const RELEASE_VERSION = "1.12.0";', 'const RELEASE_VERSION = "1.13.2";');
+else if (!source.includes('const RELEASE_VERSION = "1.13.2";')) throw new Error("Could not align release version");
 if (source.includes(oldReleaseDate)) source = source.replace(oldReleaseDate, 'const RELEASE_DATE = "10 Sep 2026";');
 else if (source.includes('const RELEASE_DATE = "7 Sep 2026";')) source = source.replace('const RELEASE_DATE = "7 Sep 2026";', 'const RELEASE_DATE = "10 Sep 2026";');
 else if (source.includes('const RELEASE_DATE = "5 Sep 2026";')) source = source.replace('const RELEASE_DATE = "5 Sep 2026";', 'const RELEASE_DATE = "10 Sep 2026";');
