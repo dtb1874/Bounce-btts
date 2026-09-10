@@ -78,16 +78,16 @@ export default async function V2PreviewPage() {
     gameweeks[0] ??
     null;
 
-  const fixturesPromise = gameweekIds.length
-    ? supabase.from("fixtures").select("*").in("gameweek_id", gameweekIds).order("kickoff_at")
-    : Promise.resolve({ data: [] as any[] });
-
   const predictionsPromise = gameweekIds.length
     ? supabase
         .from("predictions")
         .select("id,gameweek_id,member_id,fixture_id,points_awarded,created_at,updated_at")
         .in("gameweek_id", gameweekIds)
     : Promise.resolve({ data: [] as PredictionRow[] });
+
+  const fixturesPromise = gameweekIds.length
+    ? supabase.from("fixtures").select("*").in("gameweek_id", gameweekIds).order("kickoff_at")
+    : Promise.resolve({ data: [] as any[] });
 
   const adjustmentsPromise = gameweekIds.length
     ? supabase
@@ -102,14 +102,29 @@ export default async function V2PreviewPage() {
     adjustmentsPromise,
   ]);
 
+  const baseFixtures = fixturesResponse.data ?? [];
+  const predictions = (predictionsResponse.data ?? []) as PredictionRow[];
+  const loadedFixtureIds = new Set(baseFixtures.map((fixture: { id: string }) => fixture.id));
+  const missingPredictionFixtureIds = Array.from(new Set(
+    predictions.map((prediction) => prediction.fixture_id).filter((id) => id && !loadedFixtureIds.has(id))
+  ));
+
+  const referencedFixturesResponse = missingPredictionFixtureIds.length
+    ? await supabase.from("fixtures").select("*").in("id", missingPredictionFixtureIds).order("kickoff_at")
+    : { data: [] as any[] };
+
+  const fixtureMap = new Map<string, any>();
+  for (const fixture of [...baseFixtures, ...(referencedFixturesResponse.data ?? [])]) fixtureMap.set(fixture.id, fixture);
+  const fixtures = Array.from(fixtureMap.values()).sort((a, b) => String(a.kickoff_at).localeCompare(String(b.kickoff_at)));
+
   return (
     <V2PreviewClient
       profile={profile as ProfileRow}
       profiles={(profilesResponse.data ?? []) as ProfileRow[]}
       gameweeks={gameweeks}
       currentGameweekId={currentGameweek?.id ?? null}
-      fixtures={fixturesResponse.data ?? []}
-      predictions={(predictionsResponse.data ?? []) as PredictionRow[]}
+      fixtures={fixtures}
+      predictions={predictions}
       adjustments={(adjustmentsResponse.data ?? []) as ScoreAdjustmentRow[]}
       seasonLabel={currentSeason?.label ?? settings?.current_season_label ?? "2026/27"}
       entryFee={Number(settings?.entry_fee ?? 20)}
