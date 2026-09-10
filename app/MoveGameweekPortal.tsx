@@ -5,9 +5,8 @@ import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { addUtcCalendarDays, isoDate, londonLocalToUtc, londonParts } from "@/lib/london-time";
 
-type Gameweek = {
-  id: string;
-  number: number;
+type GameweekRef = { id: string; number: number };
+type Gameweek = GameweekRef & {
   status: "open" | "locked" | "complete";
   opens_at: string | null;
   locks_at: string;
@@ -71,9 +70,10 @@ function displayDate(value: string) {
   }).format(new Date(Date.UTC(year, month - 1, day, 12)));
 }
 
-export default function MoveGameweekPortal({ gameweeks }: { gameweeks: Gameweek[] }) {
+export default function MoveGameweekPortal({ gameweeks }: { gameweeks: GameweekRef[] }) {
   const [target, setTarget] = useState<Element | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [gameweek, setGameweek] = useState<Gameweek | null>(null);
   const [newDate, setNewDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -90,13 +90,25 @@ export default function MoveGameweekPortal({ gameweeks }: { gameweeks: Gameweek[
     return () => observer.disconnect();
   }, []);
 
-  const gameweek = useMemo(() => gameweeks.find((gw) => gw.number === selectedNumber) ?? null, [gameweeks, selectedNumber]);
-  const currentDate = useMemo(() => fixtureDateForGameweek(gameweek), [gameweek]);
+  const selectedRef = useMemo(() => gameweeks.find((gw) => gw.number === selectedNumber) ?? null, [gameweeks, selectedNumber]);
 
   useEffect(() => {
-    setNewDate(currentDate);
-    setMessage("");
-  }, [gameweek?.id, currentDate]);
+    let cancelled = false;
+    async function load() {
+      if (!selectedRef) { setGameweek(null); return; }
+      const { data } = await createClient()
+        .from("gameweeks")
+        .select("id,number,status,opens_at,locks_at,selection_rule_mode,selection_weekday,selection_time,one_off_rule")
+        .eq("id", selectedRef.id)
+        .maybeSingle();
+      if (!cancelled) setGameweek((data as Gameweek | null) ?? null);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [selectedRef?.id]);
+
+  const currentDate = useMemo(() => fixtureDateForGameweek(gameweek), [gameweek]);
+  useEffect(() => { setNewDate(currentDate); setMessage(""); }, [gameweek?.id, currentDate]);
 
   if (!target || !gameweek) return null;
 
@@ -113,16 +125,15 @@ export default function MoveGameweekPortal({ gameweeks }: { gameweeks: Gameweek[
 
     const days = calendarDayDifference(currentDate, newDate);
     if (days == null || days === 0) return setMessage("Choose a different valid date.");
-
     const locksAt = shiftLondonInstant(gameweek.locks_at, days);
     const opensAt = shiftLondonInstant(gameweek.opens_at, days);
     if (!locksAt) return setMessage("The current deadline could not be read.");
 
-    const laterNormal = gameweeks.filter((gw) => gw.number > gameweek.number && !gw.one_off_rule).length;
+    const later = gameweeks.filter((gw) => gw.number > gameweek.number).length;
     const direction = days > 0 ? `forward ${days} day${days === 1 ? "" : "s"}` : `back ${Math.abs(days)} day${days === -1 ? "" : "s"}`;
     if (!window.confirm(
       `Move GW${gameweek.number} from ${displayDate(currentDate)} to ${displayDate(newDate)}?\n\n` +
-      `Its opening and deadline will move ${direction}. ${laterNormal} later normal gameweek${laterNormal === 1 ? "" : "s"} will shift by the same amount automatically. Existing gameweek IDs, fixtures, selections and results are preserved.`,
+      `Its opening and deadline will move ${direction}. Up to ${later} later gameweek${later === 1 ? "" : "s"} will be considered by the existing propagation rule; one-off rounds remain fixed. Existing gameweek IDs, fixtures, selections and results are preserved.`,
     )) return;
 
     setBusy(true);
@@ -156,7 +167,7 @@ export default function MoveGameweekPortal({ gameweeks }: { gameweeks: Gameweek[
     <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid rgba(112,66,77,.55)" }}>
       <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: "#d9b85f", marginBottom: 8 }}>MOVE GAMEWEEK DATE</div>
       <p style={{ margin: "0 0 12px", color: "#cbbfc4", lineHeight: 1.45 }}>
-        Move GW {gameweek.number} to another {(["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])[gameweek.selection_weekday ?? 6]}. Its opening and deadline move with it, and every later normal gameweek shifts by the same number of days.
+        Move GW {gameweek.number} to another {(["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])[gameweek.selection_weekday ?? 6]}. Its opening and deadline move with it, and later normal gameweeks shift by the same amount.
       </p>
       <div style={{ display: "grid", gap: 10 }}>
         <div style={{ color: "#bcaeb4", fontSize: 13 }}>Current fixture date: <strong style={{ color: "#f4e5d6" }}>{displayDate(currentDate)}</strong></div>
