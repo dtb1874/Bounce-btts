@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fixtureDateForGameweek } from "@/lib/gameweek-rules";
 import {
-  FIXTURE_ALERT_WINDOW_DAYS,
+  FIXTURE_HEALTH_ALERT_DAYS,
   FIXTURE_IMPORT_LOOKBACK_DAYS,
-  fixtureAlertUpperMs,
-  recentImportCutoffIso,
-} from "@/lib/fixture-schedule-policy";
+  fixtureDateWithinDays,
+  recentFixtureImportCutoffIso,
+} from "@/lib/fixture-import-policy";
 
 const ALERT_TYPE = "gameweek_fixture_availability";
 const WARNING_THRESHOLD = 12;
@@ -13,8 +13,6 @@ const WARNING_THRESHOLD = 12;
 export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
   const now = new Date();
   const nowMs = now.getTime();
-  const upper = fixtureAlertUpperMs(nowMs);
-  const lower = nowMs - FIXTURE_IMPORT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
   const { data: season } = await admin.from("seasons").select("id").eq("is_current", true).maybeSingle();
   if (!season?.id) return { checked: 0, deferred: 0, alertsCreated: 0, alertsResolved: 0 };
@@ -30,7 +28,7 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
       .from("fixture_import_runs")
       .select("completed_at,status,details")
       .in("status", ["success", "partial"])
-      .gte("completed_at", recentImportCutoffIso(nowMs))
+      .gte("completed_at", recentFixtureImportCutoffIso(nowMs))
       .order("completed_at", { ascending: false })
       .limit(12),
   ]);
@@ -52,8 +50,7 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
 
   for (const gameweek of gameweeks ?? []) {
     const fixtureDate = fixtureDateForGameweek(gameweek as any);
-    const fixtureDay = Date.parse(`${fixtureDate}T12:00:00Z`);
-    if (!Number.isFinite(fixtureDay) || fixtureDay < lower || fixtureDay > upper) continue;
+    if (!fixtureDateWithinDays(fixtureDate, nowMs, FIXTURE_HEALTH_ALERT_DAYS, FIXTURE_IMPORT_LOOKBACK_DAYS)) continue;
 
     const { data: existing } = await admin
       .from("admin_alerts")
@@ -64,9 +61,9 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
       .limit(1)
       .maybeSingle();
 
-    // Fixture availability is only meaningful after the provider importer has
-    // attempted this exact fixture date recently. An empty fixtures table before
-    // preload is a data-not-loaded state, not evidence that no eligible games exist.
+    // Availability is only meaningful after the provider importer has attempted
+    // this exact fixture date recently. An empty fixtures table before preload is
+    // a data-not-loaded state, not evidence that no eligible games exist.
     if (!attemptedDates.has(fixtureDate)) {
       deferred += 1;
       if (existing?.id) {
@@ -103,7 +100,7 @@ export async function checkGameweekFixtureHealth(admin: SupabaseClient) {
     const details = {
       eligibleCount,
       threshold: WARNING_THRESHOLD,
-      alertWindowDays: FIXTURE_ALERT_WINDOW_DAYS,
+      alertWindowDays: FIXTURE_HEALTH_ALERT_DAYS,
       fixtureDate,
       providerDateAttempted: true,
       latestImportCompletedAt,
