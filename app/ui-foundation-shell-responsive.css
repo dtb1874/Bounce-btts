@@ -1,179 +1,596 @@
-/* Authenticated shell responsive ownership.
-   Stable semantic selectors only: no generated CSS-module substring dependencies. */
+/* Bounce 2.0 authenticated shell ownership.
+   Stable semantic hooks only. No generated CSS-module substring matching. */
+
+.uiFoundationShell.v2ShellFrame {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 84% -4%, rgba(111, 33, 58, .14), transparent 31rem),
+    linear-gradient(145deg, var(--ui-bg-deep) 0%, var(--ui-bg) 58%, #100a0e 100%);
+  color: var(--ui-text);
+  font-family: var(--ui-font-sans);
+}
+
+.v2Sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--ui-sidebar-width);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid rgba(214, 182, 111, .11);
+  background:
+    linear-gradient(180deg, rgba(9, 9, 13, .985), rgba(17, 10, 14, .985)),
+    radial-gradient(circle at 25% 12%, rgba(116, 31, 55, .18), transparent 20rem);
+  box-shadow: 16px 0 54px rgba(0, 0, 0, .18);
+}
+
+.v2Sidebar::after {
+  content: "";
+  position: absolute;
+  left: -42px;
+  right: -42px;
+  bottom: 76px;
+  height: 220px;
+  pointer-events: none;
+  opacity: .035;
+  background: url("/assets/st-giles-round.jpg") center / 190px auto no-repeat;
+  filter: grayscale(.2);
+}
+
+.v2SidebarBrand {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 2px 20px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.v2SidebarBrand img {
+  width: 46px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .38));
+}
+
+.v2SidebarBrand strong,
+.v2SidebarBrand span,
+.v2SidebarBrand small {
+  display: block;
+}
+
+.v2SidebarBrand strong {
+  color: var(--ui-text-warm);
+  font: 700 1.18rem/1 var(--ui-font-display);
+  letter-spacing: .09em;
+}
+
+.v2SidebarBrand span {
+  margin-top: 4px;
+  color: #cdbda8;
+  font: 700 .62rem/1.1 var(--ui-font-display);
+  letter-spacing: .17em;
+}
+
+.v2SidebarBrand small {
+  margin-top: 5px;
+  color: var(--ui-text-faint);
+  font-size: .52rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.v2SidebarClose {
+  display: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: 1.55rem;
+}
+
+.v2MemberIdentity {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 17px 2px 14px;
+}
+
+.v2MemberIdentity .uiFoundationSidebarPortrait {
+  position: relative !important;
+  inset: auto !important;
+  width: 42px !important;
+  height: 42px !important;
+  display: grid !important;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(214, 182, 111, .62);
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 28%, rgba(119, 36, 62, .98), rgba(26, 14, 19, .98) 72%);
+  box-shadow: none !important;
+}
+
+.v2MemberIdentity .mobileSidebarPortraitImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.v2MemberIdentity .mobileSidebarPortraitInitials {
+  color: var(--ui-text-warm);
+  font-size: .9rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.v2MemberIdentity > div > strong,
+.v2MemberIdentity > div > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2MemberIdentity > div > strong {
+  color: var(--ui-text);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.v2MemberIdentity > div > span {
+  margin-top: 3px;
+  color: var(--ui-text-muted);
+  font-size: .68rem;
+}
+
+.v2Nav {
+  position: relative;
+  z-index: 2;
+  display: flex !important;
+  flex-direction: column;
+  gap: 16px !important;
+  padding: 4px 0 0 !important;
+}
+
+.v2NavSection {
+  display: grid;
+  gap: 3px;
+}
+
+.v2NavSectionExplore,
+.v2NavSectionAdmin {
+  padding-top: 14px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.v2NavSectionLabel {
+  padding: 0 10px 7px !important;
+  color: #8f837a !important;
+  font-size: .54rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase;
+}
+
+.v2NavItem {
+  position: relative;
+  width: 100%;
+  min-height: 42px;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: var(--ui-radius-sm) !important;
+  background: transparent !important;
+  color: #c9c2bb !important;
+  text-align: left;
+  transition:
+    background var(--ui-duration-fast) var(--ui-ease-standard),
+    color var(--ui-duration-fast) var(--ui-ease-standard),
+    transform var(--ui-duration-fast) var(--ui-ease-standard);
+}
+
+.v2NavItem:hover {
+  background: rgba(255, 255, 255, .035) !important;
+  color: var(--ui-text) !important;
+}
+
+.v2NavItemActive {
+  background: linear-gradient(90deg, rgba(112, 34, 58, .36), rgba(112, 34, 58, .08)) !important;
+  color: var(--ui-text) !important;
+}
+
+.v2NavItemActive::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 2px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-gold);
+}
+
+.v2NavIcon {
+  display: grid;
+  place-items: center;
+  color: #968b83;
+  font-size: .9rem;
+}
+
+.v2NavItemActive .v2NavIcon {
+  color: var(--ui-gold-bright);
+}
+
+.v2NavText,
+.v2NavText > span,
+.v2NavHelper {
+  display: block;
+  min-width: 0;
+}
+
+.v2NavText > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.v2NavHelper {
+  margin-top: 2px;
+  color: var(--ui-text-faint) !important;
+  font-size: .57rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+}
+
+.v2NavBadge {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-gold);
+  color: #2b151c;
+  font-size: .58rem;
+  font-weight: 900;
+}
+
+.v2SidebarEgg {
+  position: relative;
+  z-index: 2;
+  width: 100% !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 2px 0 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  opacity: .01;
+}
+
+.v2SidebarEgg:focus-visible {
+  opacity: .18;
+  outline: 1px dashed rgba(214, 182, 111, .35);
+}
+
+.v2SignOut {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 9px;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-text-muted);
+  text-align: left;
+}
+
+.v2SignOut:hover {
+  color: var(--ui-text);
+}
+
+.v2SignOutInitials {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ui-maroon-soft);
+  color: var(--ui-text-warm);
+  font-size: .65rem;
+  font-weight: 900;
+}
+
+.v2SignOutCopy strong,
+.v2SignOutCopy small {
+  display: block;
+}
+
+.v2SignOutCopy strong {
+  color: inherit;
+  font-size: .72rem;
+}
+
+.v2SignOutCopy small {
+  margin-top: 2px;
+  color: var(--ui-text-faint);
+  font-size: .58rem;
+}
+
+.v2Main {
+  min-height: 100dvh;
+  margin-left: var(--ui-sidebar-width) !important;
+}
+
+.v2MobileTopbar,
+.v2BottomNav {
+  display: none;
+}
+
+.v2Scrim {
+  display: none;
+}
 
 @media (max-width: 900px) {
-  .uiFoundationSidebar {
-    width: min(86vw, 330px) !important;
-    padding: 18px 14px 14px !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+  .v2Sidebar {
+    inset: 0 auto 0 0 !important;
+    width: min(88vw, 356px) !important;
+    height: 100dvh !important;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom)) !important;
+    transform: translateX(-102%);
+    transition: transform var(--ui-duration-standard) var(--ui-ease-standard) !important;
+    z-index: 90 !important;
+    box-shadow: var(--ui-shadow-overlay);
   }
 
-  .mobileSidebarPortraitHost {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
+  .v2SidebarOpen {
+    transform: translateX(0) !important;
+  }
+
+  .v2SidebarClose {
+    display: grid;
+  }
+
+  .v2Nav {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 14px !important;
+  }
+
+  .v2NavSection {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 3px !important;
+  }
+
+  .v2NavItem {
+    min-height: 44px !important;
+    padding: 9px 10px !important;
+    border: 0 !important;
+    background: transparent !important;
+    font-size: inherit !important;
+  }
+
+  .v2NavItemActive {
+    background: linear-gradient(90deg, rgba(112, 34, 58, .42), rgba(112, 34, 58, .10)) !important;
+  }
+
+  .v2Main {
+    margin-left: 0 !important;
+    padding-top: var(--ui-mobile-topbar-height);
+    padding-bottom: calc(var(--ui-mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .v2MobileTopbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 60;
+    height: var(--ui-mobile-topbar-height);
+    display: grid;
+    grid-template-columns: 42px auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: env(safe-area-inset-top) 14px 0;
+    border-bottom: 1px solid var(--ui-border);
+    background: rgba(8, 8, 12, .86);
+    backdrop-filter: blur(18px) saturate(1.1);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  }
+
+  .v2MobileMenuButton {
+    position: static !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: grid !important;
     place-items: center;
-    overflow: hidden;
-    z-index: 3;
-    background: radial-gradient(circle at 35% 28%, rgba(104, 31, 52, .95), rgba(23, 13, 18, .98) 72%);
-    border: 2px solid rgba(216, 183, 111, .9);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(92, 25, 43, .36);
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, .035) !important;
+    color: var(--ui-text) !important;
+    font-size: 1rem;
   }
 
-  .mobileSidebarPortraitImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .v2MobileBrand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 9px;
+    border-right: 1px solid var(--ui-border);
+  }
+
+  .v2MobileBrand img {
+    width: 25px;
+    height: 27px;
+    object-fit: contain;
+  }
+
+  .v2MobileBrand span {
+    color: var(--ui-text-warm);
+    font: 700 .72rem/1 var(--ui-font-display);
+    letter-spacing: .08em;
+  }
+
+  .v2MobileContext {
+    min-width: 0;
+    text-align: right;
+  }
+
+  .v2MobileContext small,
+  .v2MobileContext strong {
     display: block;
   }
 
-  .mobileSidebarPortraitInitials {
-    color: #f4e8dd;
-    font: 900 24px/1 Arial, sans-serif;
-    letter-spacing: .04em;
+  .v2MobileContext small {
+    color: var(--ui-text-faint);
+    font-size: .48rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
 
-  .uiFoundationNav {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px !important;
+  .v2MobileContext strong {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--ui-text);
+    font-size: .72rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .uiFoundationNavItem {
-    min-height: 46px;
-    padding: 10px !important;
-    font-size: 12px;
-    line-height: 1.2;
-    border: 1px solid rgba(199, 175, 149, .12) !important;
-    background: rgba(24, 18, 22, .72) !important;
-  }
-
-  .uiFoundationSidebarEgg {
-    min-height: 64px !important;
-    height: 64px !important;
-    margin: 6px -8px 8px !important;
-    width: calc(100% + 16px) !important;
-  }
-}
-
-@media (max-width: 560px) {
-  .uiFoundationSidebar {
-    width: min(90vw, 318px) !important;
-  }
-
-  .mobileSidebarPortraitHost {
-    width: 66px;
-    height: 66px;
-    right: 14px;
-  }
-
-  .uiFoundationNavItem {
-    min-height: 44px;
-    font-size: 11.5px;
-  }
-}
-
-@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
-  .uiFoundationSidebar {
-    position: fixed !important;
-    inset: 0 auto 0 0 !important;
-    transform: translateX(-100%) !important;
-    transition: transform .18s ease !important;
-    z-index: 30 !important;
-    width: 340px !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    box-sizing: border-box;
-    padding: 18px 14px max(14px, env(safe-area-inset-bottom)) !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .uiFoundationSidebarOpen {
-    transform: none !important;
-  }
-
-  .uiFoundationMain {
-    margin-left: 0 !important;
-  }
-
-  .uiFoundationMobileMenu {
-    display: block !important;
-    position: fixed !important;
-    top: 12px !important;
-    left: 12px !important;
-    z-index: 50 !important;
-    border: 1px solid #65414b !important;
-    background: #120f14 !important;
-    color: #fff !important;
-    border-radius: 9px !important;
-    padding: 9px 11px !important;
-  }
-
-  .uiFoundationScrim {
-    display: block !important;
+  .v2Scrim {
     position: fixed !important;
     inset: 0 !important;
-    background: rgba(0, 0, 0, .56) !important;
-    z-index: 25 !important;
+    z-index: 80 !important;
+    display: block !important;
     border: 0 !important;
+    background: rgba(0, 0, 0, .62) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 
-  .mobileSidebarPortraitHost {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    place-items: center;
-    overflow: hidden;
-    z-index: 3;
-    background: radial-gradient(circle at 35% 28%, rgba(104, 31, 52, .95), rgba(23, 13, 18, .98) 72%);
-    border: 2px solid rgba(216, 183, 111, .9);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(92, 25, 43, .36);
+  .v2BottomNav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 65;
+    min-height: calc(var(--ui-mobile-nav-height) + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: start;
+    padding: 7px 6px max(6px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--ui-border);
+    background: rgba(8, 8, 12, .93);
+    backdrop-filter: blur(18px) saturate(1.1);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
   }
 
-  .mobileSidebarPortraitImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  .v2BottomNav .v2NavItem {
+    min-height: 49px !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center;
+    gap: 3px;
+    padding: 5px 2px !important;
+    border-radius: var(--ui-radius-sm) !important;
+    text-align: center;
   }
 
-  .mobileSidebarPortraitInitials {
-    color: #f4e8dd;
-    font: 900 24px/1 Arial, sans-serif;
-    letter-spacing: .04em;
+  .v2BottomNav .v2NavItemActive {
+    background: rgba(112, 34, 58, .26) !important;
   }
 
-  .uiFoundationNav {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px !important;
+  .v2BottomNav .v2NavItemActive::before {
+    left: 50%;
+    top: 0;
+    bottom: auto;
+    width: 20px;
+    height: 2px;
+    transform: translateX(-50%);
   }
 
-  .uiFoundationNavItem {
-    min-height: 46px;
-    padding: 10px !important;
-    font-size: 12px;
-    line-height: 1.2;
-    border: 1px solid rgba(199, 175, 149, .12) !important;
-    background: rgba(24, 18, 22, .72) !important;
+  .v2BottomNav .v2NavIcon {
+    font-size: .84rem;
   }
 
-  .uiFoundationSidebarEgg {
-    min-height: 64px !important;
-    height: 64px !important;
-    max-height: 64px !important;
-    margin: 6px -8px 8px !important;
-    width: calc(100% + 16px) !important;
-    overflow: hidden !important;
+  .v2BottomNav .v2NavText > span {
+    max-width: 100%;
+    font-size: .52rem;
+    font-weight: 800;
+  }
+
+  .v2MoreButton {
+    color: #b8afa7 !important;
+  }
+
+  .v2MemberIdentity {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 430px) {
+  :root {
+    --ui-mobile-topbar-height: 58px;
+    --ui-mobile-nav-height: 64px;
+  }
+
+  .v2MobileTopbar {
+    grid-template-columns: 38px auto minmax(0, 1fr);
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .v2MobileMenuButton {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .v2MobileBrand span {
+    display: none;
+  }
+
+  .v2MobileBrand {
+    padding-right: 8px;
+  }
+
+  .v2BottomNav {
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+
+  .v2BottomNav .v2NavText > span {
+    font-size: .49rem;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  :root {
+    --ui-sidebar-width: 214px;
+  }
+
+  .v2Sidebar {
+    padding-left: 13px;
+    padding-right: 13px;
   }
 }
