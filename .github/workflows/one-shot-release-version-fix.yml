@@ -1,0 +1,34 @@
+name: One-shot release version fix
+
+on:
+  push:
+    branches: [fix/fixture-browser-follows-gameweek]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, '[release-version-patch]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/fixture-browser-follows-gameweek
+      - name: Align release version
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('scripts/apply-reminder-history.mjs')
+          text=path.read_text()
+          start=text.index("if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion")
+          end=text.index("if (source.includes(oldReleaseDate))", start)
+          replacement='''if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.13.2";');\nelse if (source.includes('const RELEASE_VERSION = "1.13.1";')) source = source.replace('const RELEASE_VERSION = "1.13.1";', 'const RELEASE_VERSION = "1.13.2";');\nelse if (source.includes('const RELEASE_VERSION = "1.13.0";')) source = source.replace('const RELEASE_VERSION = "1.13.0";', 'const RELEASE_VERSION = "1.13.2";');\nelse if (source.includes('const RELEASE_VERSION = "1.12.1";')) source = source.replace('const RELEASE_VERSION = "1.12.1";', 'const RELEASE_VERSION = "1.13.2";');\nelse if (source.includes('const RELEASE_VERSION = "1.12.0";')) source = source.replace('const RELEASE_VERSION = "1.12.0";', 'const RELEASE_VERSION = "1.13.2";');\nelse if (!source.includes('const RELEASE_VERSION = "1.13.2";')) throw new Error("Could not align release version");\n'''
+          path.write_text(text[:start]+replacement+text[end:])
+          PY
+          git config user.name "dtb1874"
+          git config user.email "dtb1874@gmail.com"
+          git add scripts/apply-reminder-history.mjs
+          git commit -m "Align v1.13.2 release metadata"
+          git push origin HEAD:fix/fixture-browser-follows-gameweek
