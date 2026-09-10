@@ -1,0 +1,1 @@
+Phase 3 visual reset candidate pending CI and Vercel validation.
