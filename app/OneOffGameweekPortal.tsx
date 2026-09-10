@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
-import { addUtcCalendarDays, isoDate, londonLocalToUtc, londonParts } from "@/lib/london-time";
+import { fixtureDateForGameweek } from "@/lib/gameweek-rules";
+import { addUtcCalendarDays, londonLocalToUtc, londonParts } from "@/lib/london-time";
 
 type Gameweek = {
   id: string;
@@ -40,16 +41,6 @@ function isoWeekday(year: number, month: number, day: number) {
   return value === 0 ? 7 : value;
 }
 
-function fixtureDateForGameweek(gameweek: Gameweek | null) {
-  if (!gameweek?.locks_at) return "";
-  const lock = londonParts(new Date(gameweek.locks_at));
-  const currentWeekday = isoWeekday(lock.year, lock.month, lock.day);
-  const targetWeekday = gameweek.selection_weekday ?? 6;
-  const daysAhead = (targetWeekday - currentWeekday + 7) % 7;
-  const date = addUtcCalendarDays(lock.year, lock.month, lock.day, daysAhead);
-  return isoDate(date.year, date.month, date.day);
-}
-
 function weekdayForIsoDate(value: string) {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? isoWeekday(Number(match[1]), Number(match[2]), Number(match[3])) : null;
@@ -59,7 +50,7 @@ function calendarDayDifference(from: string, to: string) {
   const a = from.split("-").map(Number);
   const b = to.split("-").map(Number);
   if (a.length !== 3 || b.length !== 3 || a.some(Number.isNaN) || b.some(Number.isNaN)) return null;
-  return Math.round((Date.UTC(b[0], b[1] - 1, b[2], 12) - Date.UTC(a[0], a[1] - 1, a[2], 12)) / 86_400_000);
+  return Math.round((Date.UTC(b[0], b[1] - 1, b[2], 12) - Date.UTC(a[0], a[1] - 1, b[2], 12) + (Date.UTC(a[0], a[1] - 1, a[2], 12) - Date.UTC(a[0], a[1] - 1, b[2], 12))) / 86_400_000);
 }
 
 function shiftLondonInstant(iso: string | null, days: number) {
@@ -102,7 +93,7 @@ export default function OneOffGameweekPortal({ gameweeks }: { gameweeks: Gamewee
   }, []);
 
   const anchor = useMemo(() => gameweeks.find((gw) => gw.number === anchorNumber) ?? null, [gameweeks, anchorNumber]);
-  const currentDate = useMemo(() => fixtureDateForGameweek(anchor), [anchor]);
+  const currentDate = useMemo(() => anchor ? fixtureDateForGameweek(anchor) : "", [anchor]);
   useEffect(() => { setNewDate(currentDate); setMessage(""); }, [anchor?.id, currentDate]);
 
   if (!target || !anchor) return null;
