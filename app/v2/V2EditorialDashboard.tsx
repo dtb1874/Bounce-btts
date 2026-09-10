@@ -81,6 +81,14 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
     return () => { cancelled = true; };
   }, []);
 
+  function clearPortrait(id: string) {
+    setPortraits((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+
   const picks = useMemo(() => activeMembers.map((profile) => {
     const prediction = predictions.find((row) => row.member_id === profile.id);
     const fixture = fixtures.find((row) => row.id === prediction?.fixture_id);
@@ -166,7 +174,7 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
             return (
               <article className={styles.pickRow} key={profile.id}>
                 <div className={styles.memberMark}>
-                  {portrait ? <img src={portrait} alt="" onError={() => setPortraits((current) => { const next = { ...current }; delete next[profile.id]; return next; })} /> : <span>{profile.display_name.slice(0, 1).toUpperCase()}</span>}
+                  {portrait ? <img src={portrait} alt="" onError={() => clearPortrait(profile.id)} /> : <span>{profile.display_name.slice(0, 1).toUpperCase()}</span>}
                 </div>
                 <div className={styles.pickContent}>
                   <div className={styles.pickTop}><strong>{profile.display_name}</strong><span className={selected ? styles.selectedState : styles.waitingState}>{selected ? "SELECTED" : "WAITING PICK"}</span></div>
@@ -187,11 +195,19 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
         </header>
         <div className={styles.tableHead}><span>Pos</span><span>Player</span><span>W</span><span>S-N</span><span>0–0</span><span>Pts</span></div>
         <div className={styles.tableBody}>
-          {standings.slice(0, 8).map((row, index) => (
-            <div className={`${styles.tableRow} ${row.id === myId ? styles.me : ""}`} key={row.id}>
-              <span className={styles.position}>{String(index + 1).padStart(2, "0")}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
-            </div>
-          ))}
+          {standings.slice(0, 8).map((row, index) => {
+            const portrait = portraits[row.id];
+            return (
+              <div className={`${styles.tableRow} ${row.id === myId ? styles.me : ""}`} key={row.id}>
+                <span className={styles.position}>{String(index + 1).padStart(2, "0")}</span>
+                <span className={styles.tablePlayer}>
+                  <span className={styles.tableAvatar}>{portrait ? <img src={portrait} alt="" onError={() => clearPortrait(row.id)} /> : row.name.slice(0, 1).toUpperCase()}</span>
+                  <strong>{row.name}</strong>
+                </span>
+                <span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
+              </div>
+            );
+          })}
         </div>
       </section>
 
