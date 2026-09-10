@@ -1,0 +1,103 @@
+name: V2 integration guardrails
+
+on:
+  pull_request:
+    branches: [v2/product-redesign]
+  push:
+    branches: [v2/product-redesign]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Protect canonical V2 architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -n -E 'new MutationObserver\(|document\.createElement\(' app/ui/AuthenticatedShellFrame.tsx; then
+            echo "The V2 authenticated shell must remain declarative."
+            exit 1
+          fi
+          if grep -n '\[class\*=' app/ui-foundation-shell-responsive.css; then
+            echo "V2 shell CSS must use stable semantic hooks, not generated CSS-module substring selectors."
+            exit 1
+          fi
+          grep -q 'data-ui-foundation-shell="declarative"' app/ui/AuthenticatedShellFrame.tsx
+          grep -q 'data-v2-shell="true"' app/ui/AuthenticatedShellFrame.tsx
+          for hook in uiFoundationShell uiFoundationSidebar uiFoundationSidebarOpen uiFoundationMobileMenu uiFoundationScrim uiFoundationMain; do
+            grep -q "$hook" app/ui/AuthenticatedShellFrame.tsx
+          done
+          test -f docs/v2/MASTER_BLUEPRINT.md
+          test -f docs/v2/FEATURE_PARITY_MATRIX.md
+          test -f docs/v2/DESIGN_CONTRACT.md
+          test -f docs/v2/VISUAL_ARCHITECTURE.md
+
+      - name: Protect card-light design contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'Cards are emphasis components' docs/v2/DESIGN_CONTRACT.md
+          grep -q 'Cards are emphasis components' docs/v2/MASTER_BLUEPRINT.md
+          if grep -R -n -E 'v2(CardGrid|CardsGrid|DashboardCards|StatCards)' app 2>/dev/null; then
+            echo "A V2 card-grid pattern was introduced; review against the card-light design contract."
+            exit 1
+          fi
+
+      - name: Production build
+        run: npm run build
+
+      - name: Ensure build is source-clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Build modified tracked repository files"
+            git status --short --untracked-files=no
+            exit 1
+          fi
+
+      - name: Install Playwright test runner for CI only
+        run: npm install --no-save --ignore-scripts @playwright/test@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start CI auth mock and production server
+        shell: bash
+        run: |
+          node -e 'const http=require("http");http.createServer((req,res)=>{res.writeHead(401,{"content-type":"application/json"});res.end(JSON.stringify({message:"CI unauthenticated"}));}).listen(54321,"127.0.0.1");' > /tmp/bounce-auth-mock.log 2>&1 &
+          npm start > /tmp/bounce-next.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/bounce-auth-mock.log
+          cat /tmp/bounce-next.log
+          exit 1
+
+      - name: Browser hydration smoke test
+        run: npx playwright test tests/hydration-smoke.spec.js --reporter=line
+
+      - name: Existing UI foundation shell contract
+        run: npx playwright test tests/ui-foundation-shell.spec.js --reporter=line

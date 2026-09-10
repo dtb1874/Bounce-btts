@@ -1,17 +1,27 @@
 :root {
-  /* UI Foundation aliases: additive only. Existing styles remain the source of truth
-     until each surface is migrated and visually verified. */
-  --ui-bg: var(--bg);
-  --ui-surface: var(--surface);
-  --ui-surface-raised: var(--surface-2);
-  --ui-border: var(--line);
-  --ui-maroon: var(--maroon);
-  --ui-maroon-strong: var(--maroon-2);
-  --ui-maroon-soft: var(--maroon-soft);
-  --ui-text: #f3f1ed;
-  --ui-text-warm: var(--cream);
-  --ui-text-muted: var(--muted);
-  --ui-success: var(--green);
+  /* Bounce 2.0 shared visual foundation. Business/data behaviour is deliberately
+     outside this layer; these tokens describe presentation and interaction only. */
+  --ui-bg: #09090d;
+  --ui-bg-deep: #06070a;
+  --ui-surface: #101116;
+  --ui-surface-raised: #15151b;
+  --ui-surface-soft: #19151a;
+  --ui-surface-maroon: #211218;
+  --ui-border: rgba(226, 214, 202, .10);
+  --ui-border-strong: rgba(226, 214, 202, .18);
+  --ui-maroon: #641f35;
+  --ui-maroon-strong: #7b2945;
+  --ui-maroon-soft: rgba(112, 34, 58, .28);
+  --ui-gold: #d6b66f;
+  --ui-gold-bright: #ead49a;
+  --ui-gold-soft: rgba(214, 182, 111, .16);
+  --ui-text: #f5f1eb;
+  --ui-text-warm: #eadfd2;
+  --ui-text-muted: #aaa29b;
+  --ui-text-faint: #7f7974;
+  --ui-success: #78c99b;
+  --ui-warning: #e3bb70;
+  --ui-danger: #e4878d;
 
   --ui-space-1: 4px;
   --ui-space-2: 8px;
@@ -19,176 +29,63 @@
   --ui-space-4: 16px;
   --ui-space-5: 20px;
   --ui-space-6: 24px;
+  --ui-space-7: 28px;
   --ui-space-8: 32px;
+  --ui-space-10: 40px;
+  --ui-space-12: 48px;
 
-  --ui-radius-sm: 4px;
-  --ui-radius-md: 8px;
-  --ui-radius-lg: 12px;
+  --ui-radius-sm: 6px;
+  --ui-radius-md: 10px;
+  --ui-radius-lg: 14px;
   --ui-radius-pill: 999px;
 
-  --ui-shadow-panel: 0 10px 28px rgba(0, 0, 0, .22);
+  --ui-shadow-soft: 0 18px 48px rgba(0, 0, 0, .20);
+  --ui-shadow-overlay: 0 26px 80px rgba(0, 0, 0, .48);
+
+  --ui-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ui-font-display: Georgia, "Times New Roman", serif;
+
+  --ui-duration-fast: 160ms;
+  --ui-duration-standard: 220ms;
+  --ui-ease-standard: cubic-bezier(.2, .7, .2, 1);
+
+  --ui-sidebar-width: 232px;
+  --ui-mobile-topbar-height: 62px;
+  --ui-mobile-nav-height: 68px;
 }
 
-/* Behaviour-free primitives. These are opt-in and intentionally do not replace
-   any existing page selector until that page reaches its migration phase. */
+/* Shared emphasis surface. V2 pages should not use this as a universal wrapper:
+   cards are emphasis components, not the default page structure. */
 .uiSurface {
   position: relative;
   border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-md);
   background: linear-gradient(180deg, var(--ui-surface-raised), var(--ui-surface));
-  box-shadow: var(--ui-shadow-panel);
 }
 
 .uiSectionHeading {
-  min-height: 52px;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  padding: 0 var(--ui-space-5);
+  padding: 0 var(--ui-space-1) var(--ui-space-3);
   border-bottom: 1px solid var(--ui-border);
   color: var(--ui-text);
-  font-size: .86rem;
-  font-weight: 700;
-  letter-spacing: .08em;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 
-/* Phase-3 shell candidate only. The production LeagueApp navigation remains on
-   its legacy selectors until the declarative shell is explicitly activated. */
 .uiFoundationNavGroup,
-.uiFoundationNavHelper,
-.uiFoundationSidebarPortrait {
-  display: none;
+.uiFoundationNavHelper {
+  display: block;
 }
 
-@media (max-width: 900px) {
-  .uiFoundationSidebarPortrait {
-    display: grid;
-  }
-
-  .uiFoundationNav::before,
-  .uiFoundationNav::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  .uiFoundationNavGroup {
-    display: block;
-    grid-column: 1 / -1;
-    color: #c7af95;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: .12em;
-    padding: 2px 4px 0;
-  }
-
-  .uiFoundationNavGroupQuick { order: 0; }
-  .uiFoundationNavGroupMore {
-    order: 5;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(199, 175, 149, .15);
-  }
-
-  .uiFoundationNavItem-dashboard { order: 1 !important; }
-  .uiFoundationNavItem-pick { order: 2 !important; }
-  .uiFoundationNavItem-table { order: 3 !important; }
-  .uiFoundationNavItem-results { order: 4 !important; }
-  .uiFoundationNavItem-fixtures { order: 6 !important; }
-  .uiFoundationNavItem-history { order: 7 !important; }
-  .uiFoundationNavItem-players { order: 8 !important; }
-  .uiFoundationNavItem-about { order: 9 !important; }
-  .uiFoundationNavItem-alerts { order: 10 !important; }
-  .uiFoundationNavItem-admin { order: 11 !important; }
-
-  /* The legacy mobile stylesheet uses nth-child for quick-button styling and
-     pseudo helper labels. The semantic candidate adds real group nodes, so its
-     own marker must fully opt out of those positional rules. */
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem {
-    border-color: rgba(199, 175, 149, .12) !important;
-    background: rgba(24, 18, 22, .72) !important;
-  }
-
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem-quick {
-    border-color: rgba(199, 175, 149, .3) !important;
-    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
-  }
-
-  .uiFoundationNavHelper {
-    display: block;
-    margin-top: 3px;
-    color: #b99f8a;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .05em;
-  }
-}
-
-@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) and (max-height: 900px) {
-  .uiFoundationSidebarPortrait {
-    display: grid;
-  }
-
-  .uiFoundationNav::before,
-  .uiFoundationNav::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  .uiFoundationNavGroup {
-    display: block;
-    grid-column: 1 / -1;
-    color: #c7af95;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: .12em;
-    padding: 2px 4px 0;
-  }
-
-  .uiFoundationNavGroupQuick { order: 0; }
-  .uiFoundationNavGroupMore {
-    order: 5;
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(199, 175, 149, .15);
-  }
-
-  .uiFoundationNavItem-dashboard { order: 1 !important; }
-  .uiFoundationNavItem-pick { order: 2 !important; }
-  .uiFoundationNavItem-table { order: 3 !important; }
-  .uiFoundationNavItem-results { order: 4 !important; }
-  .uiFoundationNavItem-fixtures { order: 6 !important; }
-  .uiFoundationNavItem-history { order: 7 !important; }
-  .uiFoundationNavItem-players { order: 8 !important; }
-  .uiFoundationNavItem-about { order: 9 !important; }
-  .uiFoundationNavItem-alerts { order: 10 !important; }
-  .uiFoundationNavItem-admin { order: 11 !important; }
-
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem {
-    border-color: rgba(199, 175, 149, .12) !important;
-    background: rgba(24, 18, 22, .72) !important;
-  }
-
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  main[class*="shell"] > aside nav.uiFoundationNav button.uiFoundationNavItem-quick {
-    border-color: rgba(199, 175, 149, .3) !important;
-    background: linear-gradient(145deg, rgba(85, 29, 44, .92), rgba(38, 19, 27, .92)) !important;
-  }
-
-  .uiFoundationNavHelper {
-    display: block;
-    margin-top: 3px;
-    color: #b99f8a;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: .05em;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
