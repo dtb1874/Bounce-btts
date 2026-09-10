@@ -73,11 +73,16 @@ test.describe('Bounce 2.0 authenticated shell', () => {
       expect(closedBox.x + closedBox.width).toBeLessThanOrEqual(1);
       await open.click();
       await waitForDrawerOpen(sidebar);
-      await expect(page.getByRole('button', { name: 'Close navigation' }).first()).toBeVisible();
+      const drawerClose = sidebar.getByRole('button', { name: 'Close navigation' });
+      await expect(drawerClose).toBeVisible();
       await expect(sidebar.locator('.mobileSidebarPortraitInitials')).toHaveText('PM');
       await page.screenshot({ path: path.join(screenshotDir, 'phone-390x844-drawer.png'), fullPage: true });
-      await page.getByRole('button', { name: 'Close navigation' }).last().click();
+      await drawerClose.click();
       await expect(open).toBeVisible();
+      await expect.poll(async () => {
+        const box = await sidebar.boundingBox();
+        return box ? box.x + box.width : 0;
+      }).toBeLessThanOrEqual(1);
     });
   });
 
