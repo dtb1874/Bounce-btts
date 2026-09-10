@@ -63,7 +63,7 @@ export default async function V2PreviewPage() {
   const gameweeksResponse = currentSeason?.id
     ? await supabase
         .from("gameweeks")
-        .select("id,number,status,opens_at,locks_at,season_id,selection_rule_mode,selection_weekday,selection_time")
+        .select("id,number,status,opens_at,locks_at,season_id,selection_rule_mode,selection_weekday,selection_time,selection_times,selection_time_from,selection_time_to,one_off_rule")
         .eq("season_id", currentSeason.id)
         .order("number", { ascending: true })
     : { data: [] as any[] };
