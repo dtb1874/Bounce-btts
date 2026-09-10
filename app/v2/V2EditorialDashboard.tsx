@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { competitionDisplayName } from "@/lib/competition-display";
+import { compactPickOutcome, formatFootballElapsed, isLiveFixtureStatus } from "@/lib/football-live-display";
 import styles from "./V2EditorialDashboard.module.css";
 
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
 type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "about" | "alerts" | "admin";
 type Profile = { id: string; display_name: string; role: Role; active: boolean };
 type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string };
-type Fixture = { id: string; gameweek_id: string | null; competition: string; home_team: string; away_team: string; kickoff_at: string; status: string; live_elapsed?: number | null; home_score: number | null; away_score: number | null; odds_fractional: string | null };
+type Fixture = { id: string; gameweek_id: string | null; competition: string; country?: string | null; home_team: string; away_team: string; kickoff_at: string; status: string; live_elapsed?: number | null; home_score: number | null; away_score: number | null; odds_fractional: string | null };
 type Prediction = { id: string; gameweek_id: string; member_id: string; fixture_id: string; points_awarded: number | null };
 type Standing = { id: string; name: string; played: number; wins: number; oneSided: number; zeroZeroCount: number; points: number };
 
@@ -23,9 +25,6 @@ type Props = {
   myId: string;
   setView: (view: View) => void;
 };
-
-const liveStatuses = new Set(["1H", "2H", "HT", "ET", "P", "BT", "INT", "SUSP", "LIVE"]);
-const finishedStatuses = new Set(["FT", "AET", "PEN"]);
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -48,22 +47,17 @@ function ordinal(value: number) {
   return `${value}th`;
 }
 
-function outcome(fixture: Fixture | undefined, prediction: Prediction | undefined) {
-  if (!prediction) return { label: "NO PICK", detail: "Selection outstanding", tone: "quiet" };
-  if (!fixture) return { label: "WAITING", detail: "Fixture data pending", tone: "quiet" };
-  const home = fixture.home_score ?? 0;
-  const away = fixture.away_score ?? 0;
-  if (home > 0 && away > 0) return { label: "LANDED", detail: "Both teams scored", tone: "positive" };
-  if (finishedStatuses.has(fixture.status)) return { label: "MISSED", detail: "Finished without BTTS", tone: "negative" };
-  if (liveStatuses.has(fixture.status) || Date.now() >= new Date(fixture.kickoff_at).getTime()) {
-    if (home > 0 && away === 0) return { label: `NEEDS ${fixture.away_team.toUpperCase()}`, detail: `${home}–${away} · ${fixture.live_elapsed ?? "LIVE"}`, tone: "live" };
-    if (away > 0 && home === 0) return { label: `NEEDS ${fixture.home_team.toUpperCase()}`, detail: `${home}–${away} · ${fixture.live_elapsed ?? "LIVE"}`, tone: "live" };
-    return { label: "LIVE", detail: `${home}–${away} · needs both teams`, tone: "live" };
-  }
-  return { label: "WAITING", detail: formatDate(fixture.kickoff_at), tone: "quiet" };
+function fullOutcomeLabel(fixture: Fixture) {
+  const result = compactPickOutcome({ status: fixture.status, homeScore: fixture.home_score, awayScore: fixture.away_score });
+  if (result.label === "W") return "WON";
+  if (result.label === "S-N") return "SCORE-NIL";
+  if (result.label === "L") return "LOST";
+  if (result.label === "LIVE") return "LIVE";
+  return "SELECTED";
 }
 
 export default function V2EditorialDashboard({ gameweek, profiles, fixtures, predictions, standings, seasonLabel, entryFee, isOpen, myId, setView }: Props) {
+  const [portraits, setPortraits] = useState<Record<string, string>>({});
   const myPrediction = predictions.find((row) => row.member_id === myId);
   const myFixture = fixtures.find((row) => row.id === myPrediction?.fixture_id);
   const myStandingIndex = standings.findIndex((row) => row.id === myId);
@@ -73,43 +67,56 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
   const submitted = predictions.length;
   const prizePot = activeMembers.length * entryFee;
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/member-portraits", { cache: "force-cache" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Portraits unavailable")))
+      .then((data) => {
+        if (cancelled) return;
+        const next: Record<string, string> = {};
+        for (const row of data.portraits ?? []) if (row.id && row.portraitUrl) next[row.id] = row.portraitUrl;
+        setPortraits(next);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
   const picks = useMemo(() => activeMembers.map((profile) => {
     const prediction = predictions.find((row) => row.member_id === profile.id);
     const fixture = fixtures.find((row) => row.id === prediction?.fixture_id);
-    return { profile, prediction, fixture, state: outcome(fixture, prediction) };
+    const result = fixture
+      ? compactPickOutcome({ status: fixture.status, homeScore: fixture.home_score, awayScore: fixture.away_score })
+      : { label: "—" as const, tone: "waiting" as const };
+    return { profile, prediction, fixture, result };
   }), [activeMembers, predictions, fixtures]);
 
-  const landed = picks.filter((row) => row.state.tone === "positive").length;
-  const live = picks.filter((row) => row.state.tone === "live").length;
+  const won = picks.filter((row) => row.result.tone === "won").length;
+  const live = picks.filter((row) => row.fixture && isLiveFixtureStatus(row.fixture.status) && row.result.tone !== "won").length;
   const missing = Math.max(0, activeMembers.length - submitted);
-  const heroTitle = !gameweek
-    ? "Season at a glance"
-    : isOpen && !myPrediction
-      ? "Your pick is waiting"
-      : isOpen && myPrediction
-        ? "You’re in"
-        : gameweek.status === "complete"
-          ? "Week settled"
-          : live > 0
-            ? "Matchday is moving"
-            : "Picks locked";
+  const gameweekState = !gameweek ? "NO ACTIVE GAMEWEEK" : isOpen ? "PICKS OPEN" : gameweek.status === "complete" ? "COMPLETE" : "PICKS LOCKED";
 
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.brandBlock}>
-          <span className={styles.brandEyebrow}>EDINBURGH · EST. 2024</span>
-          <div className={styles.brandTitle} aria-label={`Bounce BTTS League ${seasonLabel}`}>
+          <div className={styles.brandTitle} aria-label={`The Bounce BTTS League ${seasonLabel}`}>
+            <small className={styles.brandThe}>The</small>
             <strong>BOUNCE</strong>
-            <span>BTTS LEAGUE</span>
+            <span>BTTS LEAGUE <i>· EST. 2024</i></span>
           </div>
-          <div className={styles.seasonStamp}>{seasonLabel}</div>
+          <div className={styles.brandMeta}>
+            <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" className={styles.brandCrest} />
+            <div className={styles.seasonStamp}>{seasonLabel}</div>
+          </div>
         </div>
 
         <div className={styles.weekBrief}>
-          <span className={styles.weekLabel}>{gameweek ? `GAMEWEEK ${gameweek.number}` : "SEASON"}</span>
-          <h2>{heroTitle}</h2>
-          <p>{gameweek?.locks_at ? `${isOpen ? "Picks close" : "Deadline"} ${formatDate(gameweek.locks_at)}` : "Current league status"}</p>
+          <div className={styles.weekStatusLine}>
+            <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
+            <i>·</i>
+            <span>{gameweekState}</span>
+            {gameweek?.locks_at ? <><i>·</i><time>{formatDate(gameweek.locks_at)}</time></> : null}
+          </div>
           {isOpen ? (
             <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
           ) : (
@@ -123,24 +130,17 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
           <span className={styles.selectionLabel}>YOUR SELECTION</span>
           {myFixture ? (
             <>
-              <div className={styles.fixtureNames}>
-                <strong>{myFixture.home_team}</strong>
-                <span>v</span>
-                <strong>{myFixture.away_team}</strong>
-              </div>
-              <div className={styles.fixtureMeta}>{myFixture.competition} · {formatDate(myFixture.kickoff_at)}</div>
+              <div className={styles.fixtureNames}><strong>{myFixture.home_team}</strong><span>v</span><strong>{myFixture.away_team}</strong></div>
+              <div className={styles.fixtureMeta}>{competitionDisplayName(myFixture)} · {formatDate(myFixture.kickoff_at)}</div>
             </>
           ) : (
-            <div className={styles.noSelection}>
-              <strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong>
-              <span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span>
-            </div>
+            <div className={styles.noSelection}><strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong><span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span></div>
           )}
         </div>
         {myFixture ? (
-          <div className={`${styles.outcome} ${styles[outcome(myFixture, myPrediction).tone]}`}>
-            <b>{outcome(myFixture, myPrediction).label}</b>
-            <span>{outcome(myFixture, myPrediction).detail}</span>
+          <div className={`${styles.outcome} ${styles[`result_${compactPickOutcome({ status: myFixture.status, homeScore: myFixture.home_score, awayScore: myFixture.away_score }).tone}`]}`}>
+            <b>{fullOutcomeLabel(myFixture)}</b>
+            {isLiveFixtureStatus(myFixture.status) ? <span>{myFixture.home_score ?? 0}–{myFixture.away_score ?? 0} · {formatFootballElapsed(myFixture.status, myFixture.live_elapsed)}</span> : null}
           </div>
         ) : null}
       </section>
@@ -154,44 +154,50 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
 
       <section className={styles.editorialSection}>
         <header className={styles.sectionHeader}>
-          <div><span>GAMEWEEK PULSE</span><h2>Everyone’s picks</h2></div>
-          <div className={styles.sectionAside}>{live ? `${live} live` : landed ? `${landed} landed` : `${submitted} submitted`}</div>
+          <div><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
+          <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
         </header>
         <div className={styles.pickLedger}>
-          {picks.map(({ profile, fixture, state }) => (
-            <article className={styles.pickRow} key={profile.id}>
-              <div className={styles.memberMark}>{profile.display_name.slice(0, 1).toUpperCase()}</div>
-              <div className={styles.memberName}><strong>{profile.display_name}</strong><span>{fixture?.competition ?? "Awaiting selection"}</span></div>
-              <div className={styles.memberFixture}>{fixture ? <><strong>{fixture.home_team}</strong><span> v </span><strong>{fixture.away_team}</strong></> : <span>—</span>}</div>
-              <div className={`${styles.memberState} ${styles[state.tone]}`}><strong>{state.label}</strong><span>{state.detail}</span></div>
-            </article>
-          ))}
+          {picks.map(({ profile, prediction, fixture, result }) => {
+            const portrait = portraits[profile.id];
+            const selected = Boolean(prediction);
+            const score = fixture?.home_score != null && fixture.away_score != null ? `${fixture.home_score}–${fixture.away_score}` : "—";
+            const elapsed = fixture && isLiveFixtureStatus(fixture.status) ? formatFootballElapsed(fixture.status, fixture.live_elapsed) : fixture && ["FT", "AET", "PEN"].includes(fixture.status) ? "FT" : "—";
+            return (
+              <article className={styles.pickRow} key={profile.id}>
+                <div className={styles.memberMark}>
+                  {portrait ? <img src={portrait} alt="" onError={() => setPortraits((current) => { const next = { ...current }; delete next[profile.id]; return next; })} /> : <span>{profile.display_name.slice(0, 1).toUpperCase()}</span>}
+                </div>
+                <div className={styles.pickContent}>
+                  <div className={styles.pickTop}><strong>{profile.display_name}</strong><span className={selected ? styles.selectedState : styles.waitingState}>{selected ? "SELECTED" : "WAITING PICK"}</span></div>
+                  <div className={styles.pickFixture}>{fixture ? <><strong>{fixture.home_team} v {fixture.away_team}</strong><span>{competitionDisplayName(fixture)}</span></> : <span>Awaiting selection</span>}</div>
+                  {fixture ? <div className={styles.pickLiveLine}><strong>{score}</strong><i>·</i><span>{elapsed}</span><i>·</i><b className={`${styles.resultPill} ${styles[`result_${result.tone}`]}`}>{result.label}</b></div> : null}
+                </div>
+              </article>
+            );
+          })}
         </div>
-        <button className={styles.sectionLink} type="button" onClick={() => setView("results")}>Open the full gameweek view <span>→</span></button>
+        <button className={styles.sectionLink} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
       </section>
 
       <section className={`${styles.editorialSection} ${styles.tableSection}`}>
         <header className={styles.sectionHeader}>
-          <div><span>THE RACE</span><h2>League standing</h2></div>
+          <div><span>LEAGUE</span><h2>League Standing</h2></div>
           <button className={styles.sectionAsideButton} type="button" onClick={() => setView("table")}>Stat Centre →</button>
         </header>
-        <div className={styles.tableHead}><span>Pos</span><span>Player</span><span>W</span><span>0–0</span><span>Pts</span></div>
+        <div className={styles.tableHead}><span>Pos</span><span>Player</span><span>W</span><span>S-N</span><span>0–0</span><span>Pts</span></div>
         <div className={styles.tableBody}>
           {standings.slice(0, 8).map((row, index) => (
             <div className={`${styles.tableRow} ${row.id === myId ? styles.me : ""}`} key={row.id}>
-              <span className={styles.position}>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{row.name}</strong>
-              <span>{row.wins}</span>
-              <span>{row.zeroZeroCount}</span>
-              <b>{row.points}</b>
+              <span className={styles.position}>{String(index + 1).padStart(2, "0")}</span><strong>{row.name}</strong><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
             </div>
           ))}
         </div>
       </section>
 
       <section className={styles.closingBand}>
-        <div><span>BOUNCE · EST. 2024</span><h2>Edinburgh built. Matchday driven.</h2></div>
-        <button type="button" onClick={() => setView("history")}>League history <span>→</span></button>
+        <div><span>THE BOUNCE</span><strong>BTTS LEAGUE · EST. 2024</strong></div>
+        <button type="button" onClick={() => setView("history")}>League History <span>→</span></button>
       </section>
     </main>
   );
