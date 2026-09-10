@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { competitionDisplayName } from "@/lib/competition-display";
 import { calculateLeagueStats } from "@/lib/league-stats";
 import styles from "./V2StatCentre.module.css";
@@ -37,7 +37,22 @@ function odds(value: number | null | undefined) {
 export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixtures, predictions, adjustments, standings, myId, entryFee }: Props) {
   const [tab, setTab] = useState<Tab>("league");
   const [playerId, setPlayerId] = useState(myId || profiles[0]?.id || "");
+  const [portraits, setPortraits] = useState<Record<string, string>>({});
   const activeProfiles = useMemo(() => profiles.filter((row) => row.active && row.role !== "guest"), [profiles]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/member-portraits", { cache: "force-cache" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Portraits unavailable")))
+      .then((data) => {
+        if (cancelled) return;
+        const next: Record<string, string> = {};
+        for (const row of data.portraits ?? []) if (row.id && row.portraitUrl) next[row.id] = row.portraitUrl;
+        setPortraits(next);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   const canonical = useMemo(() => calculateLeagueStats({
     standings,
@@ -65,6 +80,14 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
     { id: "form", label: "Form & Trends" },
     { id: "records", label: "Records" },
   ];
+
+  function clearPortrait(id: string) {
+    setPortraits((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
 
   return (
     <main className={styles.page}>
@@ -101,11 +124,19 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
           <header className={`${styles.sectionHeading} ${styles.tableHeading}`}><span>CURRENT TABLE</span><h2>League Table</h2></header>
           <div className={styles.tableHead}><span>Pos</span><span>Player</span><span>P</span><span>W</span><span>S-N</span><span>0–0</span><span>Pts</span></div>
           <div className={styles.tableBody}>
-            {standings.map((row, index) => (
-              <div className={`${styles.tableRow} ${row.id === myId ? styles.me : ""}`} key={row.id}>
-                <span>{String(index + 1).padStart(2, "0")}</span><strong>{row.name}</strong><span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
-              </div>
-            ))}
+            {standings.map((row, index) => {
+              const portrait = portraits[row.id];
+              return (
+                <div className={`${styles.tableRow} ${row.id === myId ? styles.me : ""}`} key={row.id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <span className={styles.tablePlayer}>
+                    <span className={styles.tableAvatar}>{portrait ? <img src={portrait} alt="" onError={() => clearPortrait(row.id)} /> : row.name.slice(0, 1).toUpperCase()}</span>
+                    <strong>{row.name}</strong>
+                  </span>
+                  <span>{row.played}</span><span>{row.wins}</span><span>{row.oneSided}</span><span>{row.zeroZeroCount}</span><b>{row.points}</b>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -118,7 +149,10 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
           </div>
           {selected ? (
             <div className={styles.playerProfile}>
-              <div className={styles.playerIdentity}><span>{selected.name.slice(0, 1).toUpperCase()}</span><div><small>PLAYER PROFILE</small><h3>{selected.name}</h3><p>{selectedStanding?.points ?? 0} points · {selectedStanding?.played ?? 0} played</p></div></div>
+              <div className={styles.playerIdentity}>
+                <span>{portraits[selected.id] ? <img src={portraits[selected.id]} alt="" onError={() => clearPortrait(selected.id)} /> : selected.name.slice(0, 1).toUpperCase()}</span>
+                <div><small>PLAYER PROFILE</small><h3>{selected.name}</h3><p>{selectedStanding?.points ?? 0} points · {selectedStanding?.played ?? 0} played</p></div>
+              </div>
               <div className={styles.playerStatLedger}>
                 <div><span>STRIKE RATE</span><b>{pct(selected.strikeRate)}</b></div>
                 <div><span>POINTS / PICK</span><b>{selected.pointsPerPick.toFixed(2)}</b></div>
