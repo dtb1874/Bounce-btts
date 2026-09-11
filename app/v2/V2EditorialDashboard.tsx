@@ -111,7 +111,7 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
       </section>
 
       <section className={styles.selectionBand}>
-        <div className={styles.selectionMain}>
+        <div>
           <span className={styles.selectionLabel}>YOUR SELECTION</span>
           {myFixture ? (
             <>
@@ -122,13 +122,23 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
             <div className={styles.noSelection}><strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong><span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span></div>
           )}
         </div>
-        <div className={styles.selectionWeekBrief}>
-          <div className={styles.weekStatusLine}>
+        <div
+          className={styles.outcome}
+          style={{
+            alignSelf: "stretch",
+            placeContent: "center",
+            minWidth: 126,
+            padding: "18px 16px",
+            background: "linear-gradient(180deg,#5f1f36 0%,#481429 100%)",
+            borderLeft: "1px solid rgba(228,191,112,.24)",
+          }}
+        >
+          <div className={styles.weekStatusLine} style={{ justifyContent: "flex-end" }}>
             <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
             <i>·</i>
-            <span>{gameweekState}</span>
+            <span style={{ color: "#e1bd72" }}>{gameweekState}</span>
           </div>
-          {gameweek?.locks_at ? <time className={styles.weekDeadline}>{formatDate(gameweek.locks_at)}</time> : null}
+          {gameweek?.locks_at ? <time style={{ color: "#d8cbbb", fontSize: ".61rem", lineHeight: 1.35 }}>{formatDate(gameweek.locks_at)}</time> : null}
           {isOpen ? (
             <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
           ) : (
