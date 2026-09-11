@@ -16,7 +16,8 @@ function isTimezoneOnlyLegacyAlert(alert: any) {
   const teamsUnchanged = String(before.home_team ?? "") === String(after.home_team ?? "")
     && String(before.away_team ?? "") === String(after.away_team ?? "");
   const statusUnchanged = String(before.status ?? "") === String(after.status ?? "");
-  return teamsUnchanged && statusUnchanged;
+  const eligibilityUnchanged = Boolean(before.is_eligible) === Boolean(after.is_eligible);
+  return teamsUnchanged && statusUnchanged && eligibilityUnchanged;
 }
 
 export async function GET(request: Request) {
