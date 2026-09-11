@@ -47,15 +47,6 @@ function ordinal(value: number) {
   return `${value}th`;
 }
 
-function fullOutcomeLabel(fixture: Fixture) {
-  const result = compactPickOutcome({ status: fixture.status, homeScore: fixture.home_score, awayScore: fixture.away_score });
-  if (result.label === "W") return "WON";
-  if (result.label === "S-N") return "SCORE-NIL";
-  if (result.label === "L") return "LOST";
-  if (result.label === "LIVE") return "LIVE";
-  return "SELECTED";
-}
-
 export default function V2EditorialDashboard({ gameweek, profiles, fixtures, predictions, standings, seasonLabel, entryFee, isOpen, myId, setView }: Props) {
   const [portraits, setPortraits] = useState<Record<string, string>>({});
   const myPrediction = predictions.find((row) => row.member_id === myId);
@@ -117,24 +108,10 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
             <div className={styles.seasonStamp}>{seasonLabel}</div>
           </div>
         </div>
-
-        <div className={styles.weekBrief}>
-          <div className={styles.weekStatusLine}>
-            <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
-            <i>·</i>
-            <span>{gameweekState}</span>
-            {gameweek?.locks_at ? <><i>·</i><time>{formatDate(gameweek.locks_at)}</time></> : null}
-          </div>
-          {isOpen ? (
-            <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
-          ) : (
-            <button className={styles.textAction} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
-          )}
-        </div>
       </section>
 
       <section className={styles.selectionBand}>
-        <div>
+        <div className={styles.selectionMain}>
           <span className={styles.selectionLabel}>YOUR SELECTION</span>
           {myFixture ? (
             <>
@@ -145,12 +122,19 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
             <div className={styles.noSelection}><strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong><span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span></div>
           )}
         </div>
-        {myFixture ? (
-          <div className={`${styles.outcome} ${styles[`result_${compactPickOutcome({ status: myFixture.status, homeScore: myFixture.home_score, awayScore: myFixture.away_score }).tone}`]}`}>
-            <b>{fullOutcomeLabel(myFixture)}</b>
-            {isLiveFixtureStatus(myFixture.status) ? <span>{myFixture.home_score ?? 0}–{myFixture.away_score ?? 0} · {formatFootballElapsed(myFixture.status, myFixture.live_elapsed)}</span> : null}
+        <div className={styles.selectionWeekBrief}>
+          <div className={styles.weekStatusLine}>
+            <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
+            <i>·</i>
+            <span>{gameweekState}</span>
           </div>
-        ) : null}
+          {gameweek?.locks_at ? <time className={styles.weekDeadline}>{formatDate(gameweek.locks_at)}</time> : null}
+          {isOpen ? (
+            <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
+          ) : (
+            <button className={styles.textAction} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
+          )}
+        </div>
       </section>
 
       <section className={styles.pulse} aria-label="League snapshot">
