@@ -5,10 +5,47 @@ import styles from "../V2AdminCentre.module.css";
 import type { AdminProps, Profile } from "./types";
 import { formatDate, token } from "./helpers";
 
-type AlertRow = { id: string; title?: string; message?: string; severity?: string; resolved?: boolean; fixture_id?: string | null; profiles?: { display_name?: string } | null; fixtures?: { home_team?: string; away_team?: string } | null };
+type AlertFixtureState = { kickoff_at?: string; status?: string; home_team?: string; away_team?: string; is_eligible?: boolean };
+type AlertRow = {
+  id: string;
+  alert_type?: string;
+  title?: string;
+  message?: string;
+  severity?: string;
+  resolved?: boolean;
+  fixture_id?: string | null;
+  profiles?: { display_name?: string } | null;
+  fixtures?: { home_team?: string; away_team?: string; kickoff_at?: string; status?: string } | null;
+  details?: { before?: AlertFixtureState; after?: AlertFixtureState } | null;
+};
 type ProviderRun = { status?: string; started_at?: string; requests_used?: number };
 
 type Props = AdminProps & { activeMembers: Profile[] };
+
+function sameInstant(left: unknown, right: unknown) {
+  const leftMs = Date.parse(String(left ?? ""));
+  const rightMs = Date.parse(String(right ?? ""));
+  return Number.isFinite(leftMs) && Number.isFinite(rightMs) && leftMs === rightMs;
+}
+
+function alertMessage(alert: AlertRow) {
+  const before = alert.details?.before;
+  const after = alert.details?.after;
+  if (alert.alert_type === "fixture_change_affecting_pick" && before && after) {
+    const changes: string[] = [];
+    if (before.kickoff_at && after.kickoff_at && !sameInstant(before.kickoff_at, after.kickoff_at)) {
+      changes.push(`Kick-off moved: ${formatDate(before.kickoff_at)} → ${formatDate(after.kickoff_at)}`);
+    }
+    if (before.status !== after.status) changes.push(`Status: ${before.status ?? "—"} → ${after.status ?? "—"}`);
+    if (before.home_team !== after.home_team || before.away_team !== after.away_team) changes.push("Fixture teams changed");
+    if (changes.length) return changes.join(" · ");
+  }
+
+  return String(alert.message ?? "").replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})/g,
+    (value) => formatDate(value),
+  );
+}
 
 export default function V2AdminOverview({ gameweek, activeMembers, fixtures, predictions, alertsCount, fixtureState = "ready", onAlertsChanged }: Props) {
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
@@ -59,6 +96,9 @@ export default function V2AdminOverview({ gameweek, activeMembers, fixtures, pre
     </div>
     {run ? <div className={styles.providerStrip}><div><span>LAST PROVIDER CHECK</span><strong>{String(run.status ?? "—").toUpperCase()}</strong></div><div><span>RUN TIME</span><strong>{formatDate(run.started_at)}</strong></div><div><span>API REQUESTS</span><strong>{run.requests_used ?? 0}</strong></div></div> : null}
     <div className={styles.alertToolbar}><div><button type="button" className={!showResolved ? styles.activeMiniTab : ""} onClick={() => setShowResolved(false)}>Needs attention · {unresolved.length}</button><button type="button" className={showResolved ? styles.activeMiniTab : ""} onClick={() => setShowResolved(true)}>Resolved · {alerts.length - unresolved.length}</button></div>{!showResolved && unresolved.length ? <button type="button" className={styles.secondaryButton} onClick={() => void bulk(unresolved)}>Clear all</button> : null}</div>
-    <div className={styles.alertList}>{loading ? <p>Loading alerts…</p> : visible.length ? visible.slice(0, 20).map((alert) => <article key={alert.id}><div><span>{String(alert.severity ?? "warning").toUpperCase()}</span><strong>{alert.title ?? `${alert.fixtures?.home_team ?? "Fixture"} v ${alert.fixtures?.away_team ?? ""}`}</strong>{alert.profiles?.display_name ? <small>Pick belongs to {alert.profiles.display_name}</small> : null}{alert.message ? <p>{alert.message}</p> : null}</div><div className={styles.rowActions}><button type="button" className={styles.secondaryButton} onClick={() => void setResolved(alert, !alert.resolved)}>{alert.resolved ? "Reopen" : "Resolve"}</button>{!alert.resolved && alert.fixture_id ? <button type="button" className={styles.secondaryButton} onClick={() => void bulk(unresolved.filter((row) => row.fixture_id === alert.fixture_id))}>Clear same fixture</button> : null}</div></article>) : <div className={styles.emptyState}>{showResolved ? "No resolved alerts." : "All clear."}</div>}</div>
+    <div className={styles.alertList}>{loading ? <p>Loading alerts…</p> : visible.length ? visible.slice(0, 20).map((alert) => {
+      const message = alertMessage(alert);
+      return <article key={alert.id}><div><span>{String(alert.severity ?? "warning").toUpperCase()}</span><strong>{alert.title ?? `${alert.fixtures?.home_team ?? "Fixture"} v ${alert.fixtures?.away_team ?? ""}`}</strong>{alert.profiles?.display_name ? <small>Pick belongs to {alert.profiles.display_name}</small> : null}{message ? <p>{message}</p> : null}</div><div className={styles.rowActions}><button type="button" className={styles.secondaryButton} onClick={() => void setResolved(alert, !alert.resolved)}>{alert.resolved ? "Reopen" : "Resolve"}</button>{!alert.resolved && alert.fixture_id ? <button type="button" className={styles.secondaryButton} onClick={() => void bulk(unresolved.filter((row) => row.fixture_id === alert.fixture_id))}>Clear same fixture</button> : null}</div></article>;
+    }) : <div className={styles.emptyState}>{showResolved ? "No resolved alerts." : "All clear."}</div>}</div>
   </section>;
 }
