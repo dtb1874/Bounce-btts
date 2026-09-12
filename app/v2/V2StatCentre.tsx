@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { competitionDisplayName } from "@/lib/competition-display";
 import { calculateLeagueStats } from "@/lib/league-stats";
 import styles from "./V2StatCentre.module.css";
+import layout from "./V2StatCentreLayout.module.css";
 
 type Profile = { id: string; display_name: string; active: boolean; role: string };
 type Gameweek = { id: string; number: number; status: string };
@@ -93,16 +94,23 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
 
   return (
     <main className={styles.page}>
-      <header className={styles.hero}>
-        <div className={styles.heroTitle}>
+      <header className={`${styles.hero} ${layout.hero}`}>
+        <div className={`${styles.heroTitle} ${layout.heroTitle}`}>
           <span>SEASON {seasonLabel}</span>
           <h1>Stat Centre</h1>
           <p>League intelligence, player tendencies and season records.</p>
         </div>
-        <div className={styles.heroSummary}>
-          <div><span>LEADER</span><strong>{canonical.headline.leagueLeader?.name ?? "—"}</strong><small>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
-          <div><span>STRIKE RATE</span><strong>{pct(canonical.headline.leagueStrikeRate)}</strong><small>{canonical.headline.bttsWins} BTTS wins</small></div>
-          <div><span>FORM</span><strong>{canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.join(" / ") : "—"}</strong><small>{canonical.headline.formLeaderNames.length ? `${canonical.headline.topFormPoints} pts` : "Waiting for scored weeks"}</small></div>
+        <div className={layout.heroArtwork} aria-hidden="true" />
+        <div className={`${styles.heroSummary} ${layout.heroSummary}`}>
+          <div className={layout.summaryCell}><span>LEADER</span><strong>{canonical.headline.leagueLeader?.name ?? "—"}</strong><small>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
+          <div className={layout.summaryCell}><span>STRIKE RATE</span><strong>{pct(canonical.headline.leagueStrikeRate)}</strong><small>{canonical.headline.bttsWins} BTTS wins</small></div>
+          <div className={layout.summaryCell}>
+            <span>FORM</span>
+            <strong className={layout.formLeaders}>
+              {canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.map((name) => <span className={layout.formLeader} key={name}>{name}</span>) : <span className={layout.formLeader}>—</span>}
+            </strong>
+            <small>{canonical.headline.formLeaderNames.length ? `${canonical.headline.topFormPoints} pts` : "Waiting for scored weeks"}</small>
+          </div>
         </div>
       </header>
 
@@ -111,23 +119,23 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
       </nav>
 
       {tab === "league" ? (
-        <section className={styles.section}>
-          <header className={styles.sectionHeading}><span>SEASON {seasonLabel}</span><h2>League Overview</h2></header>
+        <section className={`${styles.section} ${layout.leagueSection}`}>
+          <header className={`${styles.sectionHeading} ${layout.sectionHeading}`}><span>SEASON {seasonLabel}</span><h2>League Overview</h2></header>
 
-          <div className={styles.leagueLeadLine}>
+          <div className={`${styles.leagueLeadLine} ${layout.leagueLeadLine}`}>
             <div>
               <span>LEAGUE PULSE</span>
               <strong>{canonical.headline.leagueLeader?.name ?? "No leader yet"}</strong>
               <p>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} points at the top` : "Waiting for the first scored gameweek"}</p>
             </div>
-            <div className={styles.leaguePulseStats}>
+            <div className={`${styles.leaguePulseStats} ${layout.leaguePulseStats}`}>
               <div><span>SEASON POT</span><b>£{prizePot.toFixed(0)}</b></div>
               <div><span>STRIKE RATE</span><b>{pct(canonical.headline.leagueStrikeRate)}</b></div>
               <div><span>BTTS WINS</span><b>{canonical.headline.bttsWins}</b></div>
             </div>
           </div>
 
-          <div className={styles.storyRows}>
+          <div className={`${styles.storyRows} ${layout.storyRows}`}>
             <article>
               <span>FORM LEADER{canonical.headline.formLeaderNames.length > 1 ? "S" : ""}</span>
               <strong>{canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.join(" / ") : "—"}</strong>
