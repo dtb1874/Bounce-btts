@@ -38,6 +38,7 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
   const [tab, setTab] = useState<Tab>("league");
   const [playerId, setPlayerId] = useState(myId || profiles[0]?.id || "");
   const [portraits, setPortraits] = useState<Record<string, string>>({});
+  const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const activeProfiles = useMemo(() => profiles.filter((row) => row.active && row.role !== "guest"), [profiles]);
 
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
   const creature = canonical.headline.creatureLeaders.length
     ? canonical.headline.creatureLeaders.map((row) => `${row.name} · ${row.team}`).join(" / ")
     : "—";
+  const mostPickedTeamRecord = canonical.seasonFacts.find((fact) => fact.label === "MOST PICKED TEAM" || fact.label === "MOST PICKED TEAMS");
 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: "league", label: "League" },
@@ -95,9 +97,10 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
         <div className={styles.heroTitle}>
           <span>SEASON {seasonLabel}</span>
           <h1>Stat Centre</h1>
+          <p>League intelligence, player tendencies and season records.</p>
         </div>
         <div className={styles.heroSummary}>
-          <div><span>LEAGUE LEADER</span><strong>{canonical.headline.leagueLeader?.name ?? "—"}</strong><small>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
+          <div><span>LEADER</span><strong>{canonical.headline.leagueLeader?.name ?? "—"}</strong><small>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
           <div><span>STRIKE RATE</span><strong>{pct(canonical.headline.leagueStrikeRate)}</strong><small>{canonical.headline.bttsWins} BTTS wins</small></div>
           <div><span>FORM</span><strong>{canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.join(" / ") : "—"}</strong><small>{canonical.headline.formLeaderNames.length ? `${canonical.headline.topFormPoints} pts` : "Waiting for scored weeks"}</small></div>
         </div>
@@ -110,15 +113,41 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
       {tab === "league" ? (
         <section className={styles.section}>
           <header className={styles.sectionHeading}><span>SEASON {seasonLabel}</span><h2>League Overview</h2></header>
-          <div className={styles.snapshotLedger}>
-            <div><span>LEAGUE LEADER</span><strong>{canonical.headline.leagueLeader?.name ?? "—"}</strong><small>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} pts` : "No scores yet"}</small></div>
-            <div><span>SEASON POT</span><strong>£{prizePot.toFixed(0)}</strong><small>{standings.length} active players</small></div>
-            <div><span>LEAGUE STRIKE RATE</span><strong>{pct(canonical.headline.leagueStrikeRate)}</strong><small>{canonical.headline.bttsWins} BTTS wins</small></div>
-            <div><span>{canonical.headline.formLeaderNames.length > 1 ? "FORM LEADERS" : "FORM LEADER"}</span><strong>{canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.join(" / ") : "—"}</strong><small>{canonical.headline.formLeaderNames.length ? `${canonical.headline.topFormPoints} pts across current form` : "Waiting for scored weeks"}</small></div>
-            <div><span>{canonical.headline.bttsLeaderNames.length > 1 ? "BTTS LEADERS" : "BTTS LEADER"}</span><strong>{canonical.headline.bttsLeaderNames.length ? canonical.headline.bttsLeaderNames.join(" / ") : "—"}</strong><small>{canonical.headline.bttsLeaderNames.length ? `${canonical.headline.topBttsWins} BTTS wins` : "No BTTS wins yet"}</small></div>
-            <div><span>CREATURE OF HABIT</span><strong>{creature}</strong><small>{canonical.headline.creatureLeaders.length ? canonical.headline.creatureLeaders.map((row) => `${row.count} picks · ${row.wins}W ${row.losses}L`).join(" / ") : "Most repeat selections of the same team"}</small></div>
-            <div><span>GOALS IN PICKS</span><strong>{canonical.headline.leagueGoals}</strong><small>Finished selected fixtures</small></div>
-            <div><span>FINISHED PICKS</span><strong>{canonical.headline.finishedPicks}</strong><small>{canonical.headline.recordedSelections} selections recorded</small></div>
+
+          <div className={styles.leagueLeadLine}>
+            <div>
+              <span>LEAGUE PULSE</span>
+              <strong>{canonical.headline.leagueLeader?.name ?? "No leader yet"}</strong>
+              <p>{canonical.headline.leagueLeader ? `${canonical.headline.leagueLeader.points} points at the top` : "Waiting for the first scored gameweek"}</p>
+            </div>
+            <div className={styles.leaguePulseStats}>
+              <div><span>SEASON POT</span><b>£{prizePot.toFixed(0)}</b></div>
+              <div><span>STRIKE RATE</span><b>{pct(canonical.headline.leagueStrikeRate)}</b></div>
+              <div><span>BTTS WINS</span><b>{canonical.headline.bttsWins}</b></div>
+            </div>
+          </div>
+
+          <div className={styles.storyRows}>
+            <article>
+              <span>FORM LEADER{canonical.headline.formLeaderNames.length > 1 ? "S" : ""}</span>
+              <strong>{canonical.headline.formLeaderNames.length ? canonical.headline.formLeaderNames.join(" / ") : "—"}</strong>
+              <p>{canonical.headline.formLeaderNames.length ? `${canonical.headline.topFormPoints} points across the current six-week form window` : "Waiting for scored weeks"}</p>
+            </article>
+            <article>
+              <span>CREATURE OF HABIT</span>
+              <strong>{creature}</strong>
+              <p>{canonical.headline.creatureLeaders.length ? canonical.headline.creatureLeaders.map((row) => `${row.count} picks · ${row.wins}W ${row.losses}L`).join(" / ") : "Most repeat selections of the same team"}</p>
+            </article>
+            <article>
+              <span>{mostPickedTeamRecord?.label ?? "MOST PICKED TEAM"}</span>
+              <strong>{mostPickedTeamRecord?.value ?? "—"}</strong>
+              <p>{mostPickedTeamRecord?.detail ?? "League-wide selection tendency"}</p>
+            </article>
+            <article>
+              <span>SEASON VOLUME</span>
+              <strong>{canonical.headline.leagueGoals} goals</strong>
+              <p>{canonical.headline.finishedPicks} finished picks · {canonical.headline.recordedSelections} selections recorded</p>
+            </article>
           </div>
 
           <header className={`${styles.sectionHeading} ${styles.tableHeading}`}><span>CURRENT TABLE</span><h2>League Table</h2></header>
@@ -153,20 +182,43 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
                 <span>{portraits[selected.id] ? <img src={portraits[selected.id]} alt="" onError={() => clearPortrait(selected.id)} /> : selected.name.slice(0, 1).toUpperCase()}</span>
                 <div><small>PLAYER PROFILE</small><h3>{selected.name}</h3><p>{selectedStanding?.points ?? 0} points · {selectedStanding?.played ?? 0} played</p></div>
               </div>
-              <div className={styles.playerStatLedger}>
-                <div><span>STRIKE RATE</span><b>{pct(selected.strikeRate)}</b></div>
-                <div><span>POINTS / PICK</span><b>{selected.pointsPerPick.toFixed(2)}</b></div>
-                <div><span>CURRENT BTTS STREAK</span><b>{selected.currentStreak}</b></div>
-                <div><span>BEST BTTS STREAK</span><b>{selected.bestStreak}</b></div>
-                <div><span>AVG SELECTED ODDS</span><b>{odds(selected.averageSelectedOdds)}</b></div>
-                <div><span>AVG WINNING ODDS</span><b>{odds(selected.averageWinningOdds)}</b></div>
-                <div><span>BIGGEST WINNING ODDS</span><b>{odds(selected.biggestWinningOdds)}</b></div>
-                <div><span>LONGEST WINLESS RUN</span><b>{selected.longestWinlessStreak}</b></div>
-                <div><span>TOTAL GOALS</span><b>{selected.goals}</b></div>
-                <div><span>AVG GOALS / PICK</span><b>{selected.averageGoals.toFixed(1)}</b></div>
-                <div><span>RESULT SPLIT</span><b>{selected.homeWins}H · {selected.draws}D · {selected.awayWins}A</b></div>
-                <div><span>MOST PICKED COMPETITION</span><b>{selected.favouriteCompetition}</b></div>
-                <div><span>MOST PICKED TEAM</span><b>{selected.mostPickedTeamCount >= 2 ? `${selected.mostPickedTeam} · ${selected.mostPickedTeamCount} picks` : selected.mostPickedTeam}</b></div>
+
+              <div className={styles.playerGroups}>
+                <section>
+                  <header><span>PERFORMANCE</span><h4>Output</h4></header>
+                  <div className={styles.playerLines}>
+                    <div><span>Strike rate</span><b>{pct(selected.strikeRate)}</b></div>
+                    <div><span>Points / pick</span><b>{selected.pointsPerPick.toFixed(2)}</b></div>
+                    <div><span>Current BTTS streak</span><b>{selected.currentStreak}</b></div>
+                    <div><span>Best BTTS streak</span><b>{selected.bestStreak}</b></div>
+                  </div>
+                </section>
+                <section>
+                  <header><span>SELECTION STYLE</span><h4>Tendencies</h4></header>
+                  <div className={styles.playerLines}>
+                    <div><span>Most picked competition</span><b>{selected.favouriteCompetition}</b></div>
+                    <div><span>Most picked team</span><b>{selected.mostPickedTeamCount >= 2 ? `${selected.mostPickedTeam} · ${selected.mostPickedTeamCount}` : selected.mostPickedTeam}</b></div>
+                    <div><span>Repeat-team record</span><b>{selected.mostPickedTeamCount >= 2 ? `${selected.repeatTeamWins}W · ${selected.repeatTeamLosses}L` : "—"}</b></div>
+                    <div><span>Avg selected odds</span><b>{odds(selected.averageSelectedOdds)}</b></div>
+                  </div>
+                </section>
+                <section>
+                  <header><span>RECORDS</span><h4>Highs & Lows</h4></header>
+                  <div className={styles.playerLines}>
+                    <div><span>Avg winning odds</span><b>{odds(selected.averageWinningOdds)}</b></div>
+                    <div><span>Biggest winning odds</span><b>{odds(selected.biggestWinningOdds)}</b></div>
+                    <div><span>Longest winless run</span><b>{selected.longestWinlessStreak}</b></div>
+                    <div><span>Best BTTS streak</span><b>{selected.bestStreak}</b></div>
+                  </div>
+                </section>
+                <section>
+                  <header><span>GOALS & RESULTS</span><h4>Match Profile</h4></header>
+                  <div className={styles.playerLines}>
+                    <div><span>Total goals</span><b>{selected.goals}</b></div>
+                    <div><span>Avg goals / pick</span><b>{selected.averageGoals.toFixed(1)}</b></div>
+                    <div><span>Result split</span><b>{selected.homeWins}H · {selected.draws}D · {selected.awayWins}A</b></div>
+                  </div>
+                </section>
               </div>
             </div>
           ) : null}
@@ -177,6 +229,12 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
         <section className={styles.section}>
           <header className={styles.sectionHeading}><span>RECENT FORM</span><h2>Form & Trends</h2></header>
           <div className={styles.formKey}><span><i className={styles.winDot} /> +3</span><span><i className={styles.oneDot} /> +1</span><span><i className={styles.nilDot} /> −1</span></div>
+          <div className={styles.formGameweeks} aria-label="Form gameweeks">
+            <span />
+            <strong>Player</strong>
+            <div>{canonical.formGameweeks.map((number) => <b key={number}>GW {number}</b>)}</div>
+            <strong>Total</strong>
+          </div>
           <div className={styles.formTable}>
             {standings.map((standing, index) => {
               const row = formById.get(standing.id);
@@ -196,12 +254,20 @@ export default function V2StatCentre({ seasonLabel, profiles, gameweeks, fixture
         <section className={styles.section}>
           <header className={styles.sectionHeading}><span>SEASON {seasonLabel}</span><h2>League Records</h2></header>
           <div className={styles.recordLedger}>
-            {canonical.seasonFacts.map((fact) => (
-              <div key={fact.label}>
-                <span>{fact.label}</span><strong>{fact.value}</strong><b>{fact.detail}</b>
-                {fact.breakdown?.length ? <small>{fact.breakdown.join(" · ")}</small> : null}
-              </div>
-            ))}
+            {canonical.seasonFacts.map((fact) => {
+              const expandable = Boolean(fact.breakdown?.length);
+              const open = expandedRecord === fact.label;
+              return (
+                <article key={fact.label} className={open ? styles.recordOpen : ""}>
+                  <div className={styles.recordRow}>
+                    <span>{fact.label}</span>
+                    <strong>{fact.value}</strong>
+                    <div className={styles.recordDetail}><b>{fact.detail}</b>{expandable ? <button type="button" onClick={() => setExpandedRecord(open ? null : fact.label)} aria-expanded={open}>{open ? "Hide detail" : "View detail"}</button> : null}</div>
+                  </div>
+                  {open && fact.breakdown?.length ? <div className={styles.recordBreakdown}>{fact.breakdown.map((line) => <span key={line}>{line}</span>)}</div> : null}
+                </article>
+              );
+            })}
           </div>
         </section>
       ) : null}
