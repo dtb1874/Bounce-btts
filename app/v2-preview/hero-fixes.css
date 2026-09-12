@@ -84,16 +84,16 @@
     line-height: 1.2 !important;
   }
 
-  /* Admin: use the current production Tynecastle frontage watermark and keep title/state side-by-side. */
+  /* Admin: current Tynecastle frontage. Title hugs left; status stays compact, right-aligned and flush to tabs. */
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
     display: grid !important;
-    grid-template-columns: minmax(0, .9fr) minmax(145px, 1.1fr) !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: end !important;
-    gap: 12px !important;
+    gap: 8px !important;
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    padding: 18px !important;
+    padding: 18px 0 0 12px !important;
     background:
       linear-gradient(90deg, rgba(247,241,233,.98) 0%, rgba(247,241,233,.94) 46%, rgba(247,241,233,.48) 100%),
       url('/assets/tynecastle-building-watermark.png') right center / 56% auto no-repeat !important;
@@ -102,6 +102,8 @@
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] {
     width: 100% !important;
     min-width: 0 !important;
+    justify-self: start !important;
+    align-self: center !important;
   }
 
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] h1 {
@@ -118,8 +120,8 @@
 
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
     align-self: end !important;
-    justify-self: stretch !important;
-    width: auto !important;
+    justify-self: end !important;
+    width: clamp(172px, 43vw, 218px) !important;
     min-width: 0 !important;
     max-width: none !important;
     margin: 0 !important;
@@ -130,7 +132,7 @@
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] strong {
     font-size: clamp(1.15rem, 5vw, 1.45rem) !important;
     line-height: .98 !important;
-    overflow-wrap: anywhere !important;
+    white-space: nowrap !important;
   }
 
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] small {
@@ -141,12 +143,12 @@
 
 @media (max-width: 390px) {
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
-    grid-template-columns: minmax(0, 1fr) minmax(130px, .95fr) !important;
-    gap: 9px !important;
-    padding: 16px 14px !important;
+    gap: 6px !important;
+    padding: 16px 0 0 10px !important;
   }
 
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
+    width: clamp(164px, 44vw, 190px) !important;
     padding: 10px !important;
   }
 }
