@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "../V2AdminCentre.module.css";
+import overviewStyles from "./V2AdminOverview.module.css";
 import type { AdminProps, Profile } from "./types";
 import { formatDate, token } from "./helpers";
 
@@ -52,6 +52,7 @@ export default function V2AdminOverview({ gameweek, activeMembers, fixtures, pre
   const [runs, setRuns] = useState<ProviderRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [showResolved, setShowResolved] = useState(false);
+  const [showProvider, setShowProvider] = useState(false);
   const eligible = fixtures.filter((row) => row.is_eligible).length;
   const submitted = new Set(predictions.map((row) => row.member_id)).size;
   const outstanding = Math.max(0, activeMembers.length - submitted);
@@ -85,20 +86,44 @@ export default function V2AdminOverview({ gameweek, activeMembers, fixtures, pre
   const unresolved = alerts.filter((row) => !row.resolved);
   const visible = alerts.filter((row) => Boolean(row.resolved) === showResolved);
   const run = runs[0];
+  const visibleAlertCount = unresolved.length || alertsCount;
 
-  return <section className={styles.section}>
-    <header className={styles.sectionHeading}><span>CURRENT STATUS</span><h2>Overview</h2></header>
-    <div className={styles.commandStrip}>
+  return <section className={overviewStyles.overview}>
+    <header className={overviewStyles.heading}><span>LEAGUE CONTROL ROOM</span><h2>Overview</h2></header>
+
+    <div className={overviewStyles.statusBar}>
       <div><span>GAMEWEEK</span><strong>{gameweek ? `GW ${gameweek.number}` : "—"}</strong><small>{gameweek?.status ?? "No active week"}</small></div>
       <div><span>SUBMISSIONS</span><strong>{submitted}/{activeMembers.length}</strong><small>{outstanding ? `${outstanding} still to pick` : "Everyone is in"}</small></div>
-      <div><span>ELIGIBLE FIXTURES</span><strong>{fixtureState === "ready" ? eligible : "…"}</strong><small>{fixtureState === "loading" ? "Checking" : fixtureState === "error" ? "Unavailable" : `${fixtures.length} attached`}</small></div>
-      <div><span>ALERTS</span><strong>{unresolved.length || alertsCount}</strong><small>{unresolved.length || alertsCount ? "Review required" : "Clear"}</small></div>
+      <div><span>FIXTURE COVER</span><strong>{fixtureState === "ready" ? eligible : "…"}</strong><small>{fixtureState === "loading" ? "Checking provider cover" : fixtureState === "error" ? "Fixture data unavailable" : `${fixtures.length} attached`}</small></div>
+      <div><span>ATTENTION</span><strong className={visibleAlertCount ? overviewStyles.attentionState : overviewStyles.clearState}>{visibleAlertCount ? `${visibleAlertCount} alert${visibleAlertCount === 1 ? "" : "s"}` : "All clear"}</strong><small>{visibleAlertCount ? "Review below" : "No unresolved provider or gameweek alerts"}</small></div>
     </div>
-    {run ? <div className={styles.providerStrip}><div><span>LAST PROVIDER CHECK</span><strong>{String(run.status ?? "—").toUpperCase()}</strong></div><div><span>RUN TIME</span><strong>{formatDate(run.started_at)}</strong></div><div><span>API REQUESTS</span><strong>{run.requests_used ?? 0}</strong></div></div> : null}
-    <div className={styles.alertToolbar}><div><button type="button" className={!showResolved ? styles.activeMiniTab : ""} onClick={() => setShowResolved(false)}>Needs attention · {unresolved.length}</button><button type="button" className={showResolved ? styles.activeMiniTab : ""} onClick={() => setShowResolved(true)}>Resolved · {alerts.length - unresolved.length}</button></div>{!showResolved && unresolved.length ? <button type="button" className={styles.secondaryButton} onClick={() => void bulk(unresolved)}>Clear all</button> : null}</div>
-    <div className={styles.alertList}>{loading ? <p>Loading alerts…</p> : visible.length ? visible.slice(0, 20).map((alert) => {
-      const message = alertMessage(alert);
-      return <article key={alert.id}><div><span>{String(alert.severity ?? "warning").toUpperCase()}</span><strong>{alert.title ?? `${alert.fixtures?.home_team ?? "Fixture"} v ${alert.fixtures?.away_team ?? ""}`}</strong>{alert.profiles?.display_name ? <small>Pick belongs to {alert.profiles.display_name}</small> : null}{message ? <p>{message}</p> : null}</div><div className={styles.rowActions}><button type="button" className={styles.secondaryButton} onClick={() => void setResolved(alert, !alert.resolved)}>{alert.resolved ? "Reopen" : "Resolve"}</button>{!alert.resolved && alert.fixture_id ? <button type="button" className={styles.secondaryButton} onClick={() => void bulk(unresolved.filter((row) => row.fixture_id === alert.fixture_id))}>Clear same fixture</button> : null}</div></article>;
-    }) : <div className={styles.emptyState}>{showResolved ? "No resolved alerts." : "All clear."}</div>}</div>
+
+    {run ? <>
+      <button type="button" className={overviewStyles.providerToggle} onClick={() => setShowProvider((value) => !value)} aria-expanded={showProvider}>{showProvider ? "Hide provider details" : "Provider details"}</button>
+      {showProvider ? <div className={overviewStyles.providerDetails}>
+        <div><span>LAST CHECK</span><strong>{String(run.status ?? "—").toUpperCase()}</strong></div>
+        <div><span>RUN TIME</span><strong>{formatDate(run.started_at)}</strong></div>
+        <div><span>API REQUESTS</span><strong>{run.requests_used ?? 0}</strong></div>
+      </div> : null}
+    </> : null}
+
+    <div className={overviewStyles.attentionBlock}>
+      <header className={overviewStyles.attentionHeading}>
+        <div><span>{visibleAlertCount ? "ACTION REQUIRED" : "SYSTEM HEALTH"}</span><h3>{visibleAlertCount ? "Attention Queue" : "All systems clear"}</h3></div>
+        <div className={overviewStyles.attentionTabs}>
+          <button type="button" className={!showResolved ? overviewStyles.active : ""} onClick={() => setShowResolved(false)}>Needs attention · {unresolved.length}</button>
+          <button type="button" className={showResolved ? overviewStyles.active : ""} onClick={() => setShowResolved(true)}>Resolved · {alerts.length - unresolved.length}</button>
+          {!showResolved && unresolved.length ? <button type="button" className={overviewStyles.clearAll} onClick={() => void bulk(unresolved)}>Clear all</button> : null}
+        </div>
+      </header>
+
+      <div className={overviewStyles.alertList}>{loading ? <p className={overviewStyles.loading}>Loading alerts…</p> : visible.length ? visible.slice(0, 20).map((alert) => {
+        const message = alertMessage(alert);
+        return <article key={alert.id}>
+          <div className={overviewStyles.alertCopy}><span>{String(alert.severity ?? "warning").toUpperCase()}</span><strong>{alert.title ?? `${alert.fixtures?.home_team ?? "Fixture"} v ${alert.fixtures?.away_team ?? ""}`}</strong>{alert.profiles?.display_name ? <small>Pick belongs to {alert.profiles.display_name}</small> : null}{message ? <p>{message}</p> : null}</div>
+          <div className={overviewStyles.actions}><button type="button" onClick={() => void setResolved(alert, !alert.resolved)}>{alert.resolved ? "Reopen" : "Resolve"}</button>{!alert.resolved && alert.fixture_id ? <button type="button" onClick={() => void bulk(unresolved.filter((row) => row.fixture_id === alert.fixture_id))}>Clear same fixture</button> : null}</div>
+        </article>;
+      }) : <div className={overviewStyles.empty}><strong>{showResolved ? "No resolved alerts" : "All clear"}</strong><p>{showResolved ? "Resolved items will appear here." : "No unresolved provider or gameweek alerts need attention."}</p></div>}</div>
+    </div>
   </section>;
 }
