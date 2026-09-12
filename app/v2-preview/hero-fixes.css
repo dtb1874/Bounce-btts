@@ -1,0 +1,152 @@
+/* V2 preview masthead corrections.
+   Keep these overrides scoped to V2 preview while Phase 3 visual work is validated. */
+
+@media (max-width: 760px) {
+  /* Stat Centre: keep the masthead readable at full mobile width. */
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_hero__"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 18px !important;
+    background:
+      linear-gradient(90deg, rgba(247,241,233,.98) 0%, rgba(247,241,233,.94) 58%, rgba(247,241,233,.48) 100%),
+      url('/assets/st-giles-heart.jpg') right center / 48% cover no-repeat !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroTitle__"] {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroTitle__"] h1 {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 4px 0 0 !important;
+    font-size: clamp(2rem, 11vw, 2.7rem) !important;
+    line-height: .94 !important;
+    white-space: normal !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroTitle__"] p {
+    width: min(100%, 36rem) !important;
+    max-width: 36rem !important;
+    margin: 8px 0 0 !important;
+    font-size: .58rem !important;
+    line-height: 1.45 !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    background: rgba(247,241,233,.86) !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] > div {
+    min-width: 0 !important;
+    min-height: 58px !important;
+    padding: 8px 9px !important;
+    border-left: 0 !important;
+    border-right: 1px solid rgba(95,31,54,.13) !important;
+    border-bottom: 0 !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] > div:last-child {
+    border-right: 0 !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] strong,
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] small {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    text-align: left !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] strong {
+    font-size: .82rem !important;
+    line-height: 1.05 !important;
+  }
+
+  [class*="V2StatCentre_page__"] [class*="V2StatCentre_heroSummary__"] small {
+    margin-top: 2px !important;
+    font-size: .43rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Admin: use the current production Tynecastle frontage watermark and keep title/state side-by-side. */
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, .9fr) minmax(145px, 1.1fr) !important;
+    align-items: end !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 18px !important;
+    background:
+      linear-gradient(90deg, rgba(247,241,233,.98) 0%, rgba(247,241,233,.94) 46%, rgba(247,241,233,.48) 100%),
+      url('/assets/tynecastle-building-watermark.png') right center / 56% auto no-repeat !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] h1 {
+    margin: 4px 0 0 !important;
+    font-size: clamp(2.15rem, 11vw, 2.75rem) !important;
+    line-height: .92 !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] p {
+    margin-top: 6px !important;
+    font-size: .52rem !important;
+    line-height: 1.25 !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
+    align-self: end !important;
+    justify-self: stretch !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 11px 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] strong {
+    font-size: clamp(1.15rem, 5vw, 1.45rem) !important;
+    line-height: .98 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] small {
+    font-size: .48rem !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
+    grid-template-columns: minmax(0, 1fr) minmax(130px, .95fr) !important;
+    gap: 9px !important;
+    padding: 16px 14px !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
+    padding: 10px !important;
+  }
+}
