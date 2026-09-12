@@ -1,0 +1,71 @@
+/* V2 preview-only Admin masthead corrections.
+   Stat Centre responsive layout now lives in V2StatCentre.module.css. */
+
+@media (max-width: 760px) {
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 18px 0 0 12px !important;
+    background:
+      linear-gradient(90deg, rgba(247,241,233,.98) 0%, rgba(247,241,233,.94) 46%, rgba(247,241,233,.48) 100%),
+      url('/assets/tynecastle-building-watermark.png') right center / 56% auto no-repeat !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-self: start !important;
+    align-self: center !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] h1 {
+    margin: 4px 0 0 !important;
+    font-size: clamp(2.15rem, 11vw, 2.75rem) !important;
+    line-height: .92 !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_heroTitle__"] p {
+    margin-top: 6px !important;
+    font-size: .52rem !important;
+    line-height: 1.25 !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
+    align-self: end !important;
+    justify-self: end !important;
+    width: clamp(172px, 43vw, 218px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 11px 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] strong {
+    font-size: clamp(1.15rem, 5vw, 1.45rem) !important;
+    line-height: .98 !important;
+    white-space: nowrap !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] small {
+    font-size: .48rem !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
+    gap: 6px !important;
+    padding: 16px 0 0 10px !important;
+  }
+
+  [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
+    width: clamp(164px, 44vw, 190px) !important;
+    padding: 10px !important;
+  }
+}
