@@ -12,6 +12,7 @@ type ShareTableButtonProps = {
   gameweekNumber?: number | null;
   className?: string;
   compact?: boolean;
+  label?: string;
 };
 
 async function createSnapshot(rows:PublicStandingRow[],seasonLabel:string,prizePot:number,gameweekNumber:number|null,liveUrl:string){
@@ -27,8 +28,8 @@ async function createSnapshot(rows:PublicStandingRow[],seasonLabel:string,prizeP
   const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(result=>result?resolve(result):reject(new Error("The table image could not be generated.")),"image/jpeg",.94));return new File([blob],`bounce-btts-table-${seasonLabel.replace("/","-")}.jpg`,{type:"image/jpeg"});
 }
 
-export default function ShareTableButton({rows,seasonLabel,prizePot,gameweekNumber=null,className="",compact=false}:ShareTableButtonProps){
+export default function ShareTableButton({rows,seasonLabel,prizePot,gameweekNumber=null,className="",compact=false,label="Share league table"}:ShareTableButtonProps){
   const[busy,setBusy]=useState(false);const[message,setMessage]=useState("");
   async function share(){if(busy)return;setBusy(true);setMessage("");try{const liveUrl=`${window.location.origin}/table`;const file=await createSnapshot(rows,seasonLabel,prizePot,gameweekNumber,liveUrl);const text=`Bounce BTTS League table — Season ${seasonLabel}`+`${gameweekNumber?` — Gameweek ${gameweekNumber}`:""}\n`+`See the live table: ${liveUrl}`;const shareData:ShareData={title:"Bounce BTTS League Table",text,url:liveUrl,files:[file]};const browser=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};if(navigator.share&&(!browser.canShare||browser.canShare({files:[file]}))){await navigator.share(shareData);setMessage("Shared")}else{const objectUrl=URL.createObjectURL(file);const link=document.createElement("a");link.href=objectUrl;link.download=file.name;link.click();window.setTimeout(()=>URL.revokeObjectURL(objectUrl),5000);window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,"_blank","noopener,noreferrer");setMessage("JPEG downloaded — attach it in WhatsApp")}}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return;setMessage(error instanceof Error?error.message:"Could not share the table.")}finally{setBusy(false)}}
-  return <span className={`tableShareControl ${compact?"compact":""} ${className}`.trim()}><button className="dataShareButton shareCompactWhatsApp" type="button" onClick={share} disabled={busy} aria-label="Share league table to WhatsApp">{busy?"Creating…":"Share league table"}</button>{message&&<small className="tableShareMessage">{message}</small>}</span>;
+  return <span className={`tableShareControl ${compact?"compact":""} ${className}`.trim()}><button className="dataShareButton shareCompactWhatsApp" type="button" onClick={share} disabled={busy} aria-label="Share league table to WhatsApp">{busy?"Creating…":label}</button>{message&&<small className="tableShareMessage">{message}</small>}</span>;
 }
