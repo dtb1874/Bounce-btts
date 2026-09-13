@@ -3,25 +3,31 @@
 import { useEffect, useMemo, useState } from "react";
 import { competitionDisplayName } from "@/lib/competition-display";
 import { compactPickOutcome, formatFootballElapsed, isLiveFixtureStatus } from "@/lib/football-live-display";
+import V2DashboardParity from "./V2DashboardParity";
 import styles from "./V2EditorialDashboard.module.css";
 
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
 type View = "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "about" | "alerts" | "admin";
 type Profile = { id: string; display_name: string; role: Role; active: boolean };
 type Gameweek = { id: string; number: number; status: "open" | "locked" | "complete"; opens_at: string | null; locks_at: string };
-type Fixture = { id: string; gameweek_id: string | null; competition: string; country?: string | null; home_team: string; away_team: string; kickoff_at: string; status: string; live_elapsed?: number | null; home_score: number | null; away_score: number | null; odds_fractional: string | null };
+type Fixture = { id: string; gameweek_id: string | null; competition: string; country?: string | null; home_team: string; away_team: string; kickoff_at: string; status: string; live_elapsed?: number | null; home_score: number | null; away_score: number | null; odds_fractional: string | null; odds_deadline_fractional?: string | null };
 type Prediction = { id: string; gameweek_id: string; member_id: string; fixture_id: string; points_awarded: number | null };
+type Adjustment = { gameweek_id: string; member_id: string; points: number; reason: string };
 type Standing = { id: string; name: string; played: number; wins: number; oneSided: number; zeroZeroCount: number; points: number };
 
 type Props = {
   gameweek: Gameweek | null;
+  gameweeks: Gameweek[];
   profiles: Profile[];
   fixtures: Fixture[];
   predictions: Prediction[];
+  allPredictions: Prediction[];
+  adjustments: Adjustment[];
   standings: Standing[];
   seasonLabel: string;
   entryFee: number;
   isOpen: boolean;
+  isAdmin: boolean;
   myId: string;
   setView: (view: View) => void;
 };
@@ -47,7 +53,7 @@ function ordinal(value: number) {
   return `${value}th`;
 }
 
-export default function V2EditorialDashboard({ gameweek, profiles, fixtures, predictions, standings, seasonLabel, entryFee, isOpen, myId, setView }: Props) {
+export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fixtures, predictions, allPredictions, adjustments, standings, seasonLabel, entryFee, isOpen, isAdmin, myId, setView }: Props) {
   const [portraits, setPortraits] = useState<Record<string, string>>({});
   const myPrediction = predictions.find((row) => row.member_id === myId);
   const myFixture = fixtures.find((row) => row.id === myPrediction?.fixture_id);
@@ -204,6 +210,8 @@ export default function V2EditorialDashboard({ gameweek, profiles, fixtures, pre
           })}
         </div>
       </section>
+
+      <V2DashboardParity seasonLabel={seasonLabel} gameweek={gameweek} gameweeks={gameweeks} profiles={profiles} fixtures={fixtures} allPredictions={allPredictions} currentPredictions={predictions} adjustments={adjustments} isAdmin={isAdmin} isOpen={isOpen}/>
 
       <section className={styles.closingBand}>
         <div><span>THE BOUNCE</span><strong>BTTS LEAGUE · EST. 2024</strong></div>
