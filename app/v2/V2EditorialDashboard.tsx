@@ -168,10 +168,13 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
       </section>
 
       <section className={styles.editorialSection}>
-        <header className={styles.sectionHeader}>
+        <header className={styles.sectionHeader} style={{ position: "relative" }}>
           <div><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
-          <div className={styles.sectionHeaderRight}>
-            <div className={styles.combinedOddsPill}><span>Combined odds</span><strong>{combinedPickOdds ?? "—"}</strong></div>
+          <div style={{ position: "absolute", top: 0, right: 0, display: "grid", justifyItems: "end", gap: 5 }}>
+            <div style={{ minHeight: 34, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 10px", border: "1px solid rgba(183,141,54,.38)", borderRadius: 999, background: "rgba(206,167,78,.18)", color: "#5f402c", font: "800 .52rem/1 Arial,Helvetica,sans-serif", whiteSpace: "nowrap" }}>
+              <span style={{ color: "#8e5b35", letterSpacing: ".04em", textTransform: "uppercase" }}>Combined odds</span>
+              <strong style={{ color: "#431326", fontSize: ".68rem" }}>{combinedPickOdds ?? "—"}</strong>
+            </div>
             <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
           </div>
         </header>
