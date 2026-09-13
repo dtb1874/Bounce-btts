@@ -13,7 +13,7 @@ type Profile={id:string;display_name:string;active:boolean;role:string};
 type Gameweek={id:string;number:number;status:string;locks_at:string};
 type Prediction={id:string;gameweek_id:string;member_id:string;fixture_id:string;points_awarded:number|null};
 type Adjustment={gameweek_id:string;member_id:string;points:number;reason:string};
-type Fixture={id:string;gameweek_id:string|null;home_team:string;away_team:string;home_score:number|null;away_score:number|null;status?:string|null;odds_fractional?:string|null;odds_deadline_fractional?:string|null};
+type Fixture={id:string;gameweek_id:string|null;competition:string;country?:string|null;home_team:string;away_team:string;kickoff_at:string;home_score:number|null;away_score:number|null;status?:string|null;odds_fractional?:string|null;odds_deadline_fractional?:string|null};
 type Props={seasonLabel:string;gameweek:Gameweek|null;gameweeks:Gameweek[];profiles:Profile[];fixtures:Fixture[];allPredictions:Prediction[];currentPredictions:Prediction[];adjustments:Adjustment[];isAdmin:boolean;isOpen:boolean};
 
 function pointsFor(playerId:string,gwId:string,predictions:Prediction[],adjustments:Adjustment[]){const pred=predictions.find(p=>p.member_id===playerId&&p.gameweek_id===gwId&&p.points_awarded!=null);if(pred?.points_awarded!=null)return pred.points_awarded;const adj=adjustments.find(a=>a.member_id===playerId&&a.gameweek_id===gwId);return adj?.points??null}
