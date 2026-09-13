@@ -4,9 +4,9 @@ import { useState } from "react";
 import { createFixtureShareImage, type FixtureSharePick } from "./FixtureShareImage";
 import { sortFixtureSharePicks } from "./shareFixtureSort";
 
-type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];disabled?:boolean};
+type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];disabled?:boolean;label?:string};
 
-export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks,disabled=false}:Props){
+export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks,disabled=false,label="Share fixtures"}:Props){
   const [busy,setBusy]=useState(false);
   async function share(){
     if(disabled||busy)return;
@@ -20,5 +20,5 @@ export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks
       else{const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}
     }finally{setBusy(false)}
   }
-  return <button className="dashboardGoldAction" type="button" onClick={share} disabled={disabled||busy}>{busy?"Creating…":"Share fixtures"}</button>
+  return <button className="dashboardGoldAction" type="button" onClick={share} disabled={disabled||busy}>{busy?"Creating…":label}</button>
 }
