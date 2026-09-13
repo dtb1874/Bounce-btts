@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { competitionDisplayName } from "@/lib/competition-display";
 import { compactPickOutcome, formatFootballElapsed, isLiveFixtureStatus } from "@/lib/football-live-display";
 import V2DashboardParity from "./V2DashboardParity";
+import V2DashboardPickActions from "./V2DashboardPickActions";
 import styles from "./V2EditorialDashboard.module.css";
 
 type Role = "ultimate_admin" | "admin" | "member" | "guest";
@@ -128,23 +129,12 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
             <div className={styles.noSelection}><strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong><span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span></div>
           )}
         </div>
-        <div
-          className={styles.outcome}
-          style={{
-            alignSelf: "stretch",
-            placeContent: "center",
-            minWidth: 126,
-            padding: "18px 16px",
-            background: "linear-gradient(180deg,#5f1f36 0%,#481429 100%)",
-            borderLeft: "1px solid rgba(228,191,112,.24)",
-          }}
-        >
-          <div className={styles.weekStatusLine} style={{ justifyContent: "flex-end" }}>
+        <div className={styles.outcome}>
+          <div className={styles.lockedState}>
             <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
-            <i>·</i>
-            <span style={{ color: "#e1bd72" }}>{gameweekState}</span>
+            <span>{gameweekState}</span>
           </div>
-          {gameweek?.locks_at ? <time style={{ color: "#d8cbbb", fontSize: ".61rem", lineHeight: 1.35 }}>{formatDate(gameweek.locks_at)}</time> : null}
+          {gameweek?.locks_at ? <time>{formatDate(gameweek.locks_at)}</time> : null}
           {isOpen ? (
             <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
           ) : (
@@ -165,12 +155,14 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
           <div><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
           <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
         </header>
+        <V2DashboardPickActions gameweekId={gameweek?.id ?? null} gameweekNumber={gameweek?.number ?? null} seasonLabel={seasonLabel} profiles={profiles} fixtures={fixtures} predictions={predictions} standings={standings} prizePot={prizePot} isAdmin={isAdmin}/>
         <div className={styles.pickLedger}>
           {picks.map(({ profile, prediction, fixture, result }) => {
             const portrait = portraits[profile.id];
             const selected = Boolean(prediction);
             const score = fixture?.home_score != null && fixture.away_score != null ? `${fixture.home_score}–${fixture.away_score}` : "—";
-            const elapsed = fixture && isLiveFixtureStatus(fixture.status) ? formatFootballElapsed(fixture.status, fixture.live_elapsed) : fixture && ["FT", "AET", "PEN"].includes(fixture.status) ? "FT" : "—";
+            const elapsed = fixture && isLiveFixtureStatus(fixture.status) ? formatFootballElapsed(fixture.status, fixture.live_elapsed) : fixture && ["FT", "AET", "PEN"].includes(fixture.status) ? "FT" : "UPCOMING";
+            const pickOdds = fixture?.odds_deadline_fractional ?? fixture?.odds_fractional ?? "—";
             return (
               <article className={styles.pickRow} key={profile.id}>
                 <div className={styles.memberMark}>
@@ -179,13 +171,14 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
                 <div className={styles.pickContent}>
                   <div className={styles.pickTop}><strong>{profile.display_name}</strong><span className={selected ? styles.selectedState : styles.waitingState}>{selected ? "SELECTED" : "WAITING PICK"}</span></div>
                   <div className={styles.pickFixture}>{fixture ? <><strong>{fixture.home_team} v {fixture.away_team}</strong><span>{competitionDisplayName(fixture)}</span></> : <span>Awaiting selection</span>}</div>
+                  {fixture ? <div className={styles.pickMetaLine}><span>{formatDate(fixture.kickoff_at)}</span><i>·</i><b>Odds {pickOdds}</b></div> : null}
                   {fixture ? <div className={styles.pickLiveLine}><strong>{score}</strong><i>·</i><span>{elapsed}</span><i>·</i><b className={`${styles.resultPill} ${styles[`result_${result.tone}`]}`}>{result.label}</b></div> : null}
                 </div>
               </article>
             );
           })}
         </div>
-        <button className={styles.sectionLink} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
+        <button className={styles.sectionLink} type="button" onClick={() => setView("results")}>Open full results <span>→</span></button>
       </section>
 
       <section className={`${styles.editorialSection} ${styles.tableSection}`}>
