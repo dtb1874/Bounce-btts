@@ -12,16 +12,16 @@ type Adjustment = { gameweek_id: string; member_id: string; points: number; reas
 type RaceRow = { id: string; name: string; points: number; wins: number; zeroZero: number; position: number };
 type RaceFrame = { gameweek: number; rows: RaceRow[] };
 type RacePoint = { index: number; position: number; moving?: boolean };
-type Props = { profiles: Profile[]; gameweeks: Gameweek[]; predictions: Prediction[]; adjustments: Adjustment[]; seasonLabel: string };
+type Props = { profiles: Profile[]; gameweeks: Gameweek[]; predictions: Prediction[]; adjustments: Adjustment[]; seasonLabel: string; inline?: boolean };
 type SharedPlayer = { id: string; name: string; colour: string };
 type SharedFrame = { gameweek: number; positions: Record<string, number> };
 type SharedRacePayload = { v: 1; seasonLabel: string; players: SharedPlayer[]; frames: SharedFrame[]; selected: string[] };
 
 const PALETTE = ["#f1c46f", "#ef7e8c", "#7fc7ff", "#89d6a6", "#c99cff", "#ff9e67", "#8fd9d1", "#d8d0c2", "#f29fd2", "#a9c978"];
-const MS_PER_GW = 650;
+const MS_PER_GW = 1000;
 const SHARE_STEPS_PER_GW = 12;
 
-function buildFrames({ profiles, gameweeks, predictions, adjustments }: Omit<Props, "seasonLabel">): RaceFrame[] {
+function buildFrames({ profiles, gameweeks, predictions, adjustments }: Omit<Props, "seasonLabel" | "inline">): RaceFrame[] {
   const players = profiles.filter((profile) => profile.active && profile.role !== "guest");
   const scoredWeeks = [...gameweeks].filter((gw) => predictions.some((p) => p.gameweek_id === gw.id && p.points_awarded != null) || adjustments.some((a) => a.gameweek_id === gw.id)).sort((a, b) => a.number - b.number);
   const totals = new Map(players.map((player) => [player.id, { points: 0, wins: 0, zeroZero: 0 }]));
@@ -55,11 +55,11 @@ export default function PositionRacePortal(props: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { setSelectedIds((current) => { const valid = new Set(players.map((player) => player.id)); const kept = new Set([...current].filter((id) => valid.has(id))); if (kept.size === 0) players.forEach((player) => kept.add(player.id)); return kept; }); }, [players]);
-  useEffect(() => { let host: HTMLDivElement | null = null; const placeHost = () => { const form = document.querySelector("#current-form"); const dashboard = document.querySelector(".compactDashboard"); if (!form || !dashboard || !dashboard.contains(form)) return; if (!host) { host = document.createElement("div"); host.className = "positionRaceDashboardHost"; } if (form.nextElementSibling !== host) form.insertAdjacentElement("afterend", host); setTarget(host); }; placeHost(); const observer = new MutationObserver(placeHost); observer.observe(document.body, { childList: true, subtree: true }); return () => { observer.disconnect(); host?.remove(); }; }, []);
-  useEffect(() => { if (!target) return; if (frames.length < 2) { setProgress(Math.max(0, frames.length - 1)); setPlaying(false); return; } setProgress(0); setPlaying(true); }, [target, frames.length]);
+  useEffect(() => { if (props.inline) return; let host: HTMLDivElement | null = null; const placeHost = () => { const form = document.querySelector("#current-form"); const dashboard = document.querySelector(".compactDashboard"); if (!form || !dashboard || !dashboard.contains(form)) return; if (!host) { host = document.createElement("div"); host.className = "positionRaceDashboardHost"; } if (form.nextElementSibling !== host) form.insertAdjacentElement("afterend", host); setTarget(host); }; placeHost(); const observer = new MutationObserver(placeHost); observer.observe(document.body, { childList: true, subtree: true }); return () => { observer.disconnect(); host?.remove(); }; }, [props.inline]);
+  useEffect(() => { if (!props.inline && !target) return; if (frames.length < 2) { setProgress(Math.max(0, frames.length - 1)); setPlaying(false); return; } setProgress(0); setPlaying(true); }, [props.inline, target, frames.length]);
   useEffect(() => { if (!playing || frames.length < 2) return; let raf = 0; let previous = performance.now(); const tick = (now: number) => { const elapsed = now - previous; previous = now; setProgress((current) => { const next = current + elapsed / MS_PER_GW; if (next >= frames.length - 1) { setPlaying(false); return frames.length - 1; } return next; }); raf = window.requestAnimationFrame(tick); }; raf = window.requestAnimationFrame(tick); return () => window.cancelAnimationFrame(raf); }, [playing, frames.length]);
 
-  if (!target) return null;
+  if (!props.inline && !target) return null;
   const displayIndex = Math.max(0, Math.min(frames.length - 1, Math.ceil(progress - 0.001)));
   const currentFrame = frames[displayIndex];
   const visiblePlayers = players.filter((player) => selectedIds.has(player.id));
@@ -109,11 +109,12 @@ export default function PositionRacePortal(props: Props) {
     catch (error) { if (error instanceof DOMException && error.name === "AbortError") return; window.alert("Could not share the interactive race link."); }
   }
 
-  return createPortal(
+  const panel = (
     <section className={`${styles.shell} ${sharing ? styles.sharing : ""}`} aria-label="League position race">
       <div className={styles.head}><div className={styles.title}><span>SEASON STORY</span><h3>League Position Race</h3><p>League position by gameweek.</p></div><div className={styles.topActions}><div className={styles.shareActions}><button className={`${styles.shareButton} dataShareButton shareCompactWhatsApp`} type="button" onClick={shareAnimation}>{sharing ? "Creating…" : "Share clip"}</button><button className={`${styles.shareButton} ${styles.interactiveButton} dataShareButton shareCompactWhatsApp`} type="button" onClick={shareInteractive}>Interactive</button></div><div className={styles.picker}><button type="button" onClick={() => move(-1)} aria-label="Previous gameweek">‹</button><span>{currentFrame ? `GW ${currentFrame.gameweek}` : "—"}</span><button type="button" onClick={() => move(1)} aria-label="Next gameweek">›</button><button className={styles.playButton} type="button" onClick={() => { if (frames.length < 2) return; if (!playing && progress >= frames.length - 1) setProgress(0); setPlaying((value) => !value); }}>{playing ? "Pause" : "Play"}</button></div></div></div>
       {currentFrame ? <><div className={styles.graphWrap}><svg className={styles.graph} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`League positions through gameweek ${currentFrame.gameweek}`}>{players.map((_, index) => { const rank = index + 1; const y = yFor(rank); return <g key={`rank-${rank}`}><line className={styles.grid} x1={left} x2={right} y1={y} y2={y}/><text className={styles.rank} x={16} y={y + 4}>{rank}</text></g>; })}{frames.map((frame, index) => <text key={frame.gameweek} className={styles.gwLabel} x={xFor(index)} y={bottom + 30} textAnchor="middle">GW{frame.gameweek}</text>)}{visiblePlayers.map((player) => { const points = pointsAtProgress(frames, player.id, progress); const polyline = points.map((point) => `${xFor(point.index)},${yFor(point.position)}`).join(" "); const last = points.at(-1); const colour = colourById.get(player.id) ?? "#d8b76f"; return <g key={player.id}><polyline className={styles.raceLine} points={polyline} style={{ stroke: colour }}/>{points.slice(0, -1).filter((point) => !point.moving).map((point) => <circle key={`${player.id}-${point.index}`} className={styles.raceDot} cx={xFor(point.index)} cy={yFor(point.position)} r={3} style={{ fill: colour }}/>)}{last ? <circle className={styles.raceDot} cx={xFor(last.index)} cy={yFor(last.position)} r={5} style={{ fill: colour }}/> : null}</g>; })}</svg></div><div className={styles.legend}>{players.map((player, index) => { const selected = selectedIds.has(player.id); return <button key={player.id} type="button" className={`${styles.legendItem} ${selected ? "" : styles.legendOff}`} onClick={() => togglePlayer(player.id)} aria-pressed={selected}><span className={styles.avatar} style={{ background: colourById.get(player.id) ?? PALETTE[index % PALETTE.length] }}>{initials(player.name)}</span><strong>{player.name}</strong></button>; })}</div><div className={styles.legendHint}>Tap a player to show or hide their line. Your selection is also used for the shared clip.</div></> : <div className={styles.empty}>The race starts once the first gameweek has been scored.</div>}
-      <div className={styles.foot}><span>{frames.length} scored gameweek{frames.length === 1 ? "" : "s"}</span><span>~0.65 sec per GW</span></div>
-    </section>, target,
+      <div className={styles.foot}><span>{frames.length} scored gameweek{frames.length === 1 ? "" : "s"}</span><span>~1 sec per GW</span></div>
+    </section>
   );
+  return props.inline ? panel : createPortal(panel, target!);
 }
