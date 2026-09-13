@@ -57,7 +57,7 @@
     line-height: 1.25 !important;
   }
 
-  /* Stat Centre: branding is background texture, not a structural column. */
+  /* Stat Centre: full-width editorial header with faded Edinburgh texture. */
   [data-v2-surface="stats"] > main > header:first-child {
     position: relative !important;
     display: block !important;
@@ -65,11 +65,24 @@
     max-width: none !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    padding: 16px 18px 10px !important;
+    padding: 16px 18px 18px !important;
     overflow: hidden !important;
-    background:
-      linear-gradient(90deg, rgba(244,236,226,.995) 0%, rgba(244,236,226,.985) 58%, rgba(244,236,226,.90) 76%, rgba(244,236,226,.78) 100%),
-      url('/assets/st-giles-heart.jpg') right 42% / 46% auto no-repeat !important;
+    background: #f4ece2 !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child::after {
+    content: "" !important;
+    position: absolute !important;
+    z-index: 0 !important;
+    top: -16% !important;
+    right: -4% !important;
+    bottom: -12% !important;
+    left: 46% !important;
+    pointer-events: none !important;
+    background: url('/assets/st-giles-heart.jpg') center / cover no-repeat !important;
+    opacity: .16 !important;
+    -webkit-mask-image: radial-gradient(ellipse at 56% 54%, #000 0%, #000 38%, rgba(0,0,0,.76) 54%, transparent 78%) !important;
+    mask-image: radial-gradient(ellipse at 56% 54%, #000 0%, #000 38%, rgba(0,0,0,.76) 54%, transparent 78%) !important;
   }
 
   [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) {
@@ -95,104 +108,19 @@
     width: auto !important;
     max-width: 31rem !important;
     margin: 6px 0 0 !important;
-    padding-right: 22% !important;
+    padding-right: 18% !important;
     font-size: .64rem !important;
     line-height: 1.35 !important;
   }
 
+  /* Hide the structural artwork div; the faded watermark is supplied by the header itself. */
   [data-v2-surface="stats"] > main > header:first-child > div:nth-child(2) {
     display: none !important;
   }
 
+  /* Remove the duplicated headline-stat banner on mobile. League Overview carries these stats. */
   [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) {
-    position: relative !important;
-    z-index: 1 !important;
-    display: flex !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    height: auto !important;
-    min-height: 56px !important;
-    margin: 12px 0 0 !important;
-    border-top: 1px solid rgba(95,31,54,.16) !important;
-    border-bottom: 1px solid rgba(95,31,54,.16) !important;
-    background: rgba(247,241,233,.72) !important;
-    backdrop-filter: none !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    min-width: 0 !important;
-    min-height: 56px !important;
-    height: auto !important;
-    padding: 7px 9px !important;
-    overflow: hidden !important;
-    border-left: 0 !important;
-    border-right: 1px solid rgba(95,31,54,.12) !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(1) {
-    flex: 0 0 21% !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(2) {
-    flex: 0 0 23% !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) {
-    flex: 1 1 auto !important;
-    border-right: 0 !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > span {
-    font-size: .43rem !important;
-    line-height: 1 !important;
-    letter-spacing: .08em !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > strong {
-    margin-top: 2px !important;
-    max-width: 100% !important;
-    font-size: .86rem !important;
-    line-height: 1.05 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > small {
-    margin-top: 2px !important;
-    font-size: .46rem !important;
-    line-height: 1.05 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: 2px 6px !important;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
-    font-size: .58rem !important;
-    font-weight: 800 !important;
-    line-height: 1.18 !important;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong > span {
-    display: inline-block !important;
-    color: #4b2132 !important;
-    font: inherit !important;
-    letter-spacing: 0 !important;
-    text-transform: none !important;
-    white-space: nowrap !important;
+    display: none !important;
   }
 }
 
@@ -208,10 +136,15 @@
   }
 
   [data-v2-surface="stats"] > main > header:first-child {
-    padding: 14px 14px 9px !important;
-    background:
-      linear-gradient(90deg, rgba(244,236,226,.998) 0%, rgba(244,236,226,.99) 61%, rgba(244,236,226,.91) 78%, rgba(244,236,226,.80) 100%),
-      url('/assets/st-giles-heart.jpg') right 44% / 48% auto no-repeat !important;
+    padding: 14px 14px 16px !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child::after {
+    top: -12% !important;
+    right: -8% !important;
+    bottom: -10% !important;
+    left: 43% !important;
+    opacity: .15 !important;
   }
 
   [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) h1 {
@@ -219,24 +152,7 @@
   }
 
   [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) p {
-    padding-right: 18% !important;
+    padding-right: 12% !important;
     font-size: .6rem !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div {
-    padding: 6px 7px !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(1) {
-    flex-basis: 20% !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(2) {
-    flex-basis: 23% !important;
-  }
-
-  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong {
-    font-size: .54rem !important;
-    gap: 2px 5px !important;
   }
 }
