@@ -1,0 +1,33 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import styles from "./V2MemberSurfaces.module.css";
+
+type Gameweek={id:string;number:number;status:"open"|"locked"|"complete";locks_at:string};
+type Fixture={id:string;gameweek_id:string|null;competition:string;country:string;home_team:string;away_team:string;kickoff_at:string;status:string;live_elapsed?:number|null;home_score:number|null;away_score:number|null;odds_fractional:string|null;source:string;is_eligible:boolean};
+type Prediction={fixture_id:string};
+type Props={seasonLabel:string;gameweek:Gameweek|null;fixtures:Fixture[];predictions:Prediction[]};
+const liveStatuses=new Set(["1H","2H","ET","P","BT","INT"]),finishedStatuses=new Set(["FT","AET","PEN"]);
+function norm(v:string){return v.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
+function key(f:Fixture){return `${new Date(f.kickoff_at).toISOString().slice(0,16)}|${norm(f.home_team)}|${norm(f.away_team)}`}
+function richness(f:Fixture,selected:Set<string>){return(selected.has(f.id)?1000:0)+(f.source==="api-football"?40:0)+(f.odds_fractional?12:0)+(f.home_score!=null&&f.away_score!=null?10:0)+(f.status!=="NS"?4:0)}
+function dedupe(rows:Fixture[],selected:Set<string>){const map=new Map<string,Fixture>();for(const f of rows){const k=key(f),old=map.get(k);if(!old||richness(f,selected)>richness(old,selected))map.set(k,f)}return Array.from(map.values())}
+function kickoff(v:string){return new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(v))}
+function dateLabel(v:string){return new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"long",day:"numeric",month:"long"}).format(new Date(v))}
+function statusLabel(f:Fixture){if(liveStatuses.has(f.status))return f.live_elapsed!=null?`${f.live_elapsed}′ LIVE`:"LIVE";if(finishedStatuses.has(f.status))return f.status;return f.status==="NS"?"UPCOMING":f.status}
+
+export default function V2Fixtures({seasonLabel,gameweek,fixtures,predictions}:Props){
+  const [query,setQuery]=useState("");
+  const [country,setCountry]=useState("all");
+  const [competition,setCompetition]=useState("all");
+  const selected=useMemo(()=>new Set(predictions.map(p=>p.fixture_id)),[predictions]);
+  const allRows=useMemo(()=>dedupe(fixtures,selected).sort((a,b)=>a.kickoff_at.localeCompare(b.kickoff_at)||a.competition.localeCompare(b.competition)||a.home_team.localeCompare(b.home_team)),[fixtures,selected]);
+  const countries=useMemo(()=>Array.from(new Set(allRows.map(f=>f.country).filter(Boolean))).sort((a,b)=>a.localeCompare(b)),[allRows]);
+  const competitions=useMemo(()=>Array.from(new Set(allRows.filter(f=>country==="all"||f.country===country).map(f=>f.competition).filter(Boolean))).sort((a,b)=>a.localeCompare(b)),[allRows,country]);
+  const rows=useMemo(()=>{const q=norm(query);return allRows.filter(f=>(country==="all"||f.country===country)&&(competition==="all"||f.competition===competition)&&(!q||norm(`${f.home_team} ${f.away_team} ${f.country} ${f.competition}`).includes(q)))},[allRows,query,country,competition]);
+  const finished=rows.filter(f=>finishedStatuses.has(f.status)).length,live=rows.filter(f=>liveStatuses.has(f.status)).length;
+  const groups=new Map<string,Fixture[]>();for(const f of rows){const d=dateLabel(f.kickoff_at),k=`${d} · ${f.competition}`;groups.set(k,[...(groups.get(k)??[]),f])}
+  const controlsStyle={display:"grid",gridTemplateColumns:"minmax(0,1.4fr) repeat(2,minmax(150px,.7fr))",gap:8,margin:"18px 0 4px"} as const;
+  const inputStyle={minHeight:38,border:"1px solid rgba(95,31,54,.22)",borderRadius:2,background:"rgba(255,255,255,.48)",color:"#431326",padding:"0 10px",fontSize:".62rem",fontWeight:700,minWidth:0} as const;
+  return <section className={styles.page}><header className={styles.hero}><span>SEASON {seasonLabel}{gameweek?` · GW ${gameweek.number}`:""}</span><h1>Fixtures</h1><p>Gameweek-aware fixture browser with duplicate fixtures collapsed into one authoritative row. Search and filter the same fixture catalogue used for selections and live results.</p><div className={styles.summary}><div><span>FIXTURES</span><strong>{rows.length}</strong><small>{rows.length===allRows.length?"in view":"matching filters"}</small></div><div><span>LIVE</span><strong>{live}</strong><small>right now</small></div><div><span>FINISHED</span><strong>{finished}</strong><small>settled fixtures</small></div></div></header><main className={styles.content}><div className={styles.sectionTitle}><div><span>SELECTED GAMEWEEK</span><h2>Fixture List</h2></div><small>{gameweek?`GW ${gameweek.number} · ${gameweek.status}`:"No gameweek selected"}</small></div><div style={controlsStyle}><input style={inputStyle} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search team or competition" aria-label="Search fixtures"/><select style={inputStyle} value={country} onChange={e=>{setCountry(e.target.value);setCompetition("all")}} aria-label="Filter by country"><option value="all">All countries</option>{countries.map(value=><option value={value} key={value}>{value}</option>)}</select><select style={inputStyle} value={competition} onChange={e=>setCompetition(e.target.value)} aria-label="Filter by competition"><option value="all">All competitions</option>{competitions.map(value=><option value={value} key={value}>{value}</option>)}</select></div>{rows.length?Array.from(groups.entries()).map(([group,items])=><section className={styles.group} key={group}><div className={styles.competition}><strong>{group.split(" · ")[0]}</strong><span>{group.split(" · ").slice(1).join(" · ")}</span></div><div className={styles.ledger}>{items.map(f=><div className={`${styles.fixtureRow} ${selected.has(f.id)?styles.selected:""}`} key={f.id}><div className={styles.fixtureTime}><strong>{kickoff(f.kickoff_at).split(", ").pop()}</strong><span>{f.country}</span></div><div className={styles.fixtureTeams}><strong>{f.home_team} v {f.away_team}</strong><small>{f.odds_fractional?`BTTS ${f.odds_fractional}`:"BTTS odds —"}{selected.has(f.id)?" · SELECTED":""}</small></div><div className={styles.score}>{f.home_score!=null&&f.away_score!=null?`${f.home_score}–${f.away_score}`:"—"}</div><div className={`${styles.status} ${liveStatuses.has(f.status)?styles.live:finishedStatuses.has(f.status)?styles.finished:""}`}>{statusLabel(f)}</div></div>)}</div></section>):<div className={styles.empty}>{allRows.length?"No fixtures match those filters.":"No fixtures are attached to this gameweek yet."}</div>}</main><footer className={styles.footer}>Bounce BTTS · Edinburgh · fixture data follows the selected gameweek</footer></section>
+}
