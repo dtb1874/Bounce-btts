@@ -22,7 +22,8 @@ export default function V2OddsRefreshButton({ gameweekId, onChanged, className =
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Odds refresh failed.");
       setMessage(`Odds refreshed${typeof payload.oddsUpdated === "number" ? ` · ${payload.oddsUpdated} updated` : ""}`);
-      await onChanged?.();
+      if (onChanged) await onChanged();
+      else window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Odds refresh failed.");
     } finally {
