@@ -1,5 +1,5 @@
-/* V2 preview-only Admin masthead corrections.
-   Stat Centre responsive layout now lives in V2StatCentre.module.css. */
+/* V2 preview masthead corrections.
+   Admin remains module-targeted. Stat Centre uses the stable data-v2-surface hook. */
 
 @media (max-width: 760px) {
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_hero__"] {
@@ -56,6 +56,144 @@
     font-size: .48rem !important;
     line-height: 1.25 !important;
   }
+
+  /* Stat Centre: branding is background texture, not a structural column. */
+  [data-v2-surface="stats"] > main > header:first-child {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 16px 18px 10px !important;
+    overflow: hidden !important;
+    background:
+      linear-gradient(90deg, rgba(244,236,226,.995) 0%, rgba(244,236,226,.985) 58%, rgba(244,236,226,.90) 76%, rgba(244,236,226,.78) 100%),
+      url('/assets/st-giles-heart.jpg') right 42% / 46% auto no-repeat !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) {
+    position: relative !important;
+    z-index: 1 !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) h1 {
+    margin: 4px 0 0 !important;
+    max-width: none !important;
+    font-size: clamp(2rem, 10vw, 2.55rem) !important;
+    line-height: .94 !important;
+    white-space: nowrap !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) p {
+    width: auto !important;
+    max-width: 31rem !important;
+    margin: 6px 0 0 !important;
+    padding-right: 22% !important;
+    font-size: .64rem !important;
+    line-height: 1.35 !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(2) {
+    display: none !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) {
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 56px !important;
+    margin: 12px 0 0 !important;
+    border-top: 1px solid rgba(95,31,54,.16) !important;
+    border-bottom: 1px solid rgba(95,31,54,.16) !important;
+    background: rgba(247,241,233,.72) !important;
+    backdrop-filter: none !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    min-height: 56px !important;
+    height: auto !important;
+    padding: 7px 9px !important;
+    overflow: hidden !important;
+    border-left: 0 !important;
+    border-right: 1px solid rgba(95,31,54,.12) !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(1) {
+    flex: 0 0 21% !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(2) {
+    flex: 0 0 23% !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) {
+    flex: 1 1 auto !important;
+    border-right: 0 !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > span {
+    font-size: .43rem !important;
+    line-height: 1 !important;
+    letter-spacing: .08em !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > strong {
+    margin-top: 2px !important;
+    max-width: 100% !important;
+    font-size: .86rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div > small {
+    margin-top: 2px !important;
+    font-size: .46rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 2px 6px !important;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+    font-size: .58rem !important;
+    font-weight: 800 !important;
+    line-height: 1.18 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong > span {
+    display: inline-block !important;
+    color: #4b2132 !important;
+    font: inherit !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+  }
 }
 
 @media (max-width: 390px) {
@@ -67,5 +205,38 @@
   [class*="V2AdminCentre_page__"] [class*="V2AdminCentre_statusSignal__"] {
     width: clamp(164px, 44vw, 190px) !important;
     padding: 10px !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child {
+    padding: 14px 14px 9px !important;
+    background:
+      linear-gradient(90deg, rgba(244,236,226,.998) 0%, rgba(244,236,226,.99) 61%, rgba(244,236,226,.91) 78%, rgba(244,236,226,.80) 100%),
+      url('/assets/st-giles-heart.jpg') right 44% / 48% auto no-repeat !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) h1 {
+    font-size: 2rem !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(1) p {
+    padding-right: 18% !important;
+    font-size: .6rem !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div {
+    padding: 6px 7px !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(1) {
+    flex-basis: 20% !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(2) {
+    flex-basis: 23% !important;
+  }
+
+  [data-v2-surface="stats"] > main > header:first-child > div:nth-child(3) > div:nth-child(3) > strong {
+    font-size: .54rem !important;
+    gap: 2px 5px !important;
   }
 }
