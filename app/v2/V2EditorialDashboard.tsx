@@ -54,6 +54,20 @@ function ordinal(value: number) {
   return `${value}th`;
 }
 
+function combinedOdds(values: Array<string | null | undefined>) {
+  if (!values.length) return null;
+  let decimal = 1;
+  for (const value of values) {
+    const match = value?.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+    if (!match) return null;
+    const numerator = Number(match[1]);
+    const denominator = Number(match[2]);
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return null;
+    decimal *= 1 + numerator / denominator;
+  }
+  return `${(decimal - 1).toFixed(2)}/1`;
+}
+
 export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fixtures, predictions, allPredictions, adjustments, standings, seasonLabel, entryFee, isOpen, isAdmin, myId, setView }: Props) {
   const [portraits, setPortraits] = useState<Record<string, string>>({});
   const myPrediction = predictions.find((row) => row.member_id === myId);
@@ -96,6 +110,9 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
     return { profile, prediction, fixture, result };
   }), [activeMembers, predictions, fixtures]);
 
+  const combinedPickOdds = combinedOdds(
+    picks.filter((row) => row.prediction && row.fixture).map((row) => row.fixture?.odds_deadline_fractional ?? row.fixture?.odds_fractional),
+  );
   const won = picks.filter((row) => row.result.tone === "won").length;
   const live = picks.filter((row) => row.fixture && isLiveFixtureStatus(row.fixture.status) && row.result.tone !== "won").length;
   const missing = Math.max(0, activeMembers.length - submitted);
@@ -153,7 +170,10 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
       <section className={styles.editorialSection}>
         <header className={styles.sectionHeader}>
           <div><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
-          <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
+          <div className={styles.sectionHeaderRight}>
+            <div className={styles.combinedOddsPill}><span>Combined odds</span><strong>{combinedPickOdds ?? "—"}</strong></div>
+            <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
+          </div>
         </header>
         <V2DashboardPickActions gameweekId={gameweek?.id ?? null} gameweekNumber={gameweek?.number ?? null} seasonLabel={seasonLabel} profiles={profiles} fixtures={fixtures} predictions={predictions} standings={standings} prizePot={prizePot} isAdmin={isAdmin}/>
         <div className={styles.pickLedger}>
