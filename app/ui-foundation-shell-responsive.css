@@ -408,9 +408,9 @@
     z-index: 60;
     height: var(--ui-mobile-topbar-height);
     display: grid;
-    grid-template-columns: 42px auto minmax(0, 1fr);
+    grid-template-columns: 50px auto minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
+    gap: 11px;
     padding: env(safe-area-inset-top) 14px 0;
     border-bottom: 1px solid var(--ui-border);
     background: rgba(8, 8, 12, .86);
@@ -420,8 +420,8 @@
 
   .v2MobileMenuButton {
     position: static !important;
-    width: 38px !important;
-    height: 38px !important;
+    width: 48px !important;
+    height: 48px !important;
     display: grid !important;
     place-items: center;
     padding: 0 !important;
@@ -429,20 +429,20 @@
     border-radius: 50% !important;
     background: rgba(255, 255, 255, .035) !important;
     color: var(--ui-text) !important;
-    font-size: 1rem;
+    font-size: 1.28rem;
   }
 
   .v2MobileBrand {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding-right: 9px;
+    gap: 7px;
+    padding-right: 11px;
     border-right: 1px solid var(--ui-border);
   }
 
   .v2MobileBrand img {
-    width: 25px;
-    height: 27px;
+    width: 38px;
+    height: 40px;
     object-fit: contain;
   }
 
@@ -550,20 +550,20 @@
 
 @media (max-width: 430px) {
   :root {
-    --ui-mobile-topbar-height: 58px;
+    --ui-mobile-topbar-height: 64px;
     --ui-mobile-nav-height: 64px;
   }
 
   .v2MobileTopbar {
-    grid-template-columns: 38px auto minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: 50px auto minmax(0, 1fr);
+    gap: 9px;
     padding-left: 10px;
     padding-right: 10px;
   }
 
   .v2MobileMenuButton {
-    width: 34px !important;
-    height: 34px !important;
+    width: 48px !important;
+    height: 48px !important;
   }
 
   .v2MobileBrand span {
@@ -571,7 +571,7 @@
   }
 
   .v2MobileBrand {
-    padding-right: 8px;
+    padding-right: 9px;
   }
 
   .v2BottomNav {
@@ -592,5 +592,290 @@
   .v2Sidebar {
     padding-left: 13px;
     padding-right: 13px;
+  }
+}
+
+
+/* V2 mobile navigation drawer: retain the strong 1.x card-grid hierarchy,
+   but present it in the V2 cream / maroon / muted-gold editorial language. */
+@media (max-width: 900px) {
+  .v2Sidebar {
+    width: min(88vw, 390px) !important;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(14px, env(safe-area-inset-bottom)) !important;
+    overflow-x: hidden;
+    color: #2b2025;
+    border-right: 1px solid rgba(95,31,54,.16);
+    background:
+      linear-gradient(180deg, rgba(247,241,233,.985), rgba(239,229,216,.99)),
+      radial-gradient(circle at 18% 4%, rgba(183,141,54,.10), transparent 18rem);
+    box-shadow: 18px 0 44px rgba(43,19,30,.20);
+  }
+
+  .v2Sidebar::after {
+    left: -58px;
+    right: -58px;
+    bottom: 88px;
+    height: 300px;
+    opacity: .055;
+    background: url("/assets/st-giles-round.jpg") center / 245px auto no-repeat;
+    filter: sepia(.2) saturate(.55);
+    mix-blend-mode: multiply;
+  }
+
+  .v2SidebarBrand {
+    min-height: 86px;
+    grid-template-columns: 58px minmax(0,1fr) 38px;
+    gap: 12px;
+    padding: 2px 2px 18px;
+    border-bottom: 1px solid rgba(95,31,54,.15);
+  }
+
+  .v2SidebarBrand img {
+    width: 56px;
+    height: 59px;
+    filter: drop-shadow(0 4px 8px rgba(72,34,47,.18));
+  }
+
+  .v2SidebarBrand strong {
+    color: #431326;
+    font-size: 1.24rem;
+  }
+
+  .v2SidebarBrand span {
+    color: #714255;
+    font-size: .64rem;
+  }
+
+  .v2SidebarBrand small {
+    color: #8a7569;
+    font-size: .51rem;
+  }
+
+  .v2SidebarClose {
+    align-self: start;
+    margin-top: -2px;
+    color: #6f4353;
+    background: rgba(95,31,54,.05);
+    border: 1px solid rgba(95,31,54,.10);
+  }
+
+  .v2MemberIdentity {
+    position: absolute;
+    z-index: 4;
+    top: max(24px, calc(env(safe-area-inset-top) + 8px));
+    right: 64px;
+    display: block;
+    padding: 0;
+  }
+
+  .v2MemberIdentity .uiFoundationSidebarPortrait {
+    width: 54px !important;
+    height: 54px !important;
+    border: 2px solid rgba(183,141,54,.72);
+    background: #eee3d7;
+    box-shadow: 0 5px 15px rgba(67,19,38,.13) !important;
+  }
+
+  .v2MemberIdentity > div {
+    display: none;
+  }
+
+  .v2Nav {
+    gap: 0 !important;
+    padding: 20px 0 0 !important;
+  }
+
+  .v2NavSection {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .v2NavSection + .v2NavSection {
+    margin-top: 18px;
+  }
+
+  .v2NavSectionExplore {
+    padding-top: 18px;
+    border-top: 1px solid rgba(95,31,54,.13);
+  }
+
+  .v2NavSectionAdmin {
+    margin-top: 10px !important;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .v2NavSectionLabel {
+    grid-column: 1 / -1;
+    padding: 0 4px 2px !important;
+    color: #8e5b35 !important;
+    font-size: .55rem !important;
+    letter-spacing: .17em !important;
+  }
+
+  .v2NavSection:first-child .v2NavSectionLabel {
+    font-size: 0 !important;
+  }
+
+  .v2NavSection:first-child .v2NavSectionLabel::after {
+    content: "QUICK ACCESS";
+    font-size: .55rem;
+  }
+
+  .v2NavSectionExplore .v2NavSectionLabel {
+    font-size: 0 !important;
+  }
+
+  .v2NavSectionExplore .v2NavSectionLabel::after {
+    content: "MORE";
+    font-size: .55rem;
+  }
+
+  .v2NavSectionAdmin .v2NavSectionLabel {
+    display: none !important;
+  }
+
+  .v2Nav .v2NavItem {
+    min-height: 72px !important;
+    grid-template-columns: 22px minmax(0,1fr) auto !important;
+    align-content: center;
+    gap: 7px;
+    padding: 12px 12px !important;
+    border: 1px solid rgba(95,31,54,.15) !important;
+    border-radius: 10px !important;
+    background: rgba(95,31,54,.035) !important;
+    color: #3a2931 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+  }
+
+  .v2NavSection:first-child .v2NavItem {
+    border-color: rgba(95,31,54,.22) !important;
+    background: linear-gradient(145deg,rgba(95,31,54,.09),rgba(183,141,54,.055)) !important;
+  }
+
+  .v2Nav .v2NavItem:hover {
+    background: rgba(95,31,54,.07) !important;
+    color: #431326 !important;
+  }
+
+  .v2Nav .v2NavItemActive {
+    border-color: rgba(183,141,54,.58) !important;
+    background: linear-gradient(135deg,#6a2741,#51182f) !important;
+    color: #fff7ec !important;
+    box-shadow: inset 3px 0 0 #d7b468, 0 5px 14px rgba(67,19,38,.10);
+  }
+
+  .v2Nav .v2NavItemActive::before {
+    display: none;
+  }
+
+  .v2Nav .v2NavIcon {
+    color: #9a6f4c;
+    font-size: .78rem;
+  }
+
+  .v2Nav .v2NavItemActive .v2NavIcon {
+    color: #e2c276;
+  }
+
+  .v2Nav .v2NavText > span {
+    color: inherit;
+    font-size: .69rem;
+    font-weight: 820;
+    white-space: normal;
+    line-height: 1.15;
+  }
+
+  .v2Nav .v2NavHelper {
+    margin-top: 4px;
+    color: #8b7b72 !important;
+    font-size: .49rem !important;
+    line-height: 1.15;
+  }
+
+  .v2Nav .v2NavItemActive .v2NavHelper {
+    color: rgba(255,244,232,.66) !important;
+  }
+
+  .v2NavBadge {
+    min-width: 19px;
+    height: 19px;
+    background: #b78d36;
+    color: #fff9ef;
+  }
+
+  .v2SidebarEgg {
+    flex: 1 0 34px;
+    min-height: 34px !important;
+    height: auto !important;
+  }
+
+  .v2SignOut {
+    min-height: 62px;
+    grid-template-columns: 40px minmax(0,1fr) 20px;
+    gap: 11px;
+    padding: 10px 12px;
+    border: 1px solid rgba(95,31,54,.22);
+    border-radius: 10px;
+    background: linear-gradient(135deg,rgba(95,31,54,.10),rgba(183,141,54,.06));
+    color: #5f1f36;
+  }
+
+  .v2SignOutInitials {
+    width: 36px;
+    height: 36px;
+    background: #6a2741;
+    color: #fff4e8;
+  }
+
+  .v2SignOutCopy strong {
+    color: #431326;
+    font-size: .76rem;
+  }
+
+  .v2SignOutCopy small {
+    color: #7b6961;
+    font-size: .58rem;
+  }
+
+  .v2Scrim {
+    background: rgba(42,18,29,.54) !important;
+    backdrop-filter: blur(2px) saturate(.8);
+    -webkit-backdrop-filter: blur(2px) saturate(.8);
+  }
+}
+
+@media (max-width: 430px) {
+  .v2Sidebar {
+    width: 91vw !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .v2SidebarBrand {
+    grid-template-columns: 52px minmax(0,1fr) 34px;
+  }
+
+  .v2SidebarBrand img {
+    width: 50px;
+    height: 53px;
+  }
+
+  .v2MemberIdentity {
+    right: 56px;
+  }
+
+  .v2MemberIdentity .uiFoundationSidebarPortrait {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .v2Nav .v2NavItem {
+    min-height: 68px !important;
+    padding: 10px 9px !important;
+  }
+
+  .v2Nav .v2NavText > span {
+    font-size: .64rem;
   }
 }
