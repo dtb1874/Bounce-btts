@@ -39,13 +39,13 @@ Current owner: `app/EasterEggDiscovery.tsx`
 Current behaviour:
 - mounts globally from `app/layout.tsx`;
 - listens for document clicks in capture phase;
-- recognises the sidebar Hearts crest by `aside img[src*="/assets/hearts-crest.png"]`;
-- requires three taps within 2.6 seconds;
-- animates the crest after each tap;
-- finds the hidden sidebar button via `button[aria-label=" "]` and programmatically clicks it when the tap threshold is reached.
+- recognises the authenticated sidebar crest and main page-header crest;
+- opens the Easter egg after one crest tap;
+- animates the selected crest after the tap;
+- finds the hidden sidebar button via `button[aria-label=" "]` and programmatically clicks it.
 
 Migration target:
-- move the triple-tap counter onto the declarative crest/button ownership in the authenticated shell;
+- move the single-tap handling onto declarative crest/button ownership in the authenticated shell;
 - call the same existing easter-egg action callback rather than locating/clicking a hidden DOM node;
 - preserve the hidden sidebar egg button until the new handler is proven equivalent.
 
