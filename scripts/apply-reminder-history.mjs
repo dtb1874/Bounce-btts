@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-// v1.13.2 sync: keep fixture browsing aligned with the selected gameweek calendar window.
+// v1.13.3: distinguish Kelty Hearts from Heart of Midlothian in fixture eligibility.
 const path = "app/LeagueApp.tsx";
 let source = fs.readFileSync(path, "utf8");
 
@@ -56,6 +56,14 @@ if (source.includes(releaseHistoryAnchor)) {
   source = source.replace(releaseHistoryAnchor, catchup);
 }
 
+const keltyEligibilityReleaseAnchor = '  const catchup=[\n';
+if (source.includes(keltyEligibilityReleaseAnchor) && !source.includes('{version:"1.13.3"')) {
+  source = source.replace(
+    keltyEligibilityReleaseAnchor,
+    `${keltyEligibilityReleaseAnchor}    {version:"1.13.3",date:"18 Sep 2026",summary:"Kelty Hearts fixture eligibility fix",changes:["Corrected the Hearts exclusion so it applies to Heart of Midlothian and Hibernian teams without excluding Kelty Hearts","Restored valid Kelty Hearts fixtures to the normal UK Saturday 3pm selection pool","Kept the existing Hearts, Hearts youth, Hibs and Hibernian exclusions unchanged"]},\n`,
+  );
+}
+
 const releaseRenderAnchor = '    <details className={styles.releaseItem} open><summary><span><strong>v{latest.version}</strong> · {latest.date}</span><small>{latest.summary}</small></summary><ul>{latest.changes.map(c=><li key={c}>{c}</li>)}</ul></details>';
 if (source.includes(releaseRenderAnchor)) {
   source = source.replace(releaseRenderAnchor, '    {catchup.map((r,index)=><details className={styles.releaseItem} key={r.version} open={index===0}><summary><span><strong>v{r.version}</strong> · {r.date}</span><small>{r.summary}</small></summary><ul>{r.changes.map(c=><li key={c}>{c}</li>)}</ul></details>)}\n    <details className={styles.releaseItem}><summary><span><strong>v{latest.version}</strong> · {latest.date}</span><small>{latest.summary}</small></summary><ul>{latest.changes.map(c=><li key={c}>{c}</li>)}</ul></details>');
@@ -67,16 +75,14 @@ if (source.includes(releaseRenderAnchor)) {
 // entry at build time only; no browser runtime code.
 const oldReleaseVersion = 'const RELEASE_VERSION = "1.6.3";';
 const oldReleaseDate = 'const RELEASE_DATE = "20 Aug 2026";';
-if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.13.2";');
-else if (source.includes('const RELEASE_VERSION = "1.13.1";')) source = source.replace('const RELEASE_VERSION = "1.13.1";', 'const RELEASE_VERSION = "1.13.2";');
-else if (source.includes('const RELEASE_VERSION = "1.13.0";')) source = source.replace('const RELEASE_VERSION = "1.13.0";', 'const RELEASE_VERSION = "1.13.2";');
-else if (source.includes('const RELEASE_VERSION = "1.12.1";')) source = source.replace('const RELEASE_VERSION = "1.12.1";', 'const RELEASE_VERSION = "1.13.2";');
-else if (source.includes('const RELEASE_VERSION = "1.12.0";')) source = source.replace('const RELEASE_VERSION = "1.12.0";', 'const RELEASE_VERSION = "1.13.2";');
-else if (!source.includes('const RELEASE_VERSION = "1.13.2";')) throw new Error("Could not align release version");
-if (source.includes(oldReleaseDate)) source = source.replace(oldReleaseDate, 'const RELEASE_DATE = "10 Sep 2026";');
-else if (source.includes('const RELEASE_DATE = "7 Sep 2026";')) source = source.replace('const RELEASE_DATE = "7 Sep 2026";', 'const RELEASE_DATE = "10 Sep 2026";');
-else if (source.includes('const RELEASE_DATE = "5 Sep 2026";')) source = source.replace('const RELEASE_DATE = "5 Sep 2026";', 'const RELEASE_DATE = "10 Sep 2026";');
-else if (source.includes('const RELEASE_DATE = "6 Sep 2026";')) source = source.replace('const RELEASE_DATE = "6 Sep 2026";', 'const RELEASE_DATE = "10 Sep 2026";');
-else if (!source.includes('const RELEASE_DATE = "10 Sep 2026";')) throw new Error("Could not align release date");
+if (source.includes(oldReleaseVersion)) source = source.replace(oldReleaseVersion, 'const RELEASE_VERSION = "1.13.3";');
+else if (source.includes('const RELEASE_VERSION = "1.13.2";')) source = source.replace('const RELEASE_VERSION = "1.13.2";', 'const RELEASE_VERSION = "1.13.3";');
+else if (source.includes('const RELEASE_VERSION = "1.13.1";')) source = source.replace('const RELEASE_VERSION = "1.13.1";', 'const RELEASE_VERSION = "1.13.3";');
+else if (source.includes('const RELEASE_VERSION = "1.13.0";')) source = source.replace('const RELEASE_VERSION = "1.13.0";', 'const RELEASE_VERSION = "1.13.3";');
+else if (!source.includes('const RELEASE_VERSION = "1.13.3";')) throw new Error("Could not align release version");
+if (source.includes(oldReleaseDate)) source = source.replace(oldReleaseDate, 'const RELEASE_DATE = "18 Sep 2026";');
+else if (source.includes('const RELEASE_DATE = "10 Sep 2026";')) source = source.replace('const RELEASE_DATE = "10 Sep 2026";', 'const RELEASE_DATE = "18 Sep 2026";');
+else if (source.includes('const RELEASE_DATE = "7 Sep 2026";')) source = source.replace('const RELEASE_DATE = "7 Sep 2026";', 'const RELEASE_DATE = "18 Sep 2026";');
+else if (!source.includes('const RELEASE_DATE = "18 Sep 2026";')) throw new Error("Could not align release date");
 
 fs.writeFileSync(path, source);
