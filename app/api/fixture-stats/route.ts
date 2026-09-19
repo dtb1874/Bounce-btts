@@ -64,6 +64,15 @@ function complete(stats: ShotStats | null | undefined) {
   return Boolean(stats && stats.home_shots != null && stats.away_shots != null && stats.home_shots_on_target != null && stats.away_shots_on_target != null);
 }
 
+function plausible(stats: ShotStats | null | undefined, homeScore: number | null, awayScore: number | null) {
+  if (!complete(stats) || !stats) return false;
+  const values = [stats.home_shots, stats.away_shots, stats.home_shots_on_target, stats.away_shots_on_target] as number[];
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) return false;
+  if (stats.home_shots_on_target! > stats.home_shots! || stats.away_shots_on_target! > stats.away_shots!) return false;
+  const goals = Number(homeScore ?? 0) + Number(awayScore ?? 0);
+  return goals === 0 || stats.home_shots! + stats.away_shots! > 0;
+}
+
 function fixtureComplete(fixture: FixtureRow) {
   return fixture.home_shots != null && fixture.away_shots != null && fixture.home_shots_on_target != null && fixture.away_shots_on_target != null;
 }
@@ -132,8 +141,10 @@ function eventMatchesFixture(event: any, fixture: FixtureRow) {
 
 function summaryStat(team: any, name: string) {
   const row = (team?.statistics ?? []).find((item: any) => item?.name === name || item?.abbreviation === name);
-  const value = Number(row?.displayValue ?? row?.value);
-  return Number.isFinite(value) ? value : null;
+  const raw = row?.displayValue ?? row?.value;
+  if (raw == null || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 async function fetchFallbackStats(fixture: FixtureRow): Promise<ShotStats | null> {
@@ -179,7 +190,7 @@ async function fetchFallbackStats(fixture: FixtureRow): Promise<ShotStats | null
     home_shots_on_target: summaryStat(home, "shotsOnTarget"),
     away_shots_on_target: summaryStat(away, "shotsOnTarget"),
   };
-  return complete(stats) ? stats : null;
+  return plausible(stats, fixture.home_score, fixture.away_score) ? stats : null;
 }
 
 export async function GET(request: Request) {
@@ -218,7 +229,8 @@ export async function GET(request: Request) {
   for (const fixture of batch) {
     const providerId = String(fixture.provider_fixture_id ?? "");
     if (!providerId) continue;
-    const stats = await fetchPrimaryStats(providerId, fixture.home_team, fixture.away_team).catch(() => null);
+    const fetchedStats = await fetchPrimaryStats(providerId, fixture.home_team, fixture.away_team).catch(() => null);
+    const stats = fetchedStats && complete(fetchedStats) && !plausible(fetchedStats, fixture.home_score, fixture.away_score) ? null : fetchedStats;
     const checkedAt = new Date().toISOString();
     const update = stats
       ? { ...stats, stats_checked_at: checkedAt, stats_source: complete(stats) ? "api-football" : "api-football-partial" }

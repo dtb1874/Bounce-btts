@@ -48,6 +48,15 @@ function rounded(value: number, digits = 1) {
   return Math.round(value * scale) / scale;
 }
 
+function hasPlausibleShotStats(stats: FixtureStats) {
+  if (stats.homeShots == null || stats.awayShots == null || stats.homeShotsOnTarget == null || stats.awayShotsOnTarget == null) return false;
+  const values = [stats.homeShots, stats.awayShots, stats.homeShotsOnTarget, stats.awayShotsOnTarget];
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) return false;
+  if (stats.homeShotsOnTarget > stats.homeShots || stats.awayShotsOnTarget > stats.awayShots) return false;
+  const goals = Number(stats.homeScore ?? 0) + Number(stats.awayScore ?? 0);
+  return goals === 0 || stats.homeShots + stats.awayShots > 0;
+}
+
 function leader(rows: Row[], metric: (row: Row) => number | null, direction: "high" | "low" = "high") {
   const scored = rows
     .map((row) => ({ row, value: metric(row) }))
@@ -143,7 +152,7 @@ export default function ValueLeaderPortal({ profiles, predictions, fixtures }: {
         const memberPicks = predictions.filter((prediction) => prediction.member_id === profile.id && prediction.points_awarded !== null);
         const usable = memberPicks
           .map((prediction) => ({ prediction, fixture: fixtureMap.get(prediction.fixture_id), stats: statsMap.get(prediction.fixture_id) }))
-          .filter((item) => item.stats && item.stats.homeShots != null && item.stats.awayShots != null && item.stats.homeShotsOnTarget != null && item.stats.awayShotsOnTarget != null);
+          .filter((item): item is typeof item & { stats: FixtureStats } => Boolean(item.stats && hasPlausibleShotStats(item.stats)));
         const shots = usable.reduce((sum, item) => sum + Number(item.stats!.homeShots) + Number(item.stats!.awayShots), 0);
         const shotsOnTarget = usable.reduce((sum, item) => sum + Number(item.stats!.homeShotsOnTarget) + Number(item.stats!.awayShotsOnTarget), 0);
         const goals = usable.reduce((sum, item) => sum + Number(item.stats!.homeScore ?? 0) + Number(item.stats!.awayScore ?? 0), 0);
