@@ -1,5 +1,6 @@
 "use client";
 
+import { retainLiveMinutes, liveMinuteLabel } from "@/lib/live-minute-display";
 import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -126,7 +127,7 @@ function dedupeFixtures(rows:Fixture[],preferredIds?:Set<string>){
   return Array.from(unique.values());
 }
 function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
-function fixtureStatusLabel(fixture: Pick<Fixture,"status"|"live_elapsed">) { const live=["1H","2H","ET","P","BT","INT"].includes(fixture.status); return live&&fixture.live_elapsed!=null?`${fixture.live_elapsed}′`:fixture.status; }
+function fixtureStatusLabel(fixture: Pick<Fixture,"status"|"live_elapsed">) { return liveMinuteLabel(fixture.status, fixture.live_elapsed); }
 function formatAlertTime(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
 function sameMoment(a: unknown,b: unknown) { const left=Date.parse(String(a??"")); const right=Date.parse(String(b??"")); return Number.isFinite(left)&&Number.isFinite(right)&&left===right; }
 function alertChanges(alert:any) {
@@ -274,8 +275,8 @@ export default function LeagueApp(props: Props) {
       ]);
       if (!fx.error && fx.data) {
         const ids = new Set(fx.data.map((f: Fixture) => f.id));
-        setFixtures(old => [...old.filter(f => f.gameweek_id !== gameweek.id), ...(fx.data as Fixture[])]);
-        setAllFixtures(old => [...old.filter(f => !ids.has(f.id)), ...(fx.data as Fixture[])]);
+        setFixtures(old => [...old.filter(f => f.gameweek_id !== gameweek.id), ...retainLiveMinutes(old, fx.data as Fixture[])]);
+        setAllFixtures(old => [...old.filter(f => !ids.has(f.id)), ...retainLiveMinutes(old, fx.data as Fixture[])]);
       }
       if (!preds.error && preds.data) setPredictions(old => [...old.filter(p => p.gameweek_id !== gameweek.id), ...(preds.data as Prediction[])]);
       if (!silent) notice("Live scores refreshed");
@@ -292,7 +293,7 @@ export default function LeagueApp(props: Props) {
       await refreshLiveData(true);
       if(Array.isArray(j.fixtures)&&j.fixtures.length){
         const liveById=new Map(j.fixtures.map((x:any)=>[String(x.id),x]));
-        const applyLive=(rows:Fixture[])=>rows.map(f=>{const x:any=liveById.get(f.id);return x?{...f,status:String(x.status??f.status),home_score:x.homeScore??f.home_score,away_score:x.awayScore??f.away_score,live_elapsed:Number.isInteger(x.elapsed)?x.elapsed:null}:f});
+        const applyLive=(rows:Fixture[])=>rows.map(f=>{const x:any=liveById.get(f.id);return x?{...f,status:String(x.status??f.status),home_score:x.homeScore??f.home_score,away_score:x.awayScore??f.away_score,live_elapsed:Number.isInteger(x.elapsed)?x.elapsed:f.status===String(x.status??f.status)?f.live_elapsed:null}:f});
         setFixtures(applyLive);
         setAllFixtures(applyLive);
       }
