@@ -1,5 +1,6 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { outcomeLabel } from "@/lib/scoring";
 import { competitionDisplayName } from "@/lib/competition-display";
@@ -346,7 +347,7 @@ export default function V2Dashboard({
               </div>
               <div className={styles.heroFixtureMeta}>
                 <span>{fixtureStatusLabel(actualMyFixture)}</span>
-                <span>{actualMyFixture.odds_fractional ? `${actualMyFixture.odds_fractional} BTTS` : formatKickoff(actualMyFixture.kickoff_at)}</span>
+                <span>{actualMyFixture.odds_fractional ? `${formatFixtureOddsDisplay(actualMyFixture.odds_fractional)} BTTS` : formatKickoff(actualMyFixture.kickoff_at)}</span>
               </div>
             </>
           ) : (

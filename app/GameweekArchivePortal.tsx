@@ -1,5 +1,6 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./GameweekStory.module.css";
@@ -10,7 +11,7 @@ type Prediction={gameweek_id:string;member_id:string;fixture_id:string;points_aw
 type Fixture={id:string;home_team:string;away_team:string;home_score:number|null;away_score:number|null;status?:string|null;odds_deadline_fractional?:string|null;odds_fractional?:string|null};
 type Props={profiles:Profile[];gameweeks:Gameweek[];predictions:Prediction[];fixtures:Fixture[];seasonLabel:string};
 function ratio(value:string|null|undefined){if(!value)return null;const m=value.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);if(!m)return null;const n=Number(m[1]),d=Number(m[2]);return Number.isFinite(n)&&Number.isFinite(d)&&d>0?n/d:null}
-function odds(value:string|null|undefined){const r=ratio(value);return r==null?"—":`${r.toFixed(2)}/1`}
+function odds(value:string|null|undefined){return ratio(value)==null?"—":formatFixtureOddsDisplay(value)??"—"}
 function score(f:Fixture|undefined){return f?.home_score==null||f?.away_score==null?"—":`${f.home_score}–${f.away_score}`}
 function result(points:number|null){if(points===3)return "+3 BTTS";if(points===1)return "+1 S-N";if(points===-1)return "-1 0-0";return "Pending"}
 

@@ -1,12 +1,13 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Gameweek={id:string;number:number;status:string;locks_at:string|null};type Profile={id:string;display_name:string};type Prediction={gameweek_id:string;member_id:string;fixture_id:string;points_awarded:number|null};type Fixture={id:string;home_team:string;away_team:string;home_score:number|null;away_score:number|null;status:string|null;odds_fractional:string|null;odds_deadline_fractional:string|null};type Payload={season:{id:string;label:string}|null;gameweeks:Gameweek[];profiles:Profile[];predictions:Prediction[];fixtures:Fixture[];error?:string};
 async function token(){const{data}=await createClient().auth.getSession();return data.session?.access_token??""}
 function ratio(value:string|null|undefined){if(!value)return null;const match=value.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);if(!match)return null;const n=Number(match[1]),d=Number(match[2]);return Number.isFinite(n)&&Number.isFinite(d)&&d>0?n/d:null}
-function odds(value:string|null|undefined){const r=ratio(value);return r==null?"—":`${r.toFixed(2)}/1`}
+function odds(value:string|null|undefined){return ratio(value)==null?"—":formatFixtureOddsDisplay(value)??"—"}
 function result(points:number|null){if(points===3)return "+3 BTTS";if(points===1)return "+1 S-N";if(points===-1)return "-1 0-0";return "Pending"}
 
 export default function V2CurrentSeasonArchive(){
