@@ -1,5 +1,7 @@
 "use client";
 
+import { retainLiveMinutes, liveMinuteLabel } from "@/lib/live-minute-display";
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ShareTableButton from "./ShareTableButton";
@@ -125,7 +127,7 @@ function dedupeFixtures(rows:Fixture[],preferredIds?:Set<string>){
   return Array.from(unique.values());
 }
 function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
-function fixtureStatusLabel(fixture: Pick<Fixture,"status"|"live_elapsed">) { const live=["1H","2H","ET","P","BT","INT"].includes(fixture.status); return live&&fixture.live_elapsed!=null?`${fixture.live_elapsed}′`:fixture.status; }
+function fixtureStatusLabel(fixture: Pick<Fixture,"status"|"live_elapsed">) { return liveMinuteLabel(fixture.status, fixture.live_elapsed); }
 function formatAlertTime(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
 function sameMoment(a: unknown,b: unknown) { const left=Date.parse(String(a??"")); const right=Date.parse(String(b??"")); return Number.isFinite(left)&&Number.isFinite(right)&&left===right; }
 function alertChanges(alert:any) {
@@ -139,14 +141,6 @@ function alertChanges(alert:any) {
   return changes;
 }
 function isTimezoneOnlyAlert(alert:any) { return alert?.alert_type==="fixture_change_affecting_pick" && Boolean(alert?.details?.before&&alert?.details?.after) && alertChanges(alert).length===0; }
-function formatFixtureOddsDisplay(value:string|null|undefined){
-  if(!value)return null;
-  const match=value.trim().match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
-  if(!match)return value;
-  const numerator=Number(match[1]),denominator=Number(match[2]);
-  if(!Number.isFinite(numerator)||!Number.isFinite(denominator)||denominator<=0)return value;
-  return `${(numerator/denominator).toFixed(2)}/1`;
-}
 function combinedFractionalOddsFromStrings(values:Array<string|null|undefined>){
   if(!values.length)return null;
   let combinedDecimal=1;
@@ -281,8 +275,8 @@ export default function LeagueApp(props: Props) {
       ]);
       if (!fx.error && fx.data) {
         const ids = new Set(fx.data.map((f: Fixture) => f.id));
-        setFixtures(old => [...old.filter(f => f.gameweek_id !== gameweek.id), ...(fx.data as Fixture[])]);
-        setAllFixtures(old => [...old.filter(f => !ids.has(f.id)), ...(fx.data as Fixture[])]);
+        setFixtures(old => [...old.filter(f => f.gameweek_id !== gameweek.id), ...retainLiveMinutes(old, fx.data as Fixture[])]);
+        setAllFixtures(old => [...old.filter(f => !ids.has(f.id)), ...retainLiveMinutes(old, fx.data as Fixture[])]);
       }
       if (!preds.error && preds.data) setPredictions(old => [...old.filter(p => p.gameweek_id !== gameweek.id), ...(preds.data as Prediction[])]);
       if (!silent) notice("Live scores refreshed");
@@ -299,7 +293,7 @@ export default function LeagueApp(props: Props) {
       await refreshLiveData(true);
       if(Array.isArray(j.fixtures)&&j.fixtures.length){
         const liveById=new Map(j.fixtures.map((x:any)=>[String(x.id),x]));
-        const applyLive=(rows:Fixture[])=>rows.map(f=>{const x:any=liveById.get(f.id);return x?{...f,status:String(x.status??f.status),home_score:x.homeScore??f.home_score,away_score:x.awayScore??f.away_score,live_elapsed:Number.isInteger(x.elapsed)?x.elapsed:null}:f});
+        const applyLive=(rows:Fixture[])=>rows.map(f=>{const x:any=liveById.get(f.id);return x?{...f,status:String(x.status??f.status),home_score:x.homeScore??f.home_score,away_score:x.awayScore??f.away_score,live_elapsed:Number.isInteger(x.elapsed)?x.elapsed:f.status===String(x.status??f.status)?f.live_elapsed:null}:f});
         setFixtures(applyLive);
         setAllFixtures(applyLive);
       }
@@ -583,7 +577,7 @@ function Dashboard({
               return <div className={`${styles.pickListRow} dashboardSnapshotRow ${isAdmin&&!prediction?"adminMissingPickRow":""}`} key={profile.id}>
                 <div className={styles.playerCell}><span className={styles.avatar}>{initials(profile.display_name)}</span><strong>{profile.display_name}</strong></div>
                 <div className={`${styles.fixtureCell} dashboardSnapshotFixture weeklyFixtureCell`}>{fixture?<><small className="dashboardCompetition weeklyFixtureCompetition">{competitionDisplayName(fixture)}</small><strong>{fixture.home_team} v {fixture.away_team}</strong></>:<span>Awaiting selection</span>}</div>
-                <div className={`${styles.liveCell} dashboardSnapshotLive weeklySnapshotLive`}>{fixture?.home_score!=null?<strong>{fixture.home_score}-{fixture.away_score}</strong>:<strong>—</strong>}<small>{fixture?fixtureStatusLabel(fixture):"PENDING"}</small>{fixture?<b className="weeklyFixtureOdds">{fixture.odds_fractional??"—"}</b>:null}</div>
+                <div className={`${styles.liveCell} dashboardSnapshotLive weeklySnapshotLive`}>{fixture?.home_score!=null?<strong>{fixture.home_score}-{fixture.away_score}</strong>:<strong>—</strong>}<small>{fixture?fixtureStatusLabel(fixture):"PENDING"}</small>{fixture?<b className="weeklyFixtureOdds">{formatFixtureOddsDisplay(fixture.odds_fractional)??"—"}</b>:null}</div>
                 <div className={outcome?.tone==="good"?styles.statusGood:outcome?.tone==="warn"?styles.statusWarn:outcome?.tone==="bad"?styles.statusBad:styles.statusNeutral}>{outcome?`${outcome.label}${outcome.points!=null?` · ${outcome.points>0?"+":""}${outcome.points}`:""}`:"PENDING"}</div>
               </div>
             })}

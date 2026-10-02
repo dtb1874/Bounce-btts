@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LeagueApp from "./LeagueApp";
-import PublicLeagueTable from "./PublicLeagueTable";
+import V2PublicLeagueTable from "./v2/V2PublicLeagueTable";
 import PositionRacePortal from "./PositionRacePortal";
 import GameweekArchivePortal from "./GameweekArchivePortal";
 import SweepTracker from "./SweepTracker";
@@ -57,7 +57,7 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     const publicTable = await loadPublicTableData();
-    return <PublicLeagueTable {...publicTable} />;
+    return <V2PublicLeagueTable {...publicTable} />;
   }
 
   const { data: profile } = await supabase
