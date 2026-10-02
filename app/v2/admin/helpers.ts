@@ -1,3 +1,4 @@
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { createClient } from "@/lib/supabase/client";
 import { addUtcCalendarDays, londonLocalToUtc, londonParts } from "@/lib/london-time";
 import type { Fixture } from "./types";
@@ -22,7 +23,7 @@ export function displayFixture(fixture: Fixture | undefined) {
   return fixture?.home_team && fixture?.away_team ? `${fixture.home_team} v ${fixture.away_team}` : "No selection";
 }
 export function fixtureMeta(fixture: Fixture) {
-  return [fixture.competition, formatDate(fixture.kickoff_at), fixture.odds_fractional ? `${fixture.odds_fractional} BTTS` : null].filter(Boolean).join(" · ");
+  return [fixture.competition, formatDate(fixture.kickoff_at), fixture.odds_fractional ? `${formatFixtureOddsDisplay(fixture.odds_fractional)} BTTS` : null].filter(Boolean).join(" · ");
 }
 export function calendarDayDifference(from: string, to: string) {
   const a = from.split("-").map(Number), b = to.split("-").map(Number);

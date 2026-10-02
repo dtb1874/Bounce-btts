@@ -1,5 +1,6 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { competitionDisplayName } from "@/lib/competition-display";
 import { compactPickOutcome, formatFootballElapsed, isLiveFixtureStatus } from "@/lib/football-live-display";
@@ -185,7 +186,7 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
             const selected = Boolean(prediction);
             const score = fixture?.home_score != null && fixture.away_score != null ? `${fixture.home_score}–${fixture.away_score}` : "—";
             const elapsed = fixture && isLiveFixtureStatus(fixture.status) ? formatFootballElapsed(fixture.status, fixture.live_elapsed) : fixture && ["FT", "AET", "PEN"].includes(fixture.status) ? "FT" : "UPCOMING";
-            const pickOdds = fixture?.odds_deadline_fractional ?? fixture?.odds_fractional ?? "—";
+            const pickOdds = formatFixtureOddsDisplay(fixture?.odds_deadline_fractional ?? fixture?.odds_fractional) ?? "—";
             return (
               <article className={styles.pickRow} key={profile.id}>
                 <div className={styles.memberMark}>
