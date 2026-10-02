@@ -113,4 +113,12 @@ if (!source.includes('{version:"1.13.6"')) {
 source = source.replace('const RELEASE_VERSION = "1.13.5";', 'const RELEASE_VERSION = "1.13.6";');
 source = source.replace('const RELEASE_DATE = "19 Sep 2026";', 'const RELEASE_DATE = "2 Oct 2026";');
 
+// v1.13.7: stable match clock during live refreshes.
+const liveClockReleaseAnchor = '  const catchup=[\n';
+if (!source.includes('{version:"1.13.7"')) {
+  if (!source.includes(liveClockReleaseAnchor)) throw new Error("Could not place live clock release entry");
+  source = source.replace(liveClockReleaseAnchor, `${liveClockReleaseAnchor}    {version:"1.13.7",date:"2 Oct 2026",summary:"Stable live match minute display",changes:["Showed LIVE while the first confirmed match minute loads instead of flashing 1H or 2H","Retained the latest confirmed minute during database refreshes within the same match phase","Cleared retained minutes when the phase changes, including half time and full time"]},\n`);
+}
+source = source.replace('const RELEASE_VERSION = "1.13.6";', 'const RELEASE_VERSION = "1.13.7";');
+
 fs.writeFileSync(path, source);
