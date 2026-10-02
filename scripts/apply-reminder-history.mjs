@@ -104,4 +104,13 @@ else if (source.includes('const RELEASE_DATE = "10 Sep 2026";')) source = source
 else if (source.includes('const RELEASE_DATE = "7 Sep 2026";')) source = source.replace('const RELEASE_DATE = "7 Sep 2026";', 'const RELEASE_DATE = "19 Sep 2026";');
 else if (!source.includes('const RELEASE_DATE = "19 Sep 2026";')) throw new Error("Could not align release date");
 
+// v1.13.6: consistent compact fractional odds on screens and shares.
+const compactOddsReleaseAnchor = '  const catchup=[\n';
+if (!source.includes('{version:"1.13.6"')) {
+  if (!source.includes(compactOddsReleaseAnchor)) throw new Error("Could not place compact odds release entry");
+  source = source.replace(compactOddsReleaseAnchor, `${compactOddsReleaseAnchor}    {version:"1.13.6",date:"2 Oct 2026",summary:"Consistent compact fractional odds",changes:["Kept familiar fractional odds with a single-digit stake, including 5/2 and 13/8","Converted larger stakes to /1 with two decimal places, including 31/50 to 0.62/1","Applied the same display rule to dashboards, fixture views, recaps, archives and share images"]},\n`);
+}
+source = source.replace('const RELEASE_VERSION = "1.13.5";', 'const RELEASE_VERSION = "1.13.6";');
+source = source.replace('const RELEASE_DATE = "19 Sep 2026";', 'const RELEASE_DATE = "2 Oct 2026";');
+
 fs.writeFileSync(path, source);
