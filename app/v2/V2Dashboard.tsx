@@ -1,5 +1,6 @@
 "use client";
 
+import { liveMinuteLabel } from "@/lib/live-minute-display";
 import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { outcomeLabel } from "@/lib/scoring";
@@ -81,7 +82,7 @@ function formatKickoff(value: string) {
 }
 
 function fixtureStatusLabel(fixture: Fixture) {
-  return liveStatuses.has(fixture.status) && fixture.live_elapsed != null ? `${fixture.live_elapsed}′` : fixture.status;
+  return liveMinuteLabel(fixture.status, fixture.live_elapsed);
 }
 
 function ratioFromOdds(value: string | null | undefined) {
