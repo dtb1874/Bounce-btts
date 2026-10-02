@@ -1,5 +1,6 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compareCompetitions } from "@/lib/competition-order";
@@ -24,7 +25,6 @@ function competitionDisplayName(fixture: Pick<Fixture, "country" | "competition"
   return fixture.competition.trim() || `${country} — Other`;
 }
 function formatKickoff(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)); }
-function formatFixtureOddsDisplay(value: string | null | undefined) { if (!value) return null; const match = value.trim().match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/); if (!match) return value; const numerator = Number(match[1]), denominator = Number(match[2]); return Number.isFinite(numerator) && Number.isFinite(denominator) && denominator > 0 ? `${(numerator / denominator).toFixed(2)}/1` : value; }
 function day(value: string) { return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "2-digit" }).format(new Date(value)); }
 
 function TeamFormPanel({ team }: { team: TeamForm }) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatFixtureOddsDisplay } from "@/lib/odds-display";
 import { useMemo, useState } from "react";
 import styles from "./GameweekStory.module.css";
 import { drawShareAvatar, loadSharePortraits } from "@/lib/share-portraits";
@@ -13,7 +14,7 @@ type Props={profiles:Profile[];gameweeks:Gameweek[];predictions:Prediction[];adj
 type Standing={id:string;name:string;points:number;wins:number;zeroZero:number;position:number};
 
 function oddsRatio(value:string|null|undefined){if(!value)return null;const m=value.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);if(!m)return null;const n=Number(m[1]),d=Number(m[2]);return Number.isFinite(n)&&Number.isFinite(d)&&d>0?n/d:null}
-function oddsLabel(value:string|null|undefined){const r=oddsRatio(value);return r==null?"—":`${r.toFixed(2)}/1`}
+function oddsLabel(value:string|null|undefined){return oddsRatio(value)==null?"—":formatFixtureOddsDisplay(value)??"—"}
 function standingsThrough(profiles:Profile[],gameweeks:Gameweek[],predictions:Prediction[],adjustments:Adjustment[],through:number){const players=profiles.filter(p=>p.active&&p.role!=="guest");const totals=new Map(players.map(p=>[p.id,{points:0,wins:0,zeroZero:0}]));for(const gw of [...gameweeks].filter(g=>g.number<=through).sort((a,b)=>a.number-b.number)){for(const p of players){const t=totals.get(p.id)!;const pred=predictions.find(x=>x.gameweek_id===gw.id&&x.member_id===p.id&&x.points_awarded!=null);const adj=adjustments.find(x=>x.gameweek_id===gw.id&&x.member_id===p.id);const ignore=Boolean(pred&&adj?.reason?.trim().toLowerCase()==="missed selection");if(pred?.points_awarded!=null){t.points+=pred.points_awarded;if(pred.points_awarded===3)t.wins++;if(pred.points_awarded===-1)t.zeroZero++}if(adj&&!ignore)t.points+=adj.points}}const rows:Standing[]=players.map(p=>({id:p.id,name:p.display_name,...totals.get(p.id)!,position:0})).sort((a,b)=>b.points-a.points||a.zeroZero-b.zeroZero||b.wins-a.wins||a.name.localeCompare(b.name));rows.forEach((r,i)=>r.position=i+1);return rows}
 function finishedWeek(gw:Gameweek,predictions:Prediction[]){const rows=predictions.filter(p=>p.gameweek_id===gw.id);return rows.length>0&&rows.every(p=>p.points_awarded!=null)}
 
