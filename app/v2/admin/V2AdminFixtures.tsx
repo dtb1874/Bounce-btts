@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import UKLeagueSelector from "@/app/admin-controls/UKLeagueSelector";
 import styles from "../V2AdminCentre.module.css";
 import type { AdminProps, Gameweek } from "./types";
 import { displayFixture, fixtureMeta, token } from "./helpers";
@@ -38,6 +39,7 @@ export default function V2AdminFixtures({ gameweek, gameweeks, fixtures, onChang
 
   return <section className={styles.section}>
     <header className={styles.sectionHeading}><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Fixtures</h2></header>
+    <UKLeagueSelector onChanged={onChanged} />
     <div className={styles.actionBar}><button className={styles.primaryButton} type="button" disabled={!gameweek || Boolean(busy)} onClick={() => void sync(gameweek, "results")}>{busy.endsWith("-results") ? "Refreshing…" : "Quick live refresh"}</button><button className={styles.secondaryButton} type="button" disabled={!gameweek || Boolean(busy)} onClick={() => void sync(gameweek, "full")}>{busy.endsWith("-full") ? "Refreshing…" : "Full fixture & odds refresh"}</button>{nextGameweek ? <button className={styles.secondaryButton} type="button" disabled={Boolean(busy)} onClick={() => void sync(nextGameweek, "full")}>Full refresh GW {nextGameweek.number}</button> : null}</div>
     <div className={styles.fixtureLedger}>{fixtures.map((fixture) => <div key={fixture.id}><strong>{displayFixture(fixture)}</strong><span>{fixtureMeta(fixture)}</span><b>{fixture.status}</b></div>)}</div>
     <form className={styles.subsection} onSubmit={(event) => void add(event)}><header><span>MANUAL FIXTURE</span><h3>Add fixture</h3></header><div className={styles.formLedger}><label>Competition<input value={form.competition} onChange={(e) => setForm({ ...form, competition: e.target.value })} /></label><label>Country<input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></label><label>Home team<input required value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} /></label><label>Away team<input required value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} /></label><label>Kick-off (UK time)<input required type="datetime-local" value={form.kickoffLocal} onChange={(e) => setForm({ ...form, kickoffLocal: e.target.value })} /></label><label>BTTS fractional odds<input value={form.oddsFractional} onChange={(e) => setForm({ ...form, oddsFractional: e.target.value })} placeholder="8/11" /></label></div><button type="submit" className={styles.primaryButton} disabled={!gameweek || busy === "add"}>{busy === "add" ? "Adding…" : "Add fixture manually"}</button></form>
