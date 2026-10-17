@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { competitionKey, isCompetitionEnabled } from "@/lib/uk-competition-settings";
+import { competitionKey, isCompetitionEnabled, roundKey, isRoundEnabled } from "@/lib/uk-competition-settings";
 import { pointsForScore } from "@/lib/scoring";
 import {
   fixtureDateForGameweek,
@@ -183,6 +183,9 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
     const { data: competitionSettings, error: settingsError } = await admin.from("fixture_competition_settings").select("country,competition,enabled");
     if (settingsError) throw settingsError;
     const enabledCompetitions = new Map((competitionSettings ?? []).map(setting => [competitionKey(setting.country, setting.competition), setting.enabled]));
+    const { data: roundSettings, error: roundSettingsError } = await admin.from("fixture_round_settings").select("country,competition,fixture_round,enabled");
+    if (roundSettingsError) throw roundSettingsError;
+    const enabledRounds = new Map((roundSettings ?? []).map(setting => [roundKey(setting.country, setting.competition, setting.fixture_round), setting.enabled]));
     const now = Date.now();
     const requestedIds = new Set((requestedGameweekIds ?? []).filter(Boolean));
     const targetWeeks = requestedIds.size
@@ -220,6 +223,7 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           provider_fixture_id: providerId,
           competition: String(item.league?.name ?? "Unknown competition"),
           country: String(item.league?.country ?? "United Kingdom"),
+          fixture_round: String(item.league?.round ?? "").trim() || null,
           home_team: String(item.teams?.home?.name ?? "Home"),
           away_team: String(item.teams?.away?.name ?? "Away"),
           kickoff_at: String(item.fixture?.date),
@@ -228,7 +232,7 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           away_score: Number.isInteger(item.goals?.away) ? item.goals.away : null,
           completed_at: FINISHED.has(String(item.fixture?.status?.short)) ? new Date().toISOString() : null,
           source: "api-football",
-          is_eligible: Boolean(gameweek && isEligibleProviderFixture(item, gameweek) && isCompetitionEnabled(enabledCompetitions, String(item.league?.country ?? ""), String(item.league?.name ?? "Unknown competition"))),
+          is_eligible: Boolean(gameweek && isEligibleProviderFixture(item, gameweek) && isCompetitionEnabled(enabledCompetitions, String(item.league?.country ?? ""), String(item.league?.name ?? "Unknown competition")) && isRoundEnabled(enabledRounds, String(item.league?.country ?? ""), String(item.league?.name ?? "Unknown competition"), String(item.league?.round ?? ""))),
           provider_updated_at: item.fixture?.timestamp ? new Date(Number(item.fixture.timestamp) * 1000).toISOString() : null,
           last_synced_at: new Date().toISOString(),
         };
