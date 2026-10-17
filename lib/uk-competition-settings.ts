@@ -8,3 +8,10 @@ export type CompetitionSetting = { country: string; competition: string; enabled
 export function isCompetitionEnabled(settings: Map<string, boolean>, country: string, competition: string) {
   return settings.get(competitionKey(country, competition)) !== false;
 }
+
+export function roundKey(country: string, competition: string, round: string) {
+ return JSON.stringify([country.trim(), competition.trim(), round.trim()]);
+}
+export function isRoundEnabled(settings: Map<string, boolean>, country: string, competition: string, round: string) {
+ return !round || settings.get(roundKey(country, competition, round)) !== false;
+}
