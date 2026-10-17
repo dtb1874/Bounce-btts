@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { competitionKey, isCompetitionEnabled } from "@/lib/uk-competition-settings";
 import { pointsForScore } from "@/lib/scoring";
 import {
   fixtureDateForGameweek,
@@ -179,6 +180,9 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           .order("number")
       : { data: [] as any[] };
 
+    const { data: competitionSettings, error: settingsError } = await admin.from("fixture_competition_settings").select("country,competition,enabled");
+    if (settingsError) throw settingsError;
+    const enabledCompetitions = new Map((competitionSettings ?? []).map(setting => [competitionKey(setting.country, setting.competition), setting.enabled]));
     const now = Date.now();
     const requestedIds = new Set((requestedGameweekIds ?? []).filter(Boolean));
     const targetWeeks = requestedIds.size
@@ -224,7 +228,7 @@ export async function runFootballImport(triggerSource: "cron" | "admin", request
           away_score: Number.isInteger(item.goals?.away) ? item.goals.away : null,
           completed_at: FINISHED.has(String(item.fixture?.status?.short)) ? new Date().toISOString() : null,
           source: "api-football",
-          is_eligible: Boolean(gameweek && isEligibleProviderFixture(item, gameweek)),
+          is_eligible: Boolean(gameweek && isEligibleProviderFixture(item, gameweek) && isCompetitionEnabled(enabledCompetitions, String(item.league?.country ?? ""), String(item.league?.name ?? "Unknown competition"))),
           provider_updated_at: item.fixture?.timestamp ? new Date(Number(item.fixture.timestamp) * 1000).toISOString() : null,
           last_synced_at: new Date().toISOString(),
         };
