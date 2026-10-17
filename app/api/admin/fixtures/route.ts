@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isUkFixtureCountry } from "@/lib/uk-competition-settings";
 import { requireAdmin } from "@/lib/server-auth";
 import { isExcludedBounceClub, kickoffMatchesSelectionRule, selectionRule } from "@/lib/gameweek-rules";
 
@@ -23,6 +24,18 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!gameweek?.id) return NextResponse.json({ error: "Gameweek not found." }, { status: 404 });
 
+  const country = String(body.country ?? "").trim();
+  const competition = String(body.competition ?? "").trim();
+  if (!isUkFixtureCountry(country) || !competition) {
+    return NextResponse.json({ error: "Only fixtures from UK competitions may be added." }, { status: 400 });
+  }
+  const { data: setting, error: settingError } = await admin.from("fixture_competition_settings")
+    .select("enabled").eq("country", country).eq("competition", competition).maybeSingle();
+  if (settingError) return NextResponse.json({ error: settingError.message }, { status: 500 });
+  if (setting?.enabled === false) {
+    return NextResponse.json({ error: "That competition is disabled in the UK league selector." }, { status: 400 });
+  }
+
   if (isExcludedBounceClub(home, away)) {
     return NextResponse.json({ error: "Hearts and Hibs fixtures are excluded from normal Bounce selections." }, { status: 400 });
   }
@@ -36,8 +49,9 @@ export async function POST(request: Request) {
 
   const { data, error } = await admin.from("fixtures").insert({
     gameweek_id: gameweekId,
-    competition: String(body.competition ?? "Other UK Competition").trim(),
-    country: String(body.country ?? "United Kingdom").trim(),
+    competition,
+    country,
+    fixture_round: String(body.fixtureRound ?? "").trim() || null,
     home_team: home,
     away_team: away,
     kickoff_at: new Date(kickoffAt).toISOString(),
