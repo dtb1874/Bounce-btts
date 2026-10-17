@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     gameweek_id: gameweekId,
     competition,
     country,
+    fixture_round: String(body.fixtureRound ?? "").trim() || null,
     home_team: home,
     away_team: away,
     kickoff_at: new Date(kickoffAt).toISOString(),
