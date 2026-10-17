@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const disabled = new Set((overrides ?? []).filter(row => !row.enabled).map(row => competitionKey(row.country, row.competition)));
   for (const row of overrides ?? []) {
     const key = competitionKey(row.country, row.competition);
-    if (!known.has(key)) known.set(key, { country: row.country, competition: row.competition, count: 0 });
+    if (!known.has(key)) known.set(key, { country: row.country, competition: row.competition, count: 0, rounds: new Map<string, number>() });
   }
   const { data: roundOverrides, error: roundError } = await admin.from("fixture_round_settings").select("country,competition,fixture_round,enabled");
   if (roundError) return NextResponse.json({ error: roundError.message }, { status: 500 });
