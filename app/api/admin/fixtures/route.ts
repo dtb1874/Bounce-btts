@@ -32,6 +32,13 @@ export async function POST(request: Request) {
   const { data: setting, error: settingError } = await admin.from("fixture_competition_settings")
     .select("enabled").eq("country", country).eq("competition", competition).maybeSingle();
   if (settingError) return NextResponse.json({ error: settingError.message }, { status: 500 });
+  const fixtureRound = String(body.fixtureRound ?? "").trim();
+  if (fixtureRound) {
+    const { data: roundSetting, error: roundSettingError } = await admin.from("fixture_round_settings")
+      .select("enabled").eq("country", country).eq("competition", competition).eq("fixture_round", fixtureRound).maybeSingle();
+    if (roundSettingError) return NextResponse.json({ error: roundSettingError.message }, { status: 500 });
+    if (roundSetting?.enabled === false) return NextResponse.json({ error: "That competition round is disabled." }, { status: 400 });
+  }
   if (setting?.enabled === false) {
     return NextResponse.json({ error: "That competition is disabled in the UK league selector." }, { status: 400 });
   }
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
     gameweek_id: gameweekId,
     competition,
     country,
-    fixture_round: String(body.fixtureRound ?? "").trim() || null,
+    fixture_round: fixtureRound || null,
     home_team: home,
     away_team: away,
     kickoff_at: new Date(kickoffAt).toISOString(),
