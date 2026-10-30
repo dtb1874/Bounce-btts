@@ -333,6 +333,23 @@ export default function LeagueApp(props: Props) {
   },[livePollActive,gameweek?.id]);
   useEffect(() => { if (!isAdmin || isDemo || emulatedProfileId) return; (async()=>{ const r=await fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${await token()}`}}); if(r.ok){ const j=await r.json(); setAlertsCount((j.alerts ?? []).filter((a:any)=>!a.resolved).length); } })(); },[isAdmin,isDemo,emulatedProfileId,view]);
 
+  // One unobtrusive odds check when the Bounce platform first loads.
+  // Not on each dashboard visit or change of selected gameweek.
+  useEffect(()=>{
+    const startupWeek=initialGameweek;
+    if(!startupWeek?.id || initialProfile.role==="guest" || !initialProfile.active || Date.parse(startupWeek.locks_at)<=Date.now())return;
+    let cancelled=false;
+    void (async()=>{
+      try{
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:startupWeek.id}),cache:"no-store"});
+        if(response.ok && !cancelled)await refreshLiveData(true);
+      }catch{/* Platform load and normal sharing must never be held up by odds. */}
+    })();
+    return()=>{cancelled=true;};
+  // Intentionally run on initial platform mount, not when changing gameweek.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   async function selectFixture(fixtureId: string) {
     if (!gameweek || !isOpen) return;
     if (isReadOnly) return notice("Read-only view: changes are disabled.");
@@ -349,6 +366,13 @@ export default function LeagueApp(props: Props) {
       if (data) setPredictions(rows => [...rows,data as Prediction]);
     }
     notice("Pick saved ✓");
+    // Check just this fixture after a successful pick; do not delay pick confirmation.
+    void (async()=>{
+      try{
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,fixtureId}),cache:"no-store"});
+        if(response.ok)await refreshLiveData(true);
+      }catch{/* Odds provider failure never invalidates a saved selection. */}
+    })();
   }
 
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/"; }
