@@ -5,7 +5,7 @@ import { refreshFixtureShareOdds } from "./refreshFixtureShareOdds";
 import { createFixtureShareImage, type FixtureSharePick } from "./FixtureShareImage";
 import { sortFixtureSharePicks } from "./shareFixtureSort";
 
-type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];disabled?:boolean};
+type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];disabled?:boolean;gameweekId?:string;preGameweek?:boolean};
 
 export default function WeeklyPicksShareButton({gameweekNumber,seasonLabel,picks,disabled=false,gameweekId,preGameweek=false}:Props){
   const [busy,setBusy]=useState(false);
