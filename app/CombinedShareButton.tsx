@@ -6,7 +6,7 @@ import { createCombinedShareImage, type FixtureSharePick, type FixtureShareStand
 import { sortFixtureSharePicks } from "./shareFixtureSort";
 import { drawShareAvatar, loadSharePortraits } from "@/lib/share-portraits";
 
-type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];standings:FixtureShareStanding[];disabled?:boolean};
+type Props={gameweekNumber:number;seasonLabel:string;picks:FixtureSharePick[];standings:FixtureShareStanding[];disabled?:boolean;gameweekId?:string;preGameweek?:boolean};
 const finished=new Set(["FT","AET","PEN"]);
 
 async function withRecap(base:File,gameweekNumber:number,picks:FixtureSharePick[],standings:FixtureShareStanding[]){
