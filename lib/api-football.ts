@@ -93,12 +93,12 @@ async function fixtureOdds(providerId: string, betId: string, tracker: Tracker) 
   return { odds: null, bookmaker: null };
 }
 
-export async function runSelectedOddsRefresh(gameweekId: string) {
+export async function runSelectedOddsRefresh(gameweekId: string, onlyFixtureId?: string) {
   const admin = createAdminClient();
   const tracker: Tracker = { used: 0, limit: null, remaining: null };
   const { data: predictions, error: predictionsError } = await admin.from("predictions").select("fixture_id").eq("gameweek_id", gameweekId).not("fixture_id", "is", null);
   if (predictionsError) throw predictionsError;
-  const fixtureIds = [...new Set((predictions ?? []).map((row: any) => String(row.fixture_id)).filter(Boolean))];
+  const fixtureIds = [...new Set((predictions ?? []).map((row: any) => String(row.fixture_id)).filter(Boolean))].filter(id => !onlyFixtureId || id === onlyFixtureId);
   if (!fixtureIds.length) return { checked: 0, updated: 0, unavailable: 0, requestsUsed: 0 };
   const { data: fixtures, error: fixturesError } = await admin.from("fixtures").select("id,provider_fixture_id,status").in("id", fixtureIds).in("status", ["NS", "TBD"]);
   if (fixturesError) throw fixturesError;
