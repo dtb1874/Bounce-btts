@@ -333,19 +333,22 @@ export default function LeagueApp(props: Props) {
   },[livePollActive,gameweek?.id]);
   useEffect(() => { if (!isAdmin || isDemo || emulatedProfileId) return; (async()=>{ const r=await fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${await token()}`}}); if(r.ok){ const j=await r.json(); setAlertsCount((j.alerts ?? []).filter((a:any)=>!a.resolved).length); } })(); },[isAdmin,isDemo,emulatedProfileId,view]);
 
-  // Background check on opening a gameweek. Does not block the dashboard or share buttons.
+  // One unobtrusive odds check when the Bounce platform first loads.
+  // Not on each dashboard visit or change of selected gameweek.
   useEffect(()=>{
-    if(!gameweek?.id || isDemo || isReadOnly || Date.parse(gameweek.locks_at)<=Date.now())return;
+    const startupWeek=initialGameweek;
+    if(!startupWeek?.id || initialProfile.role==="guest" || !initialProfile.active || Date.parse(startupWeek.locks_at)<=Date.now())return;
     let cancelled=false;
     void (async()=>{
       try{
-        const accessToken=await token();
-        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${accessToken}`},body:JSON.stringify({gameweekId:gameweek.id}),cache:"no-store"});
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:startupWeek.id}),cache:"no-store"});
         if(response.ok && !cancelled)await refreshLiveData(true);
-      }catch{/* Keep odds already stored; background refresh must not interrupt the page. */}
+      }catch{/* Platform load and normal sharing must never be held up by odds. */}
     })();
     return()=>{cancelled=true;};
-  },[gameweek?.id,isDemo,isReadOnly]);
+  // Intentionally run on initial platform mount, not when changing gameweek.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   async function selectFixture(fixtureId: string) {
     if (!gameweek || !isOpen) return;
