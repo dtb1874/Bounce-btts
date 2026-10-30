@@ -331,6 +331,20 @@ export default function LeagueApp(props: Props) {
   },[livePollActive,gameweek?.id]);
   useEffect(() => { if (!isAdmin || isDemo || emulatedProfileId) return; (async()=>{ const r=await fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${await token()}`}}); if(r.ok){ const j=await r.json(); setAlertsCount((j.alerts ?? []).filter((a:any)=>!a.resolved).length); } })(); },[isAdmin,isDemo,emulatedProfileId,view]);
 
+  // Background check on opening a gameweek. Does not block the dashboard or share buttons.
+  useEffect(()=>{
+    if(!gameweek?.id || isDemo || isReadOnly || Date.parse(gameweek.locks_at)<=Date.now())return;
+    let cancelled=false;
+    void (async()=>{
+      try{
+        const accessToken=await token();
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${accessToken}`},body:JSON.stringify({gameweekId:gameweek.id}),cache:"no-store"});
+        if(response.ok && !cancelled)await refreshLiveData(true);
+      }catch{/* Keep odds already stored; background refresh must not interrupt the page. */}
+    })();
+    return()=>{cancelled=true;};
+  },[gameweek?.id,isDemo,isReadOnly]);
+
   async function selectFixture(fixtureId: string) {
     if (!gameweek || !isOpen) return;
     if (isReadOnly) return notice("Read-only view: changes are disabled.");
@@ -347,6 +361,13 @@ export default function LeagueApp(props: Props) {
       if (data) setPredictions(rows => [...rows,data as Prediction]);
     }
     notice("Pick saved ✓");
+    // Check just this fixture after a successful pick; do not delay pick confirmation.
+    void (async()=>{
+      try{
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,fixtureId}),cache:"no-store"});
+        if(response.ok)await refreshLiveData(true);
+      }catch{/* Odds provider failure never invalidates a saved selection. */}
+    })();
   }
 
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/"; }
@@ -576,9 +597,9 @@ Deadline: ${formatKickoff(gameweek.locks_at)}`;
             <div className="dashboardActionGrid">
               <button type="button" className="dashboardGoldAction dashboardAdminAction" onClick={onLiveRefresh} disabled={liveRefreshing}>{liveRefreshing?"Refreshing…":"Fixture refresh"}</button>
               {isAdmin&&<button type="button" className="dashboardGoldAction dashboardAdminAction" onClick={onOddsRefresh} disabled={oddsRefreshing||!gameweek}>{oddsRefreshing?"Checking…":"Odds refresh"}</button>}
-              <WeeklyPicksShareButton gameweekId={gameweek?.id} preGameweek={Boolean(gameweek && Date.parse(gameweek.locks_at)>Date.now())} disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))}/>
+              <WeeklyPicksShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))}/>
               <button type="button" className="dashboardGoldAction" onClick={()=>setView("combined")}>Combined results</button>
-              <CombinedShareButton gameweekId={gameweek?.id} preGameweek={Boolean(gameweek && Date.parse(gameweek.locks_at)>Date.now())} disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))} standings={standings}/>
+              <CombinedShareButton disabled={!gameweek} gameweekNumber={gameweek?.number??0} seasonLabel={seasonLabel} picks={picks.filter(p=>p.fixture).map(p=>({player:p.profile.display_name,homeTeam:p.fixture!.home_team,awayTeam:p.fixture!.away_team,competition:competitionDisplayName(p.fixture!),kickoffAt:p.fixture!.kickoff_at,odds:p.fixture!.odds_fractional,status:p.fixture!.status,homeScore:p.fixture!.home_score,awayScore:p.fixture!.away_score,elapsed:p.fixture!.live_elapsed??null}))} standings={standings}/>
               {isAdmin&&<button type="button" className="dashboardGoldAction dashboardAdminAction" onClick={remindMissingPicks} disabled={!isOpen||!missingPicks.length} aria-label={missingPicks.length?`Remind ${missingPicks.length} missing picks via WhatsApp`:"All picks are in"}>{missingPicks.length?"Remind Picks":"All Picks In ✓"}</button>}
             </div>
           </div>
