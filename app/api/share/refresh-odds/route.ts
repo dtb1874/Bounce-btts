@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     const { data: gameweek, error: gameweekError } = await admin.from("gameweeks").select("id,locks_at,status").eq("id",gameweekId).maybeSingle();
     if (gameweekError) throw gameweekError;
     if (!gameweek || Date.parse(gameweek.locks_at) <= Date.now() || gameweek.status === "complete") return NextResponse.json({ error: "Odds refresh is only available before the gameweek deadline." }, { status: 409 });
-    const result = await runSelectedOddsRefresh(gameweekId);
+    const fixtureId = typeof body?.fixtureId === "string" && /^[0-9a-f-]{36}$/i.test(body.fixtureId) ? body.fixtureId : undefined;
+    if (body?.fixtureId && !fixtureId) return NextResponse.json({ error: "Invalid fixture." }, { status: 400 });
+    const result = await runSelectedOddsRefresh(gameweekId,fixtureId);
     const { data: predictions, error: predictionError } = await admin.from("predictions").select("fixture_id").eq("gameweek_id",gameweekId).not("fixture_id","is",null);
     if (predictionError) throw predictionError;
     const ids = [...new Set((predictions ?? []).map(p => p.fixture_id).filter(Boolean))];
