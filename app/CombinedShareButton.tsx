@@ -33,7 +33,7 @@ async function withRecap(base:File,gameweekNumber:number,picks:FixtureSharePick[
   }finally{URL.revokeObjectURL(src)}
 }
 
-export default function CombinedShareButton({gameweekNumber,seasonLabel,picks,standings,disabled=false,label="Share combined table / fixtures"}:Props){
+export default function CombinedShareButton({gameweekNumber,seasonLabel,picks,standings,disabled=false,gameweekId,preGameweek=false,label="Share combined table / fixtures"}:Props){
   const [busy,setBusy]=useState(false);
   const [phase,setPhase]=useState("");
   const [error,setError]=useState("");
