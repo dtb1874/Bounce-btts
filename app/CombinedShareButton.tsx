@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { refreshFixtureShareOdds } from "./refreshFixtureShareOdds";
 import { createCombinedShareImage, type FixtureSharePick, type FixtureShareStanding } from "./FixtureShareImage";
 import { sortFixtureSharePicks } from "./shareFixtureSort";
 import { drawShareAvatar, loadSharePortraits } from "@/lib/share-portraits";
@@ -26,6 +27,8 @@ async function withRecap(base:File,gameweekNumber:number,picks:FixtureSharePick[
 
 export default function CombinedShareButton({gameweekNumber,seasonLabel,picks,standings,disabled=false}:Props){
   const [busy,setBusy]=useState(false);
-  async function share(){if(disabled||busy)return;setBusy(true);try{const orderedPicks=sortFixtureSharePicks(picks);const base=await createCombinedShareImage(gameweekNumber,seasonLabel,orderedPicks,standings);const file=await withRecap(base,gameweekNumber,orderedPicks,standings);const data:ShareData={title:`Bounce BTTS GW${gameweekNumber} fixtures + table`,text:`Bounce BTTS League — GW${gameweekNumber} fixtures + table`,files:[file]};const nav=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]})))await navigator.share(data);else{const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}}finally{setBusy(false)}}
+  const [phase,setPhase]=useState("");
+  const [error,setError]=useState("");
+  async function share(){if(disabled||busy)return;setBusy(true);try{setError("");setPhase(preGameweek?"Checking latest odds…":"Preparing share…");const freshPicks=preGameweek&&gameweekId?await refreshFixtureShareOdds(gameweekId,picks):picks;setPhase("Preparing share…");const orderedPicks=sortFixtureSharePicks(freshPicks);const base=await createCombinedShareImage(gameweekNumber,seasonLabel,orderedPicks,standings);const file=await withRecap(base,gameweekNumber,orderedPicks,standings);const data:ShareData={title:`Bounce BTTS GW${gameweekNumber} fixtures + table`,text:`Bounce BTTS League — GW${gameweekNumber} fixtures + table`,files:[file]};const nav=navigator as Navigator&{canShare?:(data:ShareData)=>boolean};if(navigator.share&&(!nav.canShare||nav.canShare({files:[file]})))await navigator.share(data);else{const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}}catch(e){setError(e instanceof Error?e.message:"Could not prepare share.");}finally{setBusy(false);setPhase("")}}
   return <button className="dashboardGoldAction" type="button" onClick={share} disabled={disabled||busy}>{busy?"Creating…":"Share combined table / fixtures"}</button>
 }
