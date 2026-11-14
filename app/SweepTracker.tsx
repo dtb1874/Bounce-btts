@@ -132,6 +132,12 @@ function drawChart(ctx: CanvasRenderingContext2D, points: Point[], progress: num
     ctx.textAlign = "left";
     ctx.fillStyle = "#f2dfcc"; ctx.font = "900 24px Arial";
     ctx.fillText(`GW ${display.gameweek}: ${display.goalsAway} goal${display.goalsAway === 1 ? "" : "s"} away`, 42, 568);
+    const completed = points.slice(0, displayIndex + 1);
+    const average = completed.reduce((sum, point) => sum + point.goalsAway, 0) / completed.length;
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#f0cd87";
+    ctx.font = "700 20px Arial";
+    ctx.fillText(`Average: ${average.toFixed(2)} / GW`, 854, 568);
   }
   ctx.textAlign = "left";
   ctx.fillStyle = "#8f8177"; ctx.font = "700 13px Arial";
@@ -154,6 +160,7 @@ export default function SweepTracker(props: Props) {
   if (!target) return null;
   const maxValue = Math.max(3, ...points.map((point) => point.goalsAway));
   const latest = points[points.length - 1];
+  const average = points.length ? points.reduce((sum, point) => sum + point.goalsAway, 0) / points.length : null;
   const viewWidth = 620, viewHeight = 250, left = 34, right = 600, top = 22, bottom = 205;
   const coords = points.map((point, index) => ({
     ...point,
@@ -202,7 +209,7 @@ export default function SweepTracker(props: Props) {
         <polyline className={styles.line} points={polyline}/>
         {coords.map((point) => <g key={point.gameweek}><circle className={styles.dot} cx={point.x} cy={point.y} r={5}/><text className={styles.value} x={point.x} y={point.y - 10} textAnchor="middle">{point.goalsAway}</text></g>)}
       </svg>
-      <div className={styles.summary}><span>0 = complete BTTS sweep</span><strong>{latest ? `Latest: GW ${latest.gameweek} · ${latest.goalsAway} away` : ""}</strong></div>
+      <div className={styles.summary}><span>0 = complete BTTS sweep</span><strong>{average !== null ? `Season average: ${average.toFixed(2)} goals / GW` : ""}</strong><strong>{latest ? `Latest: GW ${latest.gameweek} · ${latest.goalsAway} away` : ""}</strong></div>
     </> : <div className={styles.summary}><span>The tracker starts once a gameweek is fully scored.</span></div>}
   </section>, target);
 }
