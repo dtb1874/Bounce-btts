@@ -100,15 +100,29 @@ export default async function HomePage() {
     null;
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
 
-  const currentFixturesPromise = currentGameweekIds.length
-    ? supabase
+  // Supabase limits the number of rows returned in a single request. A full
+  // season exceeds that limit, so load each page before calculating stats.
+  const currentFixturesPromise = (async () => {
+    if (!currentGameweekIds.length) return { data: [] as any[] };
+    const pageSize = 750;
+    const allFixtures: any[] = [];
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabase
         .from("fixtures")
         .select("*")
         .in("gameweek_id", currentGameweekIds)
         .order("kickoff_at")
         .order("competition")
         .order("home_team")
-    : Promise.resolve({ data: [] as any[] });
+        .order("id")
+        .range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const page = data ?? [];
+      allFixtures.push(...page);
+      if (page.length < pageSize) break;
+    }
+    return { data: allFixtures };
+  })();
 
   const selectedGameweekFixturesPromise = gameweek?.id
     ? supabase
