@@ -100,29 +100,15 @@ export default async function HomePage() {
     null;
   const currentGameweekIds = seasonGameweeks.map((item) => item.id);
 
-  // Supabase limits the number of rows returned in a single request. A full
-  // season exceeds that limit, so load each page before calculating stats.
-  const currentFixturesPromise = (async () => {
-    if (!currentGameweekIds.length) return { data: [] as any[] };
-    const pageSize = 750;
-    const allFixtures: any[] = [];
-    for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await supabase
+  const currentFixturesPromise = currentGameweekIds.length
+    ? supabase
         .from("fixtures")
         .select("*")
         .in("gameweek_id", currentGameweekIds)
         .order("kickoff_at")
         .order("competition")
         .order("home_team")
-        .order("id")
-        .range(offset, offset + pageSize - 1);
-      if (error) throw error;
-      const page = data ?? [];
-      allFixtures.push(...page);
-      if (page.length < pageSize) break;
-    }
-    return { data: allFixtures };
-  })();
+    : Promise.resolve({ data: [] as any[] });
 
   const selectedGameweekFixturesPromise = gameweek?.id
     ? supabase
@@ -166,6 +152,19 @@ export default async function HomePage() {
   const allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
   const allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
 
+  // The sweep only needs the fixtures members actually picked, not the
+  // full season's fixture catalogue (which can exceed the API row limit).
+  const pickedFixtureIds = [...new Set(allPredictions.map((prediction) => prediction.fixture_id))];
+  const sweepFixtures: any[] = [];
+  for (let offset = 0; offset < pickedFixtureIds.length; offset += 500) {
+    const { data, error } = await supabase
+      .from("fixtures")
+      .select("id,home_team,away_team,home_score,away_score,status")
+      .in("id", pickedFixtureIds.slice(offset, offset + 500));
+    if (error) throw error;
+    sweepFixtures.push(...(data ?? []));
+  }
+
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
   const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));
   const profileRows = profiles as ProfileRow[];
@@ -204,7 +203,7 @@ export default async function HomePage() {
         seasonLabel={seasonLabel}
         gameweeks={seasonGameweeks}
         predictions={predictions}
-        fixtures={fixtures}
+        fixtures={sweepFixtures}
       />
       <StatsCentreEnhancer />
       <ValueLeaderPortal profiles={profileRows} predictions={predictions} fixtures={fixtures} />
