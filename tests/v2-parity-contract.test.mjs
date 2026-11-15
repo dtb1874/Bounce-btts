@@ -45,3 +45,18 @@ test("V2 retains score-integrity, single-tap discovery and sweep share data", ()
   mustContain("app/SweepTracker.tsx", ["Average:", "average.toFixed(1)"]);
   mustContain("app/v2/V2DashboardParity.tsx", ["<SweepTracker inline", "<PositionRacePortal inline"]);
 });
+
+test("V2 gameweek control belongs to the shell, not a sticky overlay on every page", () => {
+  mustContain("app/ui/AuthenticatedShellFrame.tsx", ["gameweekControl?: ReactNode", "v2MobileGameweek", "v2DesktopGameweek"]);
+  mustContain("app/v2-preview/V2PreviewClient.tsx", ['gameweekControl={<select', 'aria-label="Select gameweek"']);
+  const css = read("app/v2-preview/V2PreviewClient.module.css");
+  assert.ok(!css.includes(".previewHeader{"), "Remove the overlaid gameweek rail");
+  mustContain("app/ui-foundation-shell-responsive.css", [".v2Sidebar::after", "display:none !important;content:none !important", ".v2MobileGameweek select"]);
+});
+
+test("Awards section is gated by published snapshots with no premature activation", () => {
+  mustContain("lib/awards/contracts.ts", ["AwardsSeasonSnapshot", "finalisationKey", "AwardsSeenState"]);
+  mustContain("lib/awards/ceremony-state.ts", ["snapshot.visibility === \"public\"", "visibleAwards", "buildCeremonySteps"]);
+  mustContain("app/v2/awards/V2AwardsStage.tsx", ["Skip to champion", "Replay", "Pause", "canPublish"]);
+  mustContain("app/v2/awards/V2AwardsArchive.tsx", ['snapshot.visibility!=="public"', "Replay the Awards Show"]);
+});
