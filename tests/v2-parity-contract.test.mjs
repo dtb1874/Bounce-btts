@@ -25,6 +25,7 @@ test("V2 picks and fixtures retain all selected matches regardless of fixture ga
 test("V2 uses canonical UK fixture and round eligibility enforcement", () => {
   mustContain("lib/api-football.ts", ["isCompetitionEnabled", "isRoundEnabled"]);
   mustContain("app/api/admin/fixtures/route.ts", ["isUkFixtureCountry", "fixture_competition_settings", "fixture_round_settings"]);
+  mustContain("app/LeagueApp.tsx", ["<UKLeagueSelector onChanged", "One unobtrusive odds check", "gameweekId:gameweek.id,fixtureId"]);
   mustContain("app/api/admin/competitions/route.ts", ["export async function GET", "export async function PATCH"]);
   mustContain("app/v2/admin/V2AdminFixtures.tsx", ["UKLeagueSelector", "fixtureRound"]);
 });
