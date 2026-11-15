@@ -7,3 +7,6 @@
 .page :is(button,a,input,select,textarea):focus-visible{outline:2px solid #a47736;outline-offset:3px}
 .page :is(button,select){touch-action:manipulation}
 @media (prefers-reduced-motion:reduce){.page :is(button,select,input){transition:none}}
+
+
+.page .footer{background:linear-gradient(90deg,rgba(245,238,228,.97),rgba(245,238,228,.91)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat;color:#4b1d30;border-top:1px solid rgba(99,43,66,.15)}
