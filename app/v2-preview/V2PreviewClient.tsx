@@ -67,6 +67,32 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const standings = useMemo<Standing[]>(() => { const rows = new Map<string, Standing>(profiles.map((member) => [member.id, { id: member.id, name: member.display_name, played: 0, wins: 0, oneSided: 0, zeroZeroCount: 0, points: 0 }])); for (const prediction of predictions) { if (prediction.points_awarded == null) continue; const row = rows.get(prediction.member_id); if (!row) continue; row.played += 1; row.points += prediction.points_awarded; if (prediction.points_awarded === 3) row.wins += 1; if (prediction.points_awarded === 1) row.oneSided += 1; if (prediction.points_awarded === -1) row.zeroZeroCount += 1; } for (const adjustment of adjustments) { const row = rows.get(adjustment.member_id); if (!row) continue; const scored = predictions.some((prediction) => prediction.member_id === adjustment.member_id && prediction.gameweek_id === adjustment.gameweek_id && prediction.points_awarded != null); if (scored && adjustment.reason.trim().toLowerCase() === "missed selection") continue; if (!scored) row.played += 1; row.points += adjustment.points; } return Array.from(rows.values()).sort((a, b) => b.points - a.points || a.zeroZeroCount - b.zeroZeroCount || b.wins - a.wins || a.name.localeCompare(b.name)); }, [profiles, predictions, adjustments]);
   const isOpen = Boolean(gameweek && gameweek.id === currentGameweekId && gameweek.status === "open" && (!gameweek.opens_at || new Date(gameweek.opens_at).getTime() <= Date.now()) && new Date(gameweek.locks_at).getTime() > Date.now());
 
+  // Run once on platform entry. A provider failure must never delay the V2 interface.
+  useEffect(() => {
+    const openingWeek = gameweeks.find(week => week.id === currentGameweekId);
+    if (!openingWeek || profile.role === "guest" || !profile.active || openingWeek.status === "complete" || Date.parse(openingWeek.locks_at) <= Date.now()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const bearer = await token();
+        if (!bearer || cancelled) return;
+        const response = await fetch("/api/share/refresh-odds", {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${bearer}` },
+          body: JSON.stringify({ gameweekId: openingWeek.id }),
+          cache: "no-store",
+        });
+        if (!response.ok || cancelled) return;
+        const payload = await response.json();
+        if (cancelled || !Array.isArray(payload.fixtures)) return;
+        const latestOdds = new Map<string, string | null>(payload.fixtures.map((fixture: {id:string;odds_fractional:string|null}) => [fixture.id,fixture.odds_fractional]));
+        setFixtures(current => current.map(fixture => latestOdds.has(fixture.id) ? {...fixture,odds_fractional:latestOdds.get(fixture.id) ?? null} : fixture));
+      } catch { /* Odds are supplementary: leave existing prices and page actions available. */ }
+    })();
+    return () => { cancelled = true; };
+  // Startup only: not repeated when switching gameweeks.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentGameweekId, profile.id]);
   useEffect(() => { activeGameweekButton.current?.scrollIntoView({ block: "nearest", inline: "center" }); }, [gameweekId]);
   async function reloadAlerts() { if (!isAdmin || isDemo) { setAlertsCount(0); return; } try { const response = await fetch("/api/admin/alerts", { headers: { authorization: `Bearer ${await token()}` }, cache: "no-store" }); if (!response.ok) return; const data = await response.json(); setAlertsCount((data.alerts ?? []).filter((row: { resolved?: boolean }) => !row.resolved).length); } catch {} }
   useEffect(() => { void reloadAlerts(); }, [isAdmin, isDemo, activeView]);
