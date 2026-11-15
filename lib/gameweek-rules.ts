@@ -84,10 +84,18 @@ export function fixtureMatchesSelectionRule(item: ProviderFixtureLike, gameweek:
   return SELECTABLE_STATUSES.has(String(item.fixture?.status?.short ?? "NS"));
 }
 
+function canonicalClubName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function isExcludedBounceTeam(value: string) {
+  const team = canonicalClubName(value);
+  return ["heart of midlothian", "hearts", "hibernian", "hibs"]
+    .some((excluded) => team === excluded || team.startsWith(`${excluded} `));
+}
+
 export function isExcludedBounceClub(home: string, away: string) {
-  const teams = `${home} ${away}`.toLowerCase();
-  return teams.includes("heart of midlothian") || /(^|\s)hearts($|\s)/.test(teams)
-    || teams.includes("hibernian") || /(^|\s)hibs($|\s)/.test(teams);
+  return isExcludedBounceTeam(home) || isExcludedBounceTeam(away);
 }
 
 export function isEligibleProviderFixture(item: ProviderFixtureLike, gameweek: GameweekSelectionRule) {

@@ -879,3 +879,108 @@
     font-size: .64rem;
   }
 }
+
+
+/* Phase 5 light shell: one atmospheric, edge-to-edge image wash. Avoid a
+   cropped pseudo-image and the inherited blank Easter-egg overlay panel. */
+.uiFoundationShell.v2ShellFrame {
+  background:#f5f0e9;
+  color:#30232a;
+}
+.uiFoundationShell.v2ShellFrame .v2Sidebar {
+  background:linear-gradient(180deg,rgba(249,245,238,.97),rgba(245,239,231,.95) 45%,rgba(239,230,219,.96)),url("/assets/st-giles-heart.jpg") center 46% / cover no-repeat,#f5f0e9 !important;
+  border-right:1px solid rgba(95,31,54,.16);
+  color:#33242d;
+  box-shadow:8px 0 30px rgba(51,28,35,.07);
+  isolation:isolate;
+}
+.uiFoundationShell.v2ShellFrame .v2Sidebar::after,
+.uiFoundationShell.v2ShellFrame .v2SidebarEgg::before,
+.uiFoundationShell.v2ShellFrame .v2SidebarEgg::after {display:none !important;content:none !important}
+.uiFoundationShell.v2ShellFrame .v2SidebarEgg {
+  flex:0 0 12px !important;
+  min-height:12px !important;
+  height:12px !important;
+  margin:0 !important;
+  border:0 !important;
+  background:none !important;
+  box-shadow:none !important;
+}
+.uiFoundationShell.v2ShellFrame .v2SidebarBrand {border-bottom-color:rgba(95,31,54,.14)}
+.uiFoundationShell.v2ShellFrame .v2SidebarBrand strong,
+.uiFoundationShell.v2ShellFrame .v2MemberIdentity > div > strong {color:#4b1d30}
+.uiFoundationShell.v2ShellFrame .v2SidebarBrand span,
+.uiFoundationShell.v2ShellFrame .v2SidebarBrand small,
+.uiFoundationShell.v2ShellFrame .v2MemberIdentity > div > span {color:#766a64}
+.uiFoundationShell.v2ShellFrame .v2NavSectionExplore,
+.uiFoundationShell.v2ShellFrame .v2NavSectionAdmin {border-color:rgba(95,31,54,.13)}
+.uiFoundationShell.v2ShellFrame .v2NavSectionLabel {color:#91683e !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavItem {color:#45313a !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavItem:hover {background:rgba(95,31,54,.065) !important;color:#4b1d30 !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavItemActive {background:rgba(99,43,66,.11) !important;color:#4b1d30 !important;box-shadow:inset 3px 0 0 #a8834b !important;border-color:rgba(99,43,66,.24) !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavItemActive .v2NavHelper {color:#725d63 !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavIcon,
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavItemActive .v2NavIcon {color:#8c5b48 !important}
+.uiFoundationShell.v2ShellFrame .v2Nav .v2NavHelper {color:#82756e !important}
+.uiFoundationShell.v2ShellFrame .v2SignOut {border-color:rgba(95,31,54,.13);color:#5e4750}
+.uiFoundationShell.v2ShellFrame .v2SignOut:hover {color:#4b1d30}
+.uiFoundationShell.v2ShellFrame .v2SignOutCopy small {color:#776a65}
+.uiFoundationShell.v2ShellFrame .v2MobileTopbar {
+  background:rgba(247,242,235,.98) !important;
+  color:#4b1d30;
+  border-bottom-color:rgba(95,31,54,.16) !important;
+  box-shadow:0 3px 12px rgba(52,23,38,.05) !important;
+  backdrop-filter:blur(14px);
+}
+.uiFoundationShell.v2ShellFrame .v2MobileMenuButton {background:rgba(99,43,66,.06) !important;color:#4b1d30 !important;border:1px solid rgba(99,43,66,.14) !important}
+.uiFoundationShell.v2ShellFrame .v2MobileBrand {border-right-color:rgba(95,31,54,.16) !important}
+.uiFoundationShell.v2ShellFrame .v2MobileBrand span,
+.uiFoundationShell.v2ShellFrame .v2MobileContext strong {color:#4b1d30}
+.uiFoundationShell.v2ShellFrame .v2MobileContext small {color:#94715c}
+.uiFoundationShell.v2ShellFrame .v2BottomNav {
+  background:rgba(249,246,240,.98);
+  border-top:1px solid rgba(95,31,54,.16);
+  box-shadow:0 -4px 14px rgba(67,19,38,.05);
+  backdrop-filter:blur(16px);
+}
+.uiFoundationShell.v2ShellFrame .v2BottomNav .v2NavItem {color:#654b56 !important}
+.uiFoundationShell.v2ShellFrame .v2BottomNav .v2NavItemActive {background:rgba(95,31,54,.09) !important;color:#4b1d30 !important}
+.uiFoundationShell.v2ShellFrame .v2BottomNav .v2NavItemActive::before {background:#7d3d54}
+.uiFoundationShell.v2ShellFrame .v2BottomNav .v2NavIcon {color:#7d5560}
+.uiFoundationShell.v2ShellFrame .v2Main {background:#f5f0e9;min-width:0}
+.uiFoundationShell.v2ShellFrame .v2DesktopGameweek {display:flex;align-items:center;justify-content:flex-end;gap:13px;min-height:50px;padding:7px clamp(20px,5vw,64px);background:#faf7f1;border-bottom:1px solid rgba(95,31,54,.12);color:#8a6b54}
+.uiFoundationShell.v2ShellFrame .v2DesktopGameweek > span {font-size:.68rem;font-weight:800;letter-spacing:.1em}
+.uiFoundationShell.v2ShellFrame .v2MobileGameweek {display:none}
+.uiFoundationShell.v2ShellFrame .v2DesktopGameweek select,
+.uiFoundationShell.v2ShellFrame .v2MobileGameweek select {max-width:100%;min-width:96px;min-height:36px;padding:4px 26px 4px 12px;border:1px solid rgba(99,43,66,.28);border-radius:7px;background:#fffdf9;color:#4b1d30;font:800 .8rem/1.2 system-ui,sans-serif}
+.uiFoundationShell.v2ShellFrame :is(.v2DesktopGameweek,.v2MobileGameweek) select:focus-visible {outline:2px solid #9b753a;outline-offset:2px}
+@media(max-width:900px) {
+  .uiFoundationShell.v2ShellFrame .v2Sidebar {box-shadow:12px 0 30px rgba(67,19,38,.14) !important}
+  .uiFoundationShell.v2ShellFrame .v2DesktopGameweek {display:none}
+  .uiFoundationShell.v2ShellFrame .v2MobileGameweek {display:block;min-width:0;justify-self:end}
+  .uiFoundationShell.v2ShellFrame .v2MobileTopbar {grid-template-columns:48px auto minmax(0,1fr) auto;gap:8px}
+  .uiFoundationShell.v2ShellFrame .v2MobileGameweek select {min-width:84px;min-height:38px;font-size:.75rem;padding:5px 20px 5px 8px}
+  .uiFoundationShell.v2ShellFrame .v2MobileContext {min-width:0}
+  .uiFoundationShell.v2ShellFrame .v2Nav .v2NavItem {background:rgba(255,255,255,.36) !important;border:1px solid rgba(99,43,66,.14) !important;box-shadow:none !important}
+  .uiFoundationShell.v2ShellFrame .v2Nav .v2NavItemActive {background:rgba(99,43,66,.11) !important;box-shadow:inset 3px 0 0 #a8834b !important}
+  .uiFoundationShell.v2ShellFrame .v2SidebarClose {color:#61374a;background:rgba(99,43,66,.07)}
+}
+@media(max-width:430px) {
+  .uiFoundationShell.v2ShellFrame .v2MobileTopbar {grid-template-columns:46px auto minmax(0,1fr) auto;gap:6px}
+  .uiFoundationShell.v2ShellFrame .v2MobileBrand {padding-right:5px}
+  .uiFoundationShell.v2ShellFrame .v2MobileBrand img {width:31px;height:34px}
+  .uiFoundationShell.v2ShellFrame .v2MobileContext small {display:none}
+  .uiFoundationShell.v2ShellFrame .v2MobileContext strong {font-size:.65rem}
+}
+@media(prefers-reduced-motion:reduce) {
+  .uiFoundationShell.v2ShellFrame .v2NavItem {transition:none !important}
+}
+
+
+/* Soften bright blank shell surfaces; retain existing maroon/gold accents. */
+.uiFoundationShell.v2ShellFrame,
+.uiFoundationShell.v2ShellFrame .v2Main{background:#ebe6df}
+.uiFoundationShell.v2ShellFrame .v2DesktopGameweek{background:#eee9e2 !important}
+.uiFoundationShell.v2ShellFrame .v2MobileTopbar{background:#eee9e2 !important}
+.uiFoundationShell.v2ShellFrame .v2Sidebar{background:linear-gradient(180deg,rgba(235,230,223,.96),rgba(230,224,217,.95)),url("/assets/st-giles-heart.jpg") center/cover no-repeat,#ebe6df !important}
+.uiFoundationShell.v2ShellFrame .v2BottomNav{background:rgba(235,230,223,.97)}

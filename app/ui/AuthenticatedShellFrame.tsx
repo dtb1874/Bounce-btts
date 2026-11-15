@@ -9,6 +9,8 @@ type NavItem = Omit<AuthenticatedNavItem, "id"> & { id: string };
 type AuthenticatedShellFrameProps = {
   children: ReactNode;
   afterContent?: ReactNode;
+  gameweekControl?: ReactNode;
+  awardsPublished?: boolean;
   navItems: NavItem[];
   activeView: string;
   isAdmin: boolean;
@@ -34,6 +36,8 @@ type AuthenticatedShellFrameProps = {
 export default function AuthenticatedShellFrame({
   children,
   afterContent,
+  gameweekControl,
+  awardsPublished = false,
   navItems,
   activeView,
   isAdmin,
@@ -51,7 +55,7 @@ export default function AuthenticatedShellFrame({
   const canonicalById = new Map<string, AuthenticatedNavItem>(authenticatedNavItems.map((item) => [item.id, item]));
   const visibleNavItems = navItems
     .map((item) => canonicalById.get(item.id) ?? item)
-    .filter((item) => !item.adminOnly || isAdmin);
+    .filter((item) => (!item.adminOnly || isAdmin) && (item.id !== "awards" || awardsPublished));
 
   const primaryItems = visibleNavItems.filter((item) => item.group === "quick");
   const exploreItems = visibleNavItems.filter((item) => item.group === "more" && !item.adminOnly);
@@ -122,6 +126,7 @@ export default function AuthenticatedShellFrame({
           <small>Current view</small>
           <strong>{activeItem?.label ?? "Bounce"}</strong>
         </div>
+        {gameweekControl ? <div className="v2MobileGameweek">{gameweekControl}</div> : null}
       </header>
 
       <aside className={`uiFoundationSidebar v2Sidebar ${mobileMenuOpen ? "uiFoundationSidebarOpen v2SidebarOpen" : ""}`} aria-label="Bounce navigation">
@@ -175,7 +180,10 @@ export default function AuthenticatedShellFrame({
         <button type="button" className="uiFoundationScrim v2Scrim" aria-label="Close navigation" onClick={onCloseMenu} />
       ) : null}
 
-      <section className="uiFoundationMain v2Main">{children}</section>
+      <section className="uiFoundationMain v2Main">
+        {gameweekControl ? <div className="v2DesktopGameweek"><span>SEASON GAMEWEEK</span>{gameweekControl}</div> : null}
+        {children}
+      </section>
 
       <nav className="v2BottomNav" aria-label="Primary navigation">
         {primaryItems.map((item) => <NavButton item={item} compact key={item.id} />)}

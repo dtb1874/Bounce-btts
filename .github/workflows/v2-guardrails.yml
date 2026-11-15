@@ -2,16 +2,17 @@ name: V2 integration guardrails
 
 on:
   pull_request:
-    branches: [v2/product-redesign]
+    branches: [v2/product-redesign, v2/phase-3-visual-reset]
   push:
-    branches: [v2/product-redesign]
+    branches: [v2/product-redesign, v2/phase-4-cohesion-parity]
 
 permissions:
   contents: read
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    # Playwright 1.55 Chromium does not support the ubuntu26.04 latest image.
+    runs-on: ubuntu-24.04
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
@@ -60,6 +61,9 @@ jobs:
             echo "A V2 card-grid pattern was introduced; review against the card-light design contract."
             exit 1
           fi
+
+      - name: V2 source parity and integration regression contracts
+        run: node --test tests/v2-parity-contract.test.mjs
 
       - name: Production build
         run: npm run build

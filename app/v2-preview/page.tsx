@@ -40,7 +40,7 @@ export default async function V2PreviewPage() {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?next=%2Fv2-preview");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -48,7 +48,7 @@ export default async function V2PreviewPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile?.approved) redirect("/login");
+  if (!profile?.approved) redirect("/login?next=%2Fv2-preview");
 
   const [settingsResponse, seasonsResponse, profilesResponse] = await Promise.all([
     supabase.from("league_settings").select("*").eq("id", true).maybeSingle(),
@@ -85,8 +85,11 @@ export default async function V2PreviewPage() {
         .in("gameweek_id", gameweekIds)
     : Promise.resolve({ data: [] as PredictionRow[] });
 
-  const fixturesPromise = gameweekIds.length
-    ? supabase.from("fixtures").select("*").in("gameweek_id", gameweekIds).order("kickoff_at")
+  // Only the selected gameweek needs its full fixture catalogue. Historical analytics
+  // are supplied from members’ actual selected fixture IDs below, avoiding the
+  // Supabase 1,000-row season-wide fixture cap and unnecessary page weight.
+  const fixturesPromise = currentGameweek?.id
+    ? supabase.from("fixtures").select("*").eq("gameweek_id", currentGameweek.id).order("kickoff_at")
     : Promise.resolve({ data: [] as any[] });
 
   const adjustmentsPromise = gameweekIds.length

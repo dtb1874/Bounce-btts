@@ -1,1 +1,90 @@
 .panel{position:relative;isolation:isolate;margin-top:14px;overflow:hidden;border:1px solid rgba(225,174,105,.58);border-radius:19px;background:radial-gradient(circle at 86% 8%,rgba(240,207,170,.14),transparent 11rem),linear-gradient(145deg,rgba(39,17,27,.995),rgba(10,10,14,.995));box-shadow:0 20px 42px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,239,216,.06);color:#f4e7dc}.panel::after{content:"";position:absolute;z-index:-1;right:-24px;bottom:-42px;width:180px;height:180px;border-radius:50%;background:url('/assets/st-giles-round.jpg') center/cover no-repeat;opacity:.065;pointer-events:none}.compactHead{position:relative;padding:16px 16px 14px;background:linear-gradient(105deg,#7b2643 0%,#5b1b34 56%,rgba(45,17,27,.82) 100%);border-bottom:1px solid rgba(240,207,170,.32);display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}.compactHead::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:2px;background:linear-gradient(90deg,#f1cf92,#c48e42 42%,transparent 78%);opacity:.78}.eyebrow{display:block;color:#f0ca8e;font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.compactHead h3{margin:4px 0 0;font:700 25px/1 Georgia,serif;color:#fff1df;text-shadow:0 7px 20px rgba(0,0,0,.46)}.share{border:1px solid #f4db9d;background:linear-gradient(180deg,#f4dc99,#d39f49 64%,#bb7f2e);color:#2e1807;border-radius:12px;padding:10px 13px;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 8px 20px rgba(190,139,49,.28),inset 0 1px 0 rgba(255,255,255,.38)}.share:disabled{opacity:.55}.compactScoreline{display:flex;align-items:center;gap:7px;padding:12px 15px 11px;flex-wrap:wrap;color:#bcaa9c;font-size:10px;background:linear-gradient(90deg,rgba(8,8,11,.42),rgba(56,20,34,.18));border-bottom:1px solid rgba(240,207,170,.1)}.compactScoreline strong{min-width:30px;padding:5px 7px;border:1px solid rgba(224,179,115,.36);border-radius:8px;background:rgba(116,32,52,.26);color:#f5d7aa;font-size:17px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}.compactScoreline span{font-weight:800;letter-spacing:.025em}.compactScoreline i{font-style:normal;color:#665a53;margin:0 2px}.compactStories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;background:rgba(8,8,11,.28)}.compactStories>div{position:relative;min-width:0;min-height:68px;padding:11px 12px;border:1px solid rgba(199,175,149,.16);border-radius:10px;background:linear-gradient(145deg,rgba(35,22,28,.98),rgba(17,14,18,.98));box-shadow:0 6px 14px rgba(0,0,0,.15)}.compactStories>div:first-child{border-color:rgba(224,179,115,.45);background:linear-gradient(145deg,rgba(93,31,50,.78),rgba(28,17,22,.98));box-shadow:inset 3px 0 0 rgba(225,174,105,.84),0 7px 16px rgba(0,0,0,.18)}.compactStories span{display:block;color:#d0aa70;font-size:8px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.compactStories strong{display:block;margin-top:4px;color:#f5ebe3;font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.compactStories small{display:block;margin-top:3px;color:#9b8e86;font-size:9px}.archive{position:relative;isolation:isolate;margin:16px 0 20px;border:1px solid rgba(207,157,94,.44);border-radius:19px;background:linear-gradient(145deg,rgba(18,12,17,.96),rgba(8,8,12,.98));overflow:hidden;box-shadow:0 18px 38px rgba(0,0,0,.24)}.archive::after{content:"";position:absolute;z-index:-1;right:-20px;top:-30px;width:165px;height:165px;background:url('/assets/st-giles-heart.jpg') center/cover no-repeat;opacity:.045;transform:rotate(8deg);pointer-events:none}.archiveHead{padding:18px 18px 16px;background:linear-gradient(100deg,rgba(116,32,52,.74),rgba(54,19,31,.38) 64%,rgba(15,12,17,.16));border-bottom:1px solid rgba(240,207,170,.18)}.archiveHead span{color:#dfb979;font-size:10px;font-weight:900;letter-spacing:.14em}.archiveHead h3{margin:5px 0 4px;color:#fff0df;font:700 27px/1.05 Georgia,serif;text-shadow:0 5px 16px rgba(0,0,0,.34)}.archiveHead p{margin:0;color:#b4a49a;font-size:11px}.weeks{display:flex;gap:7px;overflow:auto;padding:12px 14px;border-bottom:1px solid rgba(216,183,111,.12);scrollbar-width:none;background:rgba(8,8,11,.3)}.weeks::-webkit-scrollbar{display:none}.weekButton{flex:0 0 auto;border:1px solid rgba(216,183,111,.28);border-radius:10px;background:#19151a;color:#c8b8ab;padding:9px 12px;font-weight:800;font-size:11px}.weekButtonActive{background:linear-gradient(180deg,#8a2b49,#641d35);color:#fff3e3;border-color:#e0b56e;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 5px 12px rgba(81,23,41,.25)}.detail{padding:15px}.recapLine{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}.chip{border:1px solid rgba(216,183,111,.24);background:rgba(116,32,52,.13);border-radius:999px;padding:6px 9px;color:#c9b6a7;font-size:10px}.rows{display:grid;gap:8px}.row{display:grid;grid-template-columns:minmax(70px,.8fr) minmax(150px,2fr) auto;gap:9px;align-items:center;padding:11px 12px;border-radius:11px;background:linear-gradient(145deg,rgba(255,255,255,.032),rgba(255,255,255,.014));border:1px solid rgba(255,255,255,.05)}.rowPlayer{font-weight:900;color:#f1e5dc;font-size:12px}.rowFixture{min-width:0}.rowFixture strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e4d9d0;font-size:12px}.rowFixture small{display:block;margin-top:2px;color:#928781;font-size:10px}.rowResult{text-align:right}.rowResult strong{display:block;color:#f3d09e;font-size:12px}.rowResult small{display:block;color:#9d9189;font-size:10px;margin-top:2px}.empty{padding:16px;color:#9f9289;font-size:12px}.note{padding:0 14px 14px;color:#837a75;font-size:10px}.tableMovementUp{color:#85c99d!important}.tableMovementDown{color:#d37c8c!important}@media(max-width:720px){.panel{margin-top:11px;border-radius:15px}.compactHead{padding:12px 11px 10px}.compactHead h3{font-size:20px}.share{padding:8px 10px;font-size:9px}.compactScoreline{padding:9px 10px 8px;font-size:9px;gap:5px}.compactScoreline strong{min-width:25px;padding:4px 6px;font-size:14px}.compactStories{gap:6px;padding:7px}.compactStories>div{min-height:62px;padding:9px}.compactStories strong{font-size:10px}.archive{margin-top:13px}.archiveHead{padding:14px 13px}.archiveHead h3{font-size:23px}.detail{padding:11px}.row{grid-template-columns:76px minmax(0,1fr) auto;padding:9px}.rowFixture strong{font-size:11px}}
+
+
+/* V2-only recap: neutral editorial card, same metrics and share logic as V1. */
+.panel.panelV2{
+  margin:0;
+  border:1px solid rgba(88,61,69,.17);
+  border-radius:8px;
+  background:#eae5de;
+  color:#342b30;
+  box-shadow:none;
+  isolation:auto;
+}
+.panelV2::after{display:none}
+.panelV2 .compactHead{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:18px;
+  background:#eae5de;
+  border-bottom:1px solid rgba(88,61,69,.17);
+  box-shadow:none;
+  padding:19px 20px 18px;
+}
+.panelV2 .compactHead::after{display:none}
+.panelV2 .eyebrow{color:#856246;font-size:.65rem;letter-spacing:.12em}
+.panelV2 .compactHead h3{
+  font:700 clamp(1.35rem,2.5vw,1.9rem)/1.1 Georgia,"Times New Roman",serif;
+  color:#49313d;
+  text-shadow:none;
+}
+.panelV2 .share{
+  min-height:40px;
+  padding:9px 16px;
+  background:#632b42;
+  color:#fff6ec;
+  border:1px solid #632b42;
+  border-radius:6px;
+  font-size:.72rem;
+  box-shadow:none;
+}
+.panelV2 .share:focus-visible{outline:2px solid #9b7850;outline-offset:3px}
+.panelV2 .compactScoreline{
+  padding:10px 18px;
+  background:#e3dcd3;
+  color:#766d69;
+  border-bottom:1px solid rgba(88,61,69,.12);
+  font-size:.7rem;
+}
+.panelV2 .compactScoreline strong{
+  min-width:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  font-size:1.16rem;
+  font-family:Georgia,serif;
+  color:#632b42;
+}
+.panelV2 .compactScoreline i{color:#a39891}
+.panelV2 .compactStories{
+  padding:12px 18px 16px;
+  gap:9px;
+  background:#eae5de;
+}
+.panelV2 .compactStories>div,
+.panelV2 .compactStories>div:first-child{
+  min-height:65px;
+  padding:11px 13px;
+  background:#f0ebe4;
+  border:1px solid rgba(88,61,69,.13);
+  border-radius:5px;
+  box-shadow:none;
+}
+.panelV2 .compactStories>div:first-child{border-left:3px solid #9b7850}
+.panelV2 .compactStories span{color:#856246;font-size:.65rem}
+.panelV2 .compactStories strong{color:#49313d;font-size:.81rem;line-height:1.3}
+.panelV2 .compactStories small{color:#766d69;font-size:.69rem}
+@media(max-width:720px){
+  .panelV2 .compactHead{padding:16px 14px;gap:13px;grid-template-columns:minmax(0,1fr) auto}
+  .panelV2 .compactHead h3{font-size:1.4rem;line-height:1.16}
+  .panelV2 .share{min-height:40px;padding:8px 12px;font-size:.72rem}
+  .panelV2 .compactScoreline{padding:9px 12px}
+  .panelV2 .compactStories{padding:10px 12px 12px}
+  .panelV2 .compactStories>div{padding:9px 10px}
+  .panelV2 .compactStories strong{font-size:.74rem}
+}
+
+@media(max-width:380px){.panelV2 .compactHead{grid-template-columns:1fr;gap:12px}.panelV2 .share{justify-self:start}}

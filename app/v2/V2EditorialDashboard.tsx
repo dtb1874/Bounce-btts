@@ -74,7 +74,6 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
   const myPrediction = predictions.find((row) => row.member_id === myId);
   const myFixture = fixtures.find((row) => row.id === myPrediction?.fixture_id);
   const myStandingIndex = standings.findIndex((row) => row.id === myId);
-  const myStanding = myStandingIndex >= 0 ? standings[myStandingIndex] : undefined;
   const leader = standings[0];
   const activeMembers = profiles.filter((row) => row.active && row.role !== "guest");
   const submitted = predictions.length;
@@ -116,68 +115,46 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
   );
   const won = picks.filter((row) => row.result.tone === "won").length;
   const live = picks.filter((row) => row.fixture && isLiveFixtureStatus(row.fixture.status) && row.result.tone !== "won").length;
-  const missing = Math.max(0, activeMembers.length - submitted);
   const gameweekState = !gameweek ? "NO ACTIVE GAMEWEEK" : isOpen ? "PICKS OPEN" : gameweek.status === "complete" ? "COMPLETE" : "PICKS LOCKED";
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.brandBlock}>
-          <div className={styles.brandTitle} aria-label={`The Bounce BTTS League ${seasonLabel}`}>
-            <small className={styles.brandThe}>The</small>
-            <strong>BOUNCE</strong>
-            <span>BTTS LEAGUE <i>· EST. 2024</i></span>
-          </div>
-          <div className={styles.brandMeta}>
-            <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" className={styles.brandCrest} />
-            <div className={styles.seasonStamp}>{seasonLabel}</div>
-          </div>
+      <header className={styles.hero}>
+        <div className={styles.heroContent}>
+          <p className={styles.heroEyebrow}>EDINBURGH · EST. 2024 · SEASON {seasonLabel}</p>
+          <h1 className={styles.heroTitle}><span>BOUNCE</span><small>BTTS LEAGUE</small></h1>
+          <p className={styles.heroMotto}>Weekly picks. League drama. One champion.</p>
         </div>
-      </section>
+        <div className={styles.heroEmblem} aria-hidden="true">
+          <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" />
+        </div>
+      </header>
 
-      <section className={styles.selectionBand}>
-        <div>
-          <span className={styles.selectionLabel}>YOUR SELECTION</span>
-          {myFixture ? (
-            <>
-              <div className={styles.fixtureNames}><strong>{myFixture.home_team}</strong><span>v</span><strong>{myFixture.away_team}</strong></div>
-              <div className={styles.fixtureMeta}>{competitionDisplayName(myFixture)} · {formatDate(myFixture.kickoff_at)}</div>
-            </>
-          ) : (
-            <div className={styles.noSelection}><strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong><span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "This gameweek has no recorded selection for you."}</span></div>
-          )}
-        </div>
-        <div className={styles.outcome}>
-          <div className={styles.lockedState}>
-            <strong>{gameweek ? `GW ${gameweek.number}` : "SEASON"}</strong>
-            <span>{gameweekState}</span>
+      <section className={styles.matchSummary} aria-label="Current gameweek at a glance">
+        <div className={styles.summaryLine}>
+          <div className={styles.summaryFixture}>
+            <span className={styles.summaryEyebrow}>YOUR PICK</span>
+            <strong>{myFixture ? `${myFixture.home_team} v ${myFixture.away_team}` : isOpen ? "No pick submitted" : "No selection recorded"}</strong>
+            {myFixture ? <span className={styles.summarySecondary}>{competitionDisplayName(myFixture)} · {formatDate(myFixture.kickoff_at)}</span> : null}
           </div>
-          {gameweek?.locks_at ? <time>{formatDate(gameweek.locks_at)}</time> : null}
-          {isOpen ? (
-            <button className={styles.primaryAction} type="button" onClick={() => setView("pick")}>{myPrediction ? "Change my pick" : "Make my pick"}<span>→</span></button>
-          ) : (
-            <button className={styles.textAction} type="button" onClick={() => setView("results")}>View all picks <span>→</span></button>
-          )}
+          <div className={styles.summaryStatus}>
+            <span>GW {gameweek?.number ?? "—"}</span>
+            <strong>{gameweekState}</strong>
+            <button type="button" onClick={() => setView(isOpen ? "pick" : "results")}>{isOpen ? (myPrediction ? "Change pick" : "Make pick") : "View picks"} <span aria-hidden="true">→</span></button>
+          </div>
+          <div className={styles.summaryStats} aria-label="League snapshot">
+            <span>Position <strong>{myStandingIndex >= 0 ? ordinal(myStandingIndex + 1) : "—"}</strong></span>
+            <span>Leader <strong>{leader?.name ?? "—"}</strong></span>
+            <span>Picks <strong>{submitted}/{activeMembers.length}</strong></span>
+            <span>Pot <strong>£{prizePot}</strong></span>
+          </div>
         </div>
-      </section>
-
-      <section className={styles.pulse} aria-label="League snapshot">
-        <div><span>YOUR POSITION</span><strong>{myStandingIndex >= 0 ? ordinal(myStandingIndex + 1) : "—"}</strong><small>{myStanding ? `${myStanding.points} pts` : "No score yet"}</small></div>
-        <div><span>LEADER</span><strong>{leader?.name ?? "—"}</strong><small>{leader ? `${leader.points} pts` : "Season pending"}</small></div>
-        <div><span>PICKS IN</span><strong>{submitted}/{activeMembers.length}</strong><small>{missing ? `${missing} outstanding` : "Full house"}</small></div>
-        <div><span>PRIZE POT</span><strong>£{prizePot}</strong><small>{activeMembers.length} members</small></div>
       </section>
 
       <section className={styles.editorialSection}>
-        <header className={styles.sectionHeader} style={{ position: "relative" }}>
-          <div><span>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
-          <div style={{ position: "absolute", top: 0, right: 0, display: "grid", justifyItems: "end", gap: 5 }}>
-            <div style={{ minHeight: 34, display: "inline-flex", alignItems: "center", gap: 7, padding: "0 10px", border: "1px solid rgba(183,141,54,.38)", borderRadius: 999, background: "rgba(206,167,78,.18)", color: "#5f402c", font: "800 .52rem/1 Arial,Helvetica,sans-serif", whiteSpace: "nowrap" }}>
-              <span style={{ color: "#8e5b35", letterSpacing: ".04em", textTransform: "uppercase" }}>Combined odds</span>
-              <strong style={{ color: "#431326", fontSize: ".68rem" }}>{combinedPickOdds ?? "—"}</strong>
-            </div>
-            <div className={styles.sectionAside}>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</div>
-          </div>
+        <header className={styles.sectionHeader}>
+          <div><span className={styles.eyebrow}>GAMEWEEK {gameweek?.number ?? "—"}</span><h2>Everyone’s Picks</h2></div>
+          <div className={styles.sectionMeta}><div className={styles.oddsPill}><span>COMBINED ODDS</span><strong>{combinedPickOdds ?? "—"}</strong></div><small>{live ? `${live} live` : won ? `${won} won` : `${submitted} selected`}</small></div>
         </header>
         <V2DashboardPickActions gameweekId={gameweek?.id ?? null} gameweekNumber={gameweek?.number ?? null} seasonLabel={seasonLabel} profiles={profiles} fixtures={fixtures} predictions={predictions} standings={standings} prizePot={prizePot} isAdmin={isAdmin}/>
         <div className={styles.pickLedger}>
@@ -230,10 +207,6 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
 
       <V2DashboardParity seasonLabel={seasonLabel} gameweek={gameweek} gameweeks={gameweeks} profiles={profiles} fixtures={fixtures} allPredictions={allPredictions} currentPredictions={predictions} adjustments={adjustments} isAdmin={isAdmin} isOpen={isOpen}/>
 
-      <section className={styles.closingBand}>
-        <div><span>THE BOUNCE</span><strong>BTTS LEAGUE · EST. 2024</strong></div>
-        <button type="button" onClick={() => setView("history")}>League History <span>→</span></button>
-      </section>
     </main>
   );
 }
