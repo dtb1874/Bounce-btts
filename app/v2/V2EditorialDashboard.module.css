@@ -18,3 +18,33 @@
 .page :is(button,a,input,select):focus-visible,.shell :is(button,a,input,select):focus-visible{outline:2px solid #a47736;outline-offset:3px}
 .page :is(button,select),.shell :is(button,select){touch-action:manipulation;transition:background-color .18s ease,border-color .18s ease,color .18s ease}
 @media(prefers-reduced-motion:reduce){.page :is(button,select),.shell :is(button,select){transition:none}}
+
+
+/* Phase 5 / light editorial system: maroon identifies actions, not entire surfaces. */
+.page .hero{background:linear-gradient(90deg,rgba(248,244,237,.96),rgba(248,244,237,.9)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}
+.page .weekBrief{color:#4b1d30;border-left-color:rgba(99,43,66,.22)}
+.page .weekBrief :is(strong,span,small,time){color:inherit}
+.page .selectionBand{background:#f1e8dd;color:#382a30;border-color:rgba(99,43,66,.15)}
+.page .selectionLabel{color:#83502c}
+.page .fixtureNames strong{color:#4b1d30}
+.page .fixtureNames span,.page .fixtureMeta,.page .noSelection span{color:#786c67}
+.page .outcome{background:#e8dcd0;border-left:2px solid rgba(99,43,66,.26);color:#4b1d30}
+.page .lockedState strong,.page .lockedState span,.page .outcome time,.page .outcome span{color:#65545c}
+.page .outcome.result_won b{color:#2f6c48}
+.page .outcome.result_scoreNil b{color:#8f6719}
+.page .outcome.result_lost b{color:#963b49}
+.page .outcome.result_live b{color:#6f5a84}
+.page .outcome.result_waiting b{color:#6d6661}
+.page .tableSection{background:#f9f5ee;color:#382a30}
+.page .tableSection .sectionHeader{border-bottom-color:rgba(99,43,66,.26)}
+.page .tableSection .sectionHeader span{color:#83502c}
+.page .tableSection .sectionHeader h2{color:#4b1d30}
+.page .tableSection .sectionAsideButton{color:#632b42;border-bottom-color:rgba(99,43,66,.27)}
+.page .tableHead{color:#816f68}
+.page .tableRow{color:#6a5d60;border-top-color:rgba(99,43,66,.12)}
+.page .tableRow strong,.page .tableRow b{color:#4b1d30}
+.page .position{color:#7f5462}
+.page .tableAvatar{color:#632b42;background:#eae0d4;border-color:rgba(99,43,66,.22)}
+.page .editorialSection{padding-top:clamp(28px,4vw,52px);padding-bottom:clamp(28px,4vw,52px)}
+.page .sectionHeader h2{font-size:clamp(1.8rem,3.3vw,3rem)}
+@media(max-width:900px){.page .hero{background:linear-gradient(180deg,rgba(248,244,237,.95),rgba(247,241,233,.91)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}.page .weekBrief{background:rgba(255,252,246,.85);border:1px solid rgba(99,43,66,.18);color:#4b1d30}.page .weekBrief :is(strong,small,span,time){color:inherit}}
