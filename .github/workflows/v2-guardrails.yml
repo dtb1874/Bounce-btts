@@ -2,9 +2,9 @@ name: V2 integration guardrails
 
 on:
   pull_request:
-    branches: [v2/product-redesign]
+    branches: [v2/product-redesign, v2/phase-3-visual-reset]
   push:
-    branches: [v2/product-redesign]
+    branches: [v2/product-redesign, v2/phase-4-cohesion-parity]
 
 permissions:
   contents: read
