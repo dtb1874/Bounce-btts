@@ -70,7 +70,7 @@ test("Preview login stays in V2 and rejects untrusted redirect destinations", ()
   mustContain("app/v2-preview/page.tsx", ['redirect("/login?next=%2Fv2-preview")']);
   mustContain("app/login/page.tsx", ['requested === "/v2-preview" ? "/v2-preview" : "/"']);
   const login = read("app/login/page.tsx");
-  assert.ok(!login.includes(String.raw`\\n    const requested`), "Login return path must be executable code, not escaped text inside a comment");
-  assert.match(login, /window\\.location\\.replace\\(requested === "\/v2-preview"/);
+  assert.ok(login.split("\n").some(line => line.trimStart().startsWith("const requested =")), "Preview destination redirect must be executable, not commented out");
+  assert.ok(login.includes('window.location.replace(requested === "/v2-preview"'), "Successful sign-in must navigate back to the V2 preview");
   mustContain("app/login/page.tsx", ['new Error("timeout")', "finally {", "setLoading(false)"]);
 });
