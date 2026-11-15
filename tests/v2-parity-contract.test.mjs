@@ -74,3 +74,19 @@ test("Preview login stays in V2 and rejects untrusted redirect destinations", ()
   assert.ok(login.includes('window.location.replace(requested === "/v2-preview"'), "Successful sign-in must navigate back to the V2 preview");
   mustContain("app/login/page.tsx", ['new Error("timeout")', "finally {", "setLoading(false)"]);
 });
+
+test("Dashboard uses one rebuilt identity and compact selection band, not layered legacy hero blocks", () => {
+  const dashboard = read("app/v2/V2EditorialDashboard.tsx");
+  const stylesheet = read("app/v2/V2EditorialDashboard.module.css");
+  assert.ok(dashboard.includes('className={styles.heroTitle}'), "One editorial identity heading");
+  assert.ok(dashboard.includes('className={styles.matchSummary}'), "Compact integrated pick summary");
+  assert.ok(!dashboard.includes("styles.heroArtMark"), "No duplicate floating B motif");
+  assert.ok(!dashboard.includes("styles.closingBand"), "No second branded hero at page foot");
+  assert.equal((stylesheet.match(/\.hero\{/g) ?? []).length, 1, "Exactly one authored hero rule");
+  assert.equal((stylesheet.match(/\.selectionBand\{/g) ?? []).length, 1, "Exactly one authored selection layout rule");
+  assert.ok(stylesheet.includes("background:var(--canvas)"), "Muted stone dashboard canvas");
+  for (const label of ["Everyone’s Picks","League Standing","YOUR POSITION","PRIZE POT"]) {
+    assert.ok(dashboard.includes(label), `Missing preserved dashboard feature: ${label}`);
+  }
+  mustContain("app/v2/V2EditorialDashboard.tsx", ["<V2DashboardParity", "<V2DashboardPickActions", "compactPickOutcome", "formatFixtureOddsDisplay"]);
+});
