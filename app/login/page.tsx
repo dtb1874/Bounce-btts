@@ -12,21 +12,38 @@ export default function LoginPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError("");
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password,
-    });
-    if (signInError) {
-      setError("Username or password is incorrect.");
+
+    try {
+      const supabase = createClient();
+      // A failed or stalled auth request must not permanently disable the form,
+      // especially on iOS Chrome when moving between protected Vercel previews.
+      const signIn = supabase.auth.signInWithPassword({
+        email: usernameToEmail(username.trim()),
+        password,
+      });
+      const outcome = await Promise.race([
+        signIn,
+        new Promise<{ error: Error }>((resolve) =>
+          window.setTimeout(() => resolve({ error: new Error("timeout") }), 15000)
+        ),
+      ]);
+      if (outcome.error) {
+        setError(outcome.error.message === "timeout"
+          ? "Sign-in is taking too long. Check your connection and try again."
+          : "Sign-in unsuccessful. Check your username and password.");
+        return;
+      }
+      // Only the V2 preview may be used as a return path; never accept external URLs.
+      const requested = new URLSearchParams(window.location.search).get("next");
+      window.location.replace(requested === "/v2-preview" ? "/v2-preview" : "/");
+    } catch {
+      setError("Could not complete sign-in. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-    // Only allow returning to the internal V2 preview; never redirect off-site.
-    const requested = new URLSearchParams(window.location.search).get("next");
-    window.location.assign(requested === "/v2-preview" ? "/v2-preview" : "/");
   }
 
   return (
