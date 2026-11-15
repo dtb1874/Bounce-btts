@@ -14,6 +14,7 @@ test("V2 picks and fixtures retain all selected matches regardless of fixture ga
     '.in("id", missingPredictionFixtureIds)',
     '.eq("gameweek_id", currentGameweek.id)',
   ]);
+  mustContain("app/page.tsx", ["pickedFixtures.push", "initialFixtures={completeFixtures}", "fixtures={pickedFixtures}"]);
   mustContain("app/v2-preview/V2PreviewClient.tsx", [
     "selectedIds.has(row.id)",
     "if (gameweekId) void reloadSelectedGameweek()",
