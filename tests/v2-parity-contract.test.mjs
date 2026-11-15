@@ -65,3 +65,8 @@ test("Awards navigation remains hidden until a published season explicitly enabl
   mustContain("app/ui/navigation.ts", ['id: "awards", label: "Awards"']);
   mustContain("app/ui/AuthenticatedShellFrame.tsx", ["awardsPublished = false", 'item.id !== "awards" || awardsPublished']);
 });
+
+test("Preview login stays in V2 and rejects untrusted redirect destinations", () => {
+  mustContain("app/v2-preview/page.tsx", ['redirect("/login?next=%2Fv2-preview")']);
+  mustContain("app/login/page.tsx", ['requested === "/v2-preview" ? "/v2-preview" : "/"']);
+});
