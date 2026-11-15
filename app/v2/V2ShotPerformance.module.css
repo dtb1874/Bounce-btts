@@ -15,7 +15,7 @@
 .award strong{display:block;margin-top:10px;color:#4b1d30;font:700 clamp(.88rem,1.4vw,1.08rem)/1.2 Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
 .award small{display:block;margin-top:8px;color:#746d67;font-size:.71rem;line-height:1.45}
 .table{display:grid;margin-top:23px;overflow-x:auto}
-.row{display:grid;grid-template-columns:minmax(130px,1.25fr) repeat(5,minmax(76px,.75fr));gap:10px;align-items:center;min-width:600px;min-height:49px;padding:7px 0;border-bottom:1px solid rgba(95,31,54,.12);color:#746d67;font-size:.75rem}
+.row{display:grid;grid-template-columns:minmax(130px,1.25fr) repeat(6,minmax(78px,.75fr));gap:10px;align-items:center;min-width:720px;min-height:49px;padding:7px 0;border-bottom:1px solid rgba(95,31,54,.12);color:#746d67;font-size:.75rem}
 .row strong{color:#34252c;font:700 .82rem Georgia,"Times New Roman",serif}
 .row b{text-align:right;color:#4b1d30;font-size:.76rem}
 .header{min-height:37px;color:#8e5b35;font-size:.67rem;font-weight:850;text-transform:uppercase;letter-spacing:.02em}
