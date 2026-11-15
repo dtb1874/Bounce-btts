@@ -60,3 +60,8 @@ test("Awards section is gated by published snapshots with no premature activatio
   mustContain("app/v2/awards/V2AwardsStage.tsx", ["Skip to champion", "Replay", "Pause", "canPublish"]);
   mustContain("app/v2/awards/V2AwardsArchive.tsx", ['snapshot.visibility!=="public"', "Replay the Awards Show"]);
 });
+
+test("Awards navigation remains hidden until a published season explicitly enables it", () => {
+  mustContain("app/ui/navigation.ts", ['id: "awards", label: "Awards"']);
+  mustContain("app/ui/AuthenticatedShellFrame.tsx", ["awardsPublished = false", 'item.id !== "awards" || awardsPublished']);
+});
