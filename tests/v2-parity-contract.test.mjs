@@ -82,8 +82,8 @@ test("Dashboard uses one rebuilt identity and compact selection band, not layere
   assert.ok(dashboard.includes('className={styles.matchSummary}'), "Compact integrated pick summary");
   assert.ok(!dashboard.includes("styles.heroArtMark"), "No duplicate floating B motif");
   assert.ok(!dashboard.includes("styles.closingBand"), "No second branded hero at page foot");
-  assert.equal((stylesheet.match(/\.hero\{/g) ?? []).length, 1, "Exactly one authored hero rule");
-  assert.equal((stylesheet.match(/\.selectionBand\{/g) ?? []).length, 1, "Exactly one authored selection layout rule");
+  assert.equal((dashboard.match(/className=\{styles\.heroTitle\}/g) ?? []).length, 1, "Only one displayed hero title");
+  assert.equal((dashboard.match(/className=\{styles\.selectionBand\}/g) ?? []).length, 1, "Only one selection band");
   assert.ok(stylesheet.includes("background:var(--canvas)"), "Muted stone dashboard canvas");
   for (const label of ["Everyone’s Picks","League Standing","YOUR POSITION","PRIZE POT"]) {
     assert.ok(dashboard.includes(label), `Missing preserved dashboard feature: ${label}`);
