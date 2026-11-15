@@ -132,29 +132,24 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
         </div>
       </header>
 
-      <section className={styles.matchSummary} aria-label="Your gameweek and league snapshot">
-        <div className={styles.selectionBand}>
-          <div className={styles.selectedFixture}>
-            <span className={styles.eyebrow}>YOUR SELECTION</span>
-            {myFixture ? <>
-              <div className={styles.fixtureNames}><strong>{myFixture.home_team}</strong><span>v</span><strong>{myFixture.away_team}</strong></div>
-              <p className={styles.fixtureMeta}>{competitionDisplayName(myFixture)} · {formatDate(myFixture.kickoff_at)}</p>
-            </> : <div className={styles.noSelection}>
-              <strong>{isOpen ? "No pick submitted" : "No selection recorded"}</strong>
-              <span>{isOpen ? "Choose one eligible BTTS fixture before the deadline." : "No selection recorded for this gameweek."}</span>
-            </div>}
+      <section className={styles.matchSummary} aria-label="Current gameweek at a glance">
+        <div className={styles.summaryLine}>
+          <div className={styles.summaryFixture}>
+            <span className={styles.summaryEyebrow}>YOUR PICK</span>
+            <strong>{myFixture ? `${myFixture.home_team} v ${myFixture.away_team}` : isOpen ? "No pick submitted" : "No selection recorded"}</strong>
+            {myFixture ? <span className={styles.summarySecondary}>{competitionDisplayName(myFixture)} · {formatDate(myFixture.kickoff_at)}</span> : null}
           </div>
-          <div className={styles.selectionStatus}>
-            <div className={styles.statusLabel}><span>GW {gameweek?.number ?? "—"}</span><strong>{gameweekState}</strong></div>
-            {gameweek?.locks_at ? <time>{formatDate(gameweek.locks_at)}</time> : null}
-            <button type="button" onClick={() => setView(isOpen ? "pick" : "results")}>{isOpen ? (myPrediction ? "Change pick" : "Make my pick") : "View picks"} <span aria-hidden="true">→</span></button>
+          <div className={styles.summaryStatus}>
+            <span>GW {gameweek?.number ?? "—"}</span>
+            <strong>{gameweekState}</strong>
+            <button type="button" onClick={() => setView(isOpen ? "pick" : "results")}>{isOpen ? (myPrediction ? "Change pick" : "Make pick") : "View picks"} <span aria-hidden="true">→</span></button>
           </div>
-        </div>
-        <div className={styles.pulse} aria-label="League at a glance">
-          <div><span>YOUR POSITION</span><strong>{myStandingIndex >= 0 ? ordinal(myStandingIndex + 1) : "—"}</strong><small>{myStanding ? `${myStanding.points} pts` : "No score yet"}</small></div>
-          <div><span>LEADER</span><strong>{leader?.name ?? "—"}</strong><small>{leader ? `${leader.points} pts` : "Season pending"}</small></div>
-          <div><span>PICKS IN</span><strong>{submitted}/{activeMembers.length}</strong><small>{missing ? `${missing} outstanding` : "Full house"}</small></div>
-          <div><span>PRIZE POT</span><strong>£{prizePot}</strong><small>{activeMembers.length} members</small></div>
+          <div className={styles.summaryStats} aria-label="League snapshot">
+            <span>Position <strong>{myStandingIndex >= 0 ? ordinal(myStandingIndex + 1) : "—"}</strong></span>
+            <span>Leader <strong>{leader?.name ?? "—"}</strong></span>
+            <span>Picks <strong>{submitted}/{activeMembers.length}</strong></span>
+            <span>Pot <strong>£{prizePot}</strong></span>
+          </div>
         </div>
       </section>
 
