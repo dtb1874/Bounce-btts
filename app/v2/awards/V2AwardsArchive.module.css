@@ -1,0 +1,13 @@
+.archive{background:#f5f0e9;color:#33242a;min-width:0}
+.champion{padding:clamp(26px,5vw,64px);background:linear-gradient(100deg,rgba(250,246,237,.94),rgba(245,238,228,.88)),url('/assets/st-giles-heart.jpg') right center/cover no-repeat;border-bottom:2px solid #b28a45}
+.champion span,.row small{font-size:.68rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase;color:#8a633c}
+.champion h2{margin:12px 0 7px;font:700 clamp(2.5rem,6vw,5rem)/1 Georgia,serif;color:#4b1d30}
+.champion p{font-size:1rem;color:#5f4b53}
+.champion button{margin-top:15px;min-height:42px;padding:8px 16px;background:#632b42;border:0;border-radius:5px;color:#fff9ef;font-weight:850}
+.champion button:focus-visible{outline:2px solid #ae894e;outline-offset:2px}
+.stage{padding:24px clamp(16px,5vw,64px)}
+.ledger{padding:10px clamp(16px,5vw,64px) 40px}
+.row{display:grid;grid-template-columns:minmax(180px,.75fr) minmax(0,1fr);gap:14px;align-items:center;min-height:76px;border-bottom:1px solid rgba(99,43,66,.14)}
+.row strong{display:block;margin-top:4px;font:700 1.14rem Georgia,serif;color:#4b1d30}
+.row p{font-size:.82rem;line-height:1.45;color:#75666d}
+@media(max-width:620px){.row{grid-template-columns:1fr;gap:5px;padding:15px 0}.row p{margin:0}}
