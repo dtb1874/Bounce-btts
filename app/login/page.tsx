@@ -24,7 +24,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    window.location.href = "/";
+    // Only the explicitly approved internal preview destination may be restored.\n    // Never accept arbitrary return URLs or redirect to another origin.\n    const requested = new URLSearchParams(window.location.search).get("next");\n    window.location.assign(requested === "/v2-preview" ? "/v2-preview" : "/");
   }
 
   return (
