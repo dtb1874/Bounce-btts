@@ -1,7 +1,7 @@
 export type NavGroup = "quick" | "more";
 
 export type AuthenticatedNavItem = {
-  id: "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "about" | "alerts" | "admin";
+  id: "dashboard" | "pick" | "fixtures" | "table" | "results" | "history" | "players" | "awards" | "about" | "alerts" | "admin";
   label: string;
   icon: string;
   adminOnly?: boolean;
@@ -24,6 +24,7 @@ export const authenticatedNavItems: AuthenticatedNavItem[] = [
   { id: "results", label: "Results", icon: "✦", group: "quick", helper: "All picks" },
   { id: "history", label: "League History", icon: "◷", group: "more" },
   { id: "players", label: "Players", icon: "◉", group: "more" },
+  { id: "awards", label: "Awards", icon: "✧", group: "more", helper: "Season honours" },
   { id: "about", label: "About", icon: "?", group: "more" },
   { id: "alerts", label: "Alerts", icon: "!", adminOnly: true, group: "more" },
   { id: "admin", label: "Admin", icon: "⚙", adminOnly: true, group: "more" },
