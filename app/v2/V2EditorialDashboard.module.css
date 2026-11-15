@@ -129,3 +129,11 @@
   .heroArtMark{font-size:3.4rem}
   .heroArtKicker,.heroArtFoot{font-size:.38rem}
 }
+
+
+/* Subtler canvas: remove glare without recolouring the league identity. */
+.page .hero{background:linear-gradient(90deg,rgba(231,226,219,.94),rgba(231,226,219,.89)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}
+.page .heroArt{background:linear-gradient(rgba(231,224,215,.81),rgba(231,224,215,.87)),url('/assets/st-giles-round.jpg') center/210px auto no-repeat}
+.page .pulse{background:#e1dad1}
+.page .selectionBand{background:#e8e0d7}
+@media(max-width:900px){.page .hero{background:linear-gradient(90deg,rgba(231,226,219,.94),rgba(231,226,219,.9)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}}
