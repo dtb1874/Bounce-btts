@@ -93,73 +93,39 @@
 .heroEmblem img{display:block;width:100%;height:100%;object-fit:contain}
 
 /* One compact summary, not two oversized cards. */
+/* A single compact line, never a stacked two-tier card. */
 .matchSummary{background:var(--paper);border-bottom:1px solid var(--border)}
-.selectionBand{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:center;
-  gap:20px;
-  min-height:0;
-  padding:16px clamp(22px,5vw,65px);
+.summaryLine{
+  display:flex;align-items:center;gap:20px;
+  min-height:54px;padding:9px clamp(22px,5vw,65px);
 }
-.selectedFixture{min-width:0}
-.fixtureNames{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;margin:7px 0 0}
-.fixtureNames strong{
-  font:700 clamp(1.15rem,2vw,1.6rem)/1.15 Georgia,"Times New Roman",serif;
-  color:#532d3c;
-  overflow-wrap:anywhere;
+.summaryFixture{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1 1 280px}
+.summaryEyebrow{flex:0 0 auto;font-size:.59rem;font-weight:900;letter-spacing:.08em;color:#856246;white-space:nowrap}
+.summaryFixture>strong{min-width:0;color:#532d3c;font:700 .95rem/1.3 Georgia,serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.summarySecondary{flex:0 1 175px;min-width:0;color:var(--secondary);font-size:.65rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.summaryStatus{display:flex;align-items:center;gap:7px;flex:0 0 auto;padding:0 12px;border-left:1px solid var(--border);color:#6d5b5f;font-size:.66rem;white-space:nowrap}
+.summaryStatus>span{font-weight:850;color:#856246}
+.summaryStatus>strong{color:#603a4b;font-size:.65rem}
+.summaryStatus button{border:0;background:transparent;color:var(--maroon);font-size:.67rem;font-weight:850;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.summaryStats{display:flex;gap:13px;align-items:center;flex:0 0 auto;border-left:1px solid var(--border);padding-left:14px}
+.summaryStats>span{font-size:.64rem;color:var(--secondary);white-space:nowrap}
+.summaryStats strong{font-size:.78rem;color:#49313d;margin-left:3px;font-weight:850}
+@media(max-width:1100px){
+  .summaryLine{gap:12px}
+  .summarySecondary{display:none}
+  .summaryStats{gap:9px}
+  .summaryStats>span{font-size:.6rem}
 }
-.fixtureNames span{color:#81746d;font:italic .85rem Georgia,serif}
-.fixtureMeta{margin:7px 0 0;color:var(--secondary);font-size:.75rem;line-height:1.35}
-.noSelection{display:grid;gap:4px;margin-top:8px}
-.noSelection strong{font:700 1.2rem Georgia,serif;color:#532d3c}
-.noSelection span{font-size:.77rem;color:var(--secondary)}
-.selectionStatus{
-  display:grid;
-  align-content:center;
-  justify-items:end;
-  gap:5px;
-  min-width:140px;
-  padding:0 0 0 16px;
-  border-left:1px solid var(--border);
-  text-align:right;
+@media(max-width:760px){
+  .summaryLine{display:flex;gap:10px;padding:10px 18px;overflow-x:auto;scrollbar-width:thin}
+  .summaryFixture{flex:0 0 auto;max-width:min(57vw,310px);gap:5px}
+  .summaryFixture>strong{font-size:.83rem}
+  .summaryEyebrow{font-size:.55rem}
+  .summaryStatus{padding:0 9px;gap:5px;font-size:.61rem}
+  .summaryStatus>strong{font-size:.61rem}
+  .summaryStatus button{font-size:.63rem}
+  .summaryStats{gap:12px;padding-left:10px}
 }
-.statusLabel{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
-.statusLabel span{color:#856246;font-size:.68rem;font-weight:850;white-space:nowrap}
-.statusLabel strong{color:#603a4b;font-size:.68rem;letter-spacing:.025em}
-.selectionStatus time{color:var(--secondary);font-size:.69rem}
-.selectionStatus button{
-  padding:4px 0;
-  border:0;
-  border-bottom:1px solid rgba(99,43,66,.38);
-  background:none;
-  color:var(--maroon);
-  font-size:.73rem;
-  font-weight:800;
-}
-.selectionStatus button span{margin-left:7px}
-.pulse{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  padding:0 clamp(22px,5vw,65px);
-  border-top:1px solid var(--border);
-  background:var(--paper2);
-}
-.pulse>div{
-  display:grid;
-  align-content:center;
-  gap:3px;
-  min-width:0;
-  min-height:76px;
-  padding:11px 16px;
-  border-right:1px solid var(--border);
-}
-.pulse>div:first-child{padding-left:0}
-.pulse>div:last-child{border-right:0}
-.pulse span{color:#82684f;font-size:.63rem;font-weight:850;letter-spacing:.1em}
-.pulse strong{font:700 clamp(1.18rem,2.2vw,1.72rem)/1.1 Georgia,serif;color:#49313d;overflow-wrap:anywhere}
-.pulse small{color:var(--secondary);font-size:.67rem}
-
 /* Shared editorial rhythm; no fullscreen maroon sections. */
 .editorialSection{padding:34px clamp(22px,5vw,65px);border-bottom:1px solid var(--border);background:var(--canvas)}
 .editorialSection:nth-of-type(even){background:#ede7df}
@@ -238,8 +204,8 @@
   .heroEmblem{width:112px;height:112px;flex-basis:112px}
   .heroTitle span{font-size:clamp(3.3rem,8vw,5.3rem)}
   .pulse>div{padding:9px 10px;min-height:72px}
-  .selectionBand,.editorialSection{padding-left:30px;padding-right:30px}
-  .pulse{padding:0 30px}
+  .editorialSection{padding-left:30px;padding-right:30px}
+
 }
 @media(max-width:680px){
   .hero{min-height:190px;padding:22px 18px;gap:8px}
@@ -249,20 +215,9 @@
   .heroTitle small{font-size:clamp(1.05rem,4.1vw,1.4rem);letter-spacing:.02em}
   .heroMotto{margin-top:12px;font-size:.72rem}
   .heroEmblem{width:70px;height:70px;flex:0 0 70px;opacity:.28}
-  .selectionBand{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:12px 18px}
-  .selectionStatus{min-width:98px;padding-left:9px}
-  .statusLabel{display:grid;gap:2px}
-  .statusLabel strong,.statusLabel span{font-size:.6rem}
-  .selectionStatus time{font-size:.58rem}
-  .selectionStatus button{font-size:.65rem;min-height:30px}
-  .fixtureNames strong{font-size:1.05rem}
-  .fixtureMeta{font-size:.66rem}
+
   .eyebrow{font-size:.6rem}
-  .pulse{padding:0 18px}
-  .pulse>div{min-height:65px;padding:8px 5px;gap:3px}
-  .pulse span{font-size:.52rem;letter-spacing:.05em}
-  .pulse strong{font-size:clamp(.86rem,3.55vw,1.15rem)}
-  .pulse small{font-size:.56rem}
+
   .editorialSection{padding:27px 18px}
   .sectionHeader{align-items:flex-start}
   .sectionHeader h2{font-size:clamp(1.7rem,7vw,2.15rem)}
