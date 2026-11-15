@@ -61,6 +61,9 @@ jobs:
             exit 1
           fi
 
+      - name: V2 source parity and integration regression contracts
+        run: node --test tests/v2-parity-contract.test.mjs
+
       - name: Production build
         run: npm run build
 
