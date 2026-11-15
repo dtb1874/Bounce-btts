@@ -83,9 +83,9 @@ test("Dashboard uses one rebuilt identity and compact selection band, not layere
   assert.ok(!dashboard.includes("styles.heroArtMark"), "No duplicate floating B motif");
   assert.ok(!dashboard.includes("styles.closingBand"), "No second branded hero at page foot");
   assert.equal((dashboard.match(/className=\{styles\.heroTitle\}/g) ?? []).length, 1, "Only one displayed hero title");
-  assert.equal((dashboard.match(/className=\{styles\.selectionBand\}/g) ?? []).length, 1, "Only one selection band");
+  assert.equal((dashboard.match(/className=\{styles\.summaryLine\}/g) ?? []).length, 1, "One compact summary row");
   assert.ok(stylesheet.includes("background:var(--canvas)"), "Muted stone dashboard canvas");
-  for (const label of ["Everyone’s Picks","League Standing","YOUR POSITION","PRIZE POT"]) {
+  for (const label of ["Everyone’s Picks","League Standing","Position <strong>","Pot <strong>"]) {
     assert.ok(dashboard.includes(label), `Missing preserved dashboard feature: ${label}`);
   }
   mustContain("app/v2/V2EditorialDashboard.tsx", ["<V2DashboardParity", "<V2DashboardPickActions", "compactPickOutcome", "formatFixtureOddsDisplay"]);
@@ -103,4 +103,40 @@ test("Dashboard summary stays one line and recap uses V2-only styling", () => {
   assert.ok(recapCss.includes(".panel.panelV2"), "New muted recap presentation");
   const formCss = read("app/v2/V2DashboardParity.module.css");
   for (const name of ["good","ok","bad","muted"]) assert.ok(formCss.includes(`.formPill.${name}{background:`), `Solid form state ${name}`);
+});
+
+test("V2 Stat Centre preserves all V1 headline categories, player insights and season records", () => {
+  const stat = read("app/v2/V2StatCentre.tsx");
+  const canonical = read("lib/league-stats.ts");
+  for (const field of ["leagueLeader","leagueStrikeRate","bttsWins","formLeaderNames","bttsLeaderNames","creatureLeaders","leagueGoals","finishedPicks","recordedSelections"]) {
+    assert.ok(canonical.includes(field), `Missing canonical V1 headline: ${field}`);
+  }
+  for (const field of ["strikeRate","pointsPerPick","currentStreak","bestStreak","longestWinlessStreak","averageSelectedOdds","averageWinningOdds","biggestWinningOdds","goals","averageGoals","homeWins","draws","awayWins","favouriteCompetition","mostPickedTeam","repeatTeamWins","repeatTeamLosses"]) {
+    assert.ok(canonical.includes(field), `Missing canonical player insight: ${field}`);
+  }
+  for (const title of ["GOAL MAGNET","BTTS KING","HOME-WIN HUNTER","AWAY-WIN HUNTER","DRAW MAGNET","BIGGEST ODDS WINNER","LONGEST BTTS STREAK","LONGEST WINLESS RUN","VALUE LEADER","MOST PICKED TEAM"]) {
+    assert.ok(canonical.includes(title), `Missing V1 league record: ${title}`);
+  }
+  assert.ok(stat.includes('canonical.headline.bttsLeaderNames'), "BTTS Leader headline must be visible in V2 overview");
+  assert.ok(stat.includes('canonical.seasonFacts.map'), "All V1 record categories must be rendered");
+  assert.ok(stat.includes('<V2ShotPerformance'), "Shot analytics remain available");
+});
+
+test("V2 shot stats retain V1 shot awards and shots-per-goal with plausible-data checks", () => {
+  const shot = read("app/v2/V2ShotPerformance.tsx");
+  for (const label of ["CHANCE MAGNET","SHARPSHOOTER","CLINICAL PICKER","SHOT SHY","COLDEST FINISHER","Shots/goal"]) {
+    assert.ok(shot.includes(label), `Missing V1 shot statistic: ${label}`);
+  }
+  assert.ok(shot.includes("hasPlausibleShotStats(stats)"), "Reject impossible shot data before aggregation");
+  assert.ok(shot.includes("row.shotsPerGoal"), "Display V1 shots per goal");
+  const css = read("app/v2/V2ShotPerformance.module.css");
+  assert.ok(css.includes("min-height:40px"), "Shot refresh button needs usable touch target");
+});
+
+test("Section headings and controls are spaced independently of old recap design", () => {
+  const styles = read("app/GameweekStory.module.css");
+  assert.ok(styles.includes(".panelV2 .compactHead{"), "V2-only recap header layout");
+  assert.ok(styles.includes("grid-template-columns:minmax(0,1fr) auto"), "Recap header must allocate room for its button");
+  const dashboard = read("app/v2/V2DashboardParity.module.css");
+  assert.ok(dashboard.includes("gap:18px 24px"), "Separate form section headings and controls");
 });
