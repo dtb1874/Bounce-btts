@@ -6,7 +6,7 @@
 .count{flex:0 0 auto;text-align:right;color:var(--muted);font-size:.75rem}
 .count strong{display:block;font:700 1.6rem/1.1 Georgia,serif;color:var(--accent)}
 .filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,.32fr);gap:10px;margin:18px 0}
-.field{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:9px 12px;border:1px solid rgba(99,43,66,.25);border-radius:5px;background:#fffaf5;color:var(--ink);font:600 .84rem/1.25 inherit}
+.field{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:9px 12px;border:1px solid rgba(99,43,66,.25);border-radius:5px;background:#fffaf5;color:var(--ink);font-size:.84rem;font-weight:600;font-family:inherit;line-height:1.25}
 .field:focus-visible,.roundToggle:focus-visible,.expand:focus-visible,.toggle:focus-visible{outline:2px solid #a67e44;outline-offset:3px}
 .list{display:grid;border-top:1px solid var(--line)}
 .item{border-bottom:1px solid var(--line)}
@@ -16,7 +16,7 @@
 .identity{display:grid;gap:4px;min-width:0}
 .identity strong{font-size:.88rem;font-weight:750;overflow-wrap:anywhere}
 .identity small{color:var(--muted);font-size:.73rem}
-.expand{display:flex;gap:6px;align-items:center;justify-content:center;min-height:36px;padding:4px 9px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--accent);font:750 .75rem/1.1 inherit;cursor:pointer;white-space:nowrap}
+.expand{display:flex;gap:6px;align-items:center;justify-content:center;min-height:36px;padding:4px 9px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--accent);font-size:.75rem;font-weight:750;font-family:inherit;line-height:1.1;cursor:pointer;white-space:nowrap}
 .state{min-width:76px;text-align:right;color:#31614b;font-weight:750;font-size:.74rem}
 .disabledState{color:#98636a}
 .rounds{padding:0 8px 12px 33px}
