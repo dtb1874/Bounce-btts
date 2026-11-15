@@ -96,3 +96,13 @@ These are database **read-only checks**, not authenticated end-to-end tests.
 - A production promotion decision requires explicit approval and a documented rollback path.
 
 **Status: strong code-level parity improvements implemented; final like-for-like release validation still open.**
+
+## Phase 5 — Light visual system, navigation placement and awards preparation (15 Nov 2026)
+
+- The V2 shell owns one compact gameweek picker in the mobile top utility row and the desktop header, rather than an overlapping sticky per-page rail.
+- The mobile drawer has a continuous lightly faded St Giles image background; removed the finite-size decorative pseudo-image and cleared inherited Easter-egg backgrounds that could appear as rectangular overlays.
+- Navigation, bottom bar, mobile header, dashboard hero/selected fixture/table, Admin states/tabs, Stat Centre tabs and editorial footers now use the warm paper base with maroon accents.
+- The existing awards season snapshot types were retained and extended with pure ceremony sequence/publication helpers, a gated V2 awards show and a gated season archive. No public route, automatic trigger, schema mutation or season-finalisation action is active. See `docs/v2/AWARDS_CEREMONY_FRAMEWORK.md` and issue #31 (post-GW30).
+- The V2 preview login now retains `/v2-preview` using a strictly allowlisted `next` destination. Previously, login redirected to `/` and could put the tester in the legacy compatibility app instead of V2 — a likely source of mixed-theme screenshots.
+- Regression guards cover gameweek placement, drawer reset, awards disabled-by-default, and login returning to V2.
+- Validate these in the current branch's CI, Vercel preview and authenticated device QA before any release.
