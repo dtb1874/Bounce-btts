@@ -132,6 +132,12 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
             <img src="/assets/hearts-crest.png?v=gold-crest-20260817-1945" alt="" className={styles.brandCrest} />
             <div className={styles.seasonStamp}>{seasonLabel}</div>
           </div>
+          <p className={styles.brandMotto}>Weekly picks. League drama. One champion.</p>
+        </div>
+        <div className={styles.heroArt} aria-hidden="true">
+          <span className={styles.heroArtKicker}>EDINBURGH · EST. 2024</span>
+          <span className={styles.heroArtMark}>B</span>
+          <span className={styles.heroArtFoot}>THE BOUNCE</span>
         </div>
       </section>
 
