@@ -2,6 +2,7 @@
 
 import { retainLiveMinutes, liveMinuteLabel } from "@/lib/live-minute-display";
 import { formatFixtureOddsDisplay } from "@/lib/odds-display";
+import UKLeagueSelector from "./admin-controls/UKLeagueSelector";
 import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ShareTableButton from "./ShareTableButton";
@@ -333,6 +334,23 @@ export default function LeagueApp(props: Props) {
   },[livePollActive,gameweek?.id]);
   useEffect(() => { if (!isAdmin || isDemo || emulatedProfileId) return; (async()=>{ const r=await fetch("/api/admin/alerts",{headers:{authorization:`Bearer ${await token()}`}}); if(r.ok){ const j=await r.json(); setAlertsCount((j.alerts ?? []).filter((a:any)=>!a.resolved).length); } })(); },[isAdmin,isDemo,emulatedProfileId,view]);
 
+  // One unobtrusive odds check when the Bounce platform first loads.
+  // Not on each dashboard visit or change of selected gameweek.
+  useEffect(()=>{
+    const startupWeek=initialGameweek;
+    if(!startupWeek?.id || initialProfile.role==="guest" || !initialProfile.active || Date.parse(startupWeek.locks_at)<=Date.now())return;
+    let cancelled=false;
+    void (async()=>{
+      try{
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:startupWeek.id}),cache:"no-store"});
+        if(response.ok && !cancelled)await refreshLiveData(true);
+      }catch{/* Platform load and normal sharing must never be held up by odds. */}
+    })();
+    return()=>{cancelled=true;};
+  // Intentionally run on initial platform mount, not when changing gameweek.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   async function selectFixture(fixtureId: string) {
     if (!gameweek || !isOpen) return;
     if (isReadOnly) return notice("Read-only view: changes are disabled.");
@@ -349,6 +367,13 @@ export default function LeagueApp(props: Props) {
       if (data) setPredictions(rows => [...rows,data as Prediction]);
     }
     notice("Pick saved ✓");
+    // Check just this fixture after a successful pick; do not delay pick confirmation.
+    void (async()=>{
+      try{
+        const response=await fetch("/api/share/refresh-odds",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({gameweekId:gameweek.id,fixtureId}),cache:"no-store"});
+        if(response.ok)await refreshLiveData(true);
+      }catch{/* Odds provider failure never invalidates a saved selection. */}
+    })();
   }
 
   async function signOut(){ await createClient().auth.signOut(); window.location.href="/"; }
@@ -1053,7 +1078,7 @@ function ReleaseHistory(){
 }
 function Instructions({role}:{role:Role}){return <><h3>Instructions — {role==="ultimate_admin"?"Ultimate Admin":role==="admin"?"League Admin":role==="guest"?"Demo Guest":"Member"}</h3><ul><li><strong>Making a pick:</strong> open Make My Pick, search, choose a fixture and press Select.</li><li><strong>Viewing picks:</strong> Dashboard shows submitted and pending players plus live/provisional outcomes.</li><li><strong>Sharing:</strong> use Share weekly picks or Share table snapshot.</li>{role!=="member"&&<><li><strong>Admin selections:</strong> Admin → Selections lets you enter or replace multiple player picks before one Save all.</li><li><strong>Fixtures:</strong> use Quick results refresh during match time; use Full fixture & odds refresh for the complete catalogue.</li><li><strong>Results/scoring:</strong> Save FT writes the result and triggers scoring; Recalculate Gameweek Points repairs finished selections.</li></>}{role==="ultimate_admin"&&<li><strong>Users:</strong> Ultimate Admin can manage usernames, passwords, roles and active slots.</li>}</ul></>}
 
-function AdminPage({active,setActive,isUltimate,readOnly,demoMode,onEmulate,gameweek,nextGameweek,profiles,fixtures,predictions,adjustments,entryFee,notice,onChanged}:{active:AdminView;setActive:(v:AdminView)=>void;isUltimate:boolean;readOnly:boolean;demoMode:boolean;onEmulate:(id:string)=>void;gameweek:Gameweek|null;nextGameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];entryFee:number;notice:(m:string)=>void;onChanged:()=>void}){const wrap=(node:ReactNode)=><fieldset disabled={readOnly} className={readOnly?styles.readOnlyControls:""} style={{border:0,padding:0,margin:0,minWidth:0}}>{node}</fieldset>;return <section className={`${styles.adminPage} uiFoundationAdminPage`} data-ui-foundation-view="admin"><Heading eyebrow="ADMIN CONTROL" title="League Management"><p>{isUltimate?"Full league, user and security administration.":"Manage selections, fixtures, results and gameweek status."}</p></Heading><div className={`${styles.adminTabs} uiFoundationAdminTabs`}>{(["users","selections","fixtures","results","gameweek","seasons"] as AdminView[]).filter(v=>v!=="users"||isUltimate).map(v=><button key={v} className={active===v?styles.active:""} onClick={()=>setActive(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div><div className={`${styles.panel} ${styles.adminPanel} uiFoundationAdminPanel`}>{readOnly&&<div className={styles.demoNotice}>Read-only view — controls are disabled.</div>}{active==="users"&&isUltimate&&(demoMode?<DemoUsersAdmin profiles={profiles}/>:wrap(<><PaymentTracker profiles={profiles} entryFee={entryFee} notice={notice}/><UsersAdmin notice={notice} onEmulate={onEmulate}/></>))}{active==="selections"&&wrap(<SelectionsAdmin gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} notice={notice} onChanged={onChanged}/>) }{active==="fixtures"&&wrap(<FixturesAdmin gameweek={gameweek} nextGameweek={nextGameweek} notice={notice} onChanged={onChanged}/>) }{active==="results"&&wrap(<ResultsAdmin gameweek={gameweek} fixtures={fixtures} predictions={predictions} notice={notice} onChanged={onChanged}/>) }{active==="gameweek"&&wrap(<GameweekAdmin gameweek={gameweek} notice={notice} onChanged={onChanged}/>) }{active==="seasons"&&wrap(<SeasonsAdmin notice={notice} onChanged={onChanged}/>)}</div></section>}
+function AdminPage({active,setActive,isUltimate,readOnly,demoMode,onEmulate,gameweek,nextGameweek,profiles,fixtures,predictions,adjustments,entryFee,notice,onChanged}:{active:AdminView;setActive:(v:AdminView)=>void;isUltimate:boolean;readOnly:boolean;demoMode:boolean;onEmulate:(id:string)=>void;gameweek:Gameweek|null;nextGameweek:Gameweek|null;profiles:Profile[];fixtures:Fixture[];predictions:Prediction[];adjustments:ScoreAdjustment[];entryFee:number;notice:(m:string)=>void;onChanged:()=>void}){const wrap=(node:ReactNode)=><fieldset disabled={readOnly} className={readOnly?styles.readOnlyControls:""} style={{border:0,padding:0,margin:0,minWidth:0}}>{node}</fieldset>;return <section className={`${styles.adminPage} uiFoundationAdminPage`} data-ui-foundation-view="admin"><Heading eyebrow="ADMIN CONTROL" title="League Management"><p>{isUltimate?"Full league, user and security administration.":"Manage selections, fixtures, results and gameweek status."}</p></Heading><div className={`${styles.adminTabs} uiFoundationAdminTabs`}>{(["users","selections","fixtures","results","gameweek","seasons"] as AdminView[]).filter(v=>v!=="users"||isUltimate).map(v=><button key={v} className={active===v?styles.active:""} onClick={()=>setActive(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</div><div className={`${styles.panel} ${styles.adminPanel} uiFoundationAdminPanel`}>{readOnly&&<div className={styles.demoNotice}>Read-only view — controls are disabled.</div>}{active==="users"&&isUltimate&&(demoMode?<DemoUsersAdmin profiles={profiles}/>:wrap(<><PaymentTracker profiles={profiles} entryFee={entryFee} notice={notice}/><UsersAdmin notice={notice} onEmulate={onEmulate}/></>))}{active==="selections"&&wrap(<SelectionsAdmin gameweek={gameweek} profiles={profiles} fixtures={fixtures} predictions={predictions} adjustments={adjustments} notice={notice} onChanged={onChanged}/>) }{active==="fixtures" && !demoMode && <UKLeagueSelector onChanged={onChanged} readOnly={readOnly} />}{active==="fixtures"&&wrap(<FixturesAdmin gameweek={gameweek} nextGameweek={nextGameweek} notice={notice} onChanged={onChanged}/>) }{active==="results"&&wrap(<ResultsAdmin gameweek={gameweek} fixtures={fixtures} predictions={predictions} notice={notice} onChanged={onChanged}/>) }{active==="gameweek"&&wrap(<GameweekAdmin gameweek={gameweek} notice={notice} onChanged={onChanged}/>) }{active==="seasons"&&wrap(<SeasonsAdmin notice={notice} onChanged={onChanged}/>)}</div></section>}
 
 function PaymentTracker({profiles,entryFee,notice}:{profiles:Profile[];entryFee:number;notice:(m:string)=>void}){const [seasonId,setSeasonId]=useState("");const [paid,setPaid]=useState<Record<string,boolean>>({});const [loading,setLoading]=useState(true);async function load(){const client=createClient();const season=await client.from("seasons").select("id").eq("is_current",true).maybeSingle();const id=season.data?.id??"";setSeasonId(id);if(id){const rows=await client.from("season_memberships").select("profile_id,paid").eq("season_id",id);setPaid(Object.fromEntries((rows.data??[]).map((r:any)=>[r.profile_id,Boolean(r.paid)])))}setLoading(false)}useEffect(()=>{load()},[]);async function toggle(id:string){if(!seasonId)return;const next=!paid[id];const client=createClient();const r=await client.from("season_memberships").update({paid:next,paid_at:next?new Date().toISOString():null}).eq("season_id",seasonId).eq("profile_id",id);if(r.error)return notice(r.error.message);setPaid(v=>({...v,[id]:next}));notice(next?"Entry fee marked paid":"Entry fee marked unpaid")}const active=profiles.filter(p=>p.active&&p.role!=="guest");const count=active.filter(p=>paid[p.id]).length;return <div className={styles.paymentTracker}><div className={styles.adminPaymentSummary}><article><span>ENTRY FEE</span><strong>£{entryFee.toFixed(0)}</strong><small>per member</small></article><article><span>PAID</span><strong>{count}/{active.length}</strong><small>£{(count*entryFee).toFixed(0)} received</small></article><article><span>OUTSTANDING</span><strong>£{((active.length-count)*entryFee).toFixed(0)}</strong><small>{active.length-count} member{active.length-count===1?"":"s"}</small></article></div>{loading?<div className={styles.notice}>Loading payment status…</div>:<div className={styles.paymentGrid}>{active.map(p=><button type="button" key={p.id} onClick={()=>toggle(p.id)} className={`${styles.paymentMember} ${paid[p.id]?styles.paymentPaid:styles.paymentUnpaid}`}><strong>{p.display_name}</strong><span>{paid[p.id]?"Paid ✓":`£${entryFee.toFixed(0)} unpaid`}</span></button>)}</div>}</div>}
 
