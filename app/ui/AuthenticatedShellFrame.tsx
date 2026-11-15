@@ -10,6 +10,7 @@ type AuthenticatedShellFrameProps = {
   children: ReactNode;
   afterContent?: ReactNode;
   gameweekControl?: ReactNode;
+  awardsPublished?: boolean;
   navItems: NavItem[];
   activeView: string;
   isAdmin: boolean;
@@ -36,6 +37,7 @@ export default function AuthenticatedShellFrame({
   children,
   afterContent,
   gameweekControl,
+  awardsPublished = false,
   navItems,
   activeView,
   isAdmin,
@@ -53,7 +55,7 @@ export default function AuthenticatedShellFrame({
   const canonicalById = new Map<string, AuthenticatedNavItem>(authenticatedNavItems.map((item) => [item.id, item]));
   const visibleNavItems = navItems
     .map((item) => canonicalById.get(item.id) ?? item)
-    .filter((item) => !item.adminOnly || isAdmin);
+    .filter((item) => (!item.adminOnly || isAdmin) && (item.id !== "awards" || awardsPublished));
 
   const primaryItems = visibleNavItems.filter((item) => item.group === "quick");
   const exploreItems = visibleNavItems.filter((item) => item.group === "more" && !item.adminOnly);
