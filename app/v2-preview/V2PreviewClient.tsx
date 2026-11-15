@@ -59,8 +59,13 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   const isUltimate = !emulatedProfile && effectiveRole === "ultimate_admin";
   const readOnly = isDemo || Boolean(emulatedProfile);
   const gameweek = gameweeks.find((row) => row.id === gameweekId) ?? null;
-  const currentFixtures = useMemo(() => fixtures.filter((row) => row.gameweek_id === gameweekId), [fixtures, gameweekId]);
   const currentPredictions = useMemo(() => predictions.filter((row) => row.gameweek_id === gameweekId), [predictions, gameweekId]);
+  // Imported fixtures may have no assigned gameweek; a member’s selected match
+  // must still appear in Results, Live and Admin for the chosen round.
+  const currentFixtures = useMemo(() => {
+    const selectedIds = new Set(currentPredictions.map((row) => row.fixture_id));
+    return fixtures.filter((row) => row.gameweek_id === gameweekId || selectedIds.has(row.id));
+  }, [fixtures, gameweekId, currentPredictions]);
   const currentAdjustments = useMemo(() => adjustments.filter((row) => row.gameweek_id === gameweekId), [adjustments, gameweekId]);
   const selectionFixtures = useMemo(() => { const unique = new Map<string, Fixture>(); for (const row of [...currentFixtures, ...browserFixtures]) unique.set(row.id, row); const rows = Array.from(unique.values()); if (!gameweek) return rows; return rows.filter((row) => row.is_eligible && kickoffMatchesSelectionRule(row.kickoff_at, gameweek)); }, [browserFixtures, currentFixtures, gameweek]);
   const selectedFixtureState: "loading" | "ready" | "error" = fixtureBrowserState?.gameweekId === gameweekId ? fixtureBrowserState.status : "loading";
@@ -108,6 +113,8 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   useEffect(() => { if (!livePollActive) return; void refreshFixtures(false); const timer = window.setInterval(() => void refreshFixtures(false), 15_000); return () => window.clearInterval(timer); }, [livePollActive, gameweekId]);
   async function refreshOdds() { if (!gameweekId || oddsRefreshing || !isAdmin || readOnly) { if (readOnly) setMessage("Read-only view: odds refresh is disabled."); return; } setOddsRefreshing(true); setMessage(""); try { const response = await fetch("/api/admin/provider-sync", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` }, body: JSON.stringify({ gameweekIds: [gameweekId], oddsOnly: true }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error ?? "Could not refresh odds"); await reloadSelectedGameweek(); setMessage("BTTS odds refreshed"); } catch (error) { setMessage(error instanceof Error ? error.message : "Could not refresh odds"); } finally { setOddsRefreshing(false); } }
   async function selectFixture(fixtureId: string) { if (!gameweek || !isOpen) return; if (readOnly) return setMessage("Read-only Demo/Emulation view: changes are disabled."); const taken = currentPredictions.find((row) => row.fixture_id === fixtureId && row.member_id !== viewerProfile.id); if (taken) return setMessage("That fixture has already been selected."); const client = createClient(); const existing = currentPredictions.find((row) => row.member_id === viewerProfile.id); if (existing) { const { error } = await client.from("predictions").update({ fixture_id: fixtureId, updated_at: new Date().toISOString() }).eq("id", existing.id); if (error) return setMessage(error.message); setPredictions((rows) => rows.map((row) => row.id === existing.id ? { ...row, fixture_id: fixtureId, updated_at: new Date().toISOString() } : row)); } else { const { data, error } = await client.from("predictions").insert({ gameweek_id: gameweek.id, member_id: viewerProfile.id, fixture_id: fixtureId }).select().single(); if (error) return setMessage(error.message.includes("duplicate") ? "That fixture has just been taken by another player." : error.message); if (data) setPredictions((rows) => [...rows, data as Prediction]); } setMessage("Pick saved ✓");
+    const browserSelection = browserFixtures.find(row => row.id === fixtureId);
+    if (browserSelection) setFixtures(rows => rows.some(row => row.id === fixtureId) ? rows : [...rows, browserSelection]);
     // Refresh just this selected fixture in the background; keep the saved pick immediate.
     const selectedGameweekId = gameweek.id;
     void (async () => {
@@ -124,7 +131,10 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
         const result = await response.json();
         if (!Array.isArray(result.fixtures)) return;
         const refreshed = result.fixtures.find((fixture: { id: string }) => fixture.id === fixtureId);
-        if (refreshed) setFixtures(rows => rows.map(row => row.id === fixtureId ? { ...row, odds_fractional: refreshed.odds_fractional ?? row.odds_fractional } : row));
+        if (refreshed) {
+          setFixtures(rows => rows.map(row => row.id === fixtureId ? { ...row, odds_fractional: refreshed.odds_fractional ?? row.odds_fractional } : row));
+          setBrowserFixtures(rows => rows.map(row => row.id === fixtureId ? { ...row, odds_fractional: refreshed.odds_fractional ?? row.odds_fractional } : row));
+        }
       } catch { /* Saving the pick does not depend on the odds provider. */ }
     })();
   }
