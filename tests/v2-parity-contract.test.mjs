@@ -90,3 +90,17 @@ test("Dashboard uses one rebuilt identity and compact selection band, not layere
   }
   mustContain("app/v2/V2EditorialDashboard.tsx", ["<V2DashboardParity", "<V2DashboardPickActions", "compactPickOutcome", "formatFixtureOddsDisplay"]);
 });
+
+test("Dashboard summary stays one line and recap uses V2-only styling", () => {
+  const dashboard = read("app/v2/V2EditorialDashboard.tsx");
+  assert.ok(dashboard.includes('className={styles.summaryLine}'), "One-row dashboard summary");
+  assert.ok(dashboard.includes('className={styles.summaryStats}'), "Compact inline statistics");
+  assert.ok(!dashboard.includes('className={styles.pulse}'), "Remove old second stats row");
+  const recap = read("app/GameweekRecapCard.tsx");
+  assert.ok(recap.includes('props.variant === "v2" ? styles.panelV2'), "Scoped V2 recap visuals");
+  assert.ok(read("app/v2/V2DashboardParity.tsx").includes('variant="v2"'), "V2 uses redesigned recap");
+  const recapCss = read("app/GameweekStory.module.css");
+  assert.ok(recapCss.includes(".panel.panelV2"), "New muted recap presentation");
+  const formCss = read("app/v2/V2DashboardParity.module.css");
+  for (const name of ["good","ok","bad","muted"]) assert.ok(formCss.includes(`.formPill.${name}{background:`), `Solid form state ${name}`);
+});
