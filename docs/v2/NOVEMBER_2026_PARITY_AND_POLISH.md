@@ -60,3 +60,39 @@ The 13 September V2 audit and test-readiness documents establish implementation-
 ## Boundaries
 
 This branch changes V2-only presentation and tracking documentation. It does not mutate production data, alter canonical scoring or merge `main`. Treat the September parity audit as historical evidence, not present-day signoff.
+
+## Phase 4 implementation progress — 15 November 2026
+
+The work branch has now implemented the following **without merging to main**:
+
+- Backported the canonical production UK competition + cup-round source, admin API, import eligibility and manual fixture restrictions.
+- Connected the selector to V2 Admin Fixtures and added an optional manual fixture round field; refreshed selector styling to follow V2's ledger system.
+- Committed existing production migration definitions into V2. **No SQL migration was executed** by this development phase.
+- Synced the canonical team eligibility fix (Kelty Hearts) and shot-stat validity safeguards; added plausible-shot filtering to V2's Value Leader portal.
+- Retained production single-tap Easter egg discovery behaviour for legacy/shell compatibility.
+- Implemented non-blocking selected BTTS odds checks on V2 entry and after pick save, with authentication and current saved-price preservation.
+- Re-scoped V2 initial fixture loading: full current round plus each member's historical selected fixtures, rather than an arbitrarily truncated season-wide catalogue. Selected gameweek hydration now runs on switch.
+- Ensured fixtures selected from the browser remain visible immediately in Results/Live, even when the fixture is not assigned a gameweek at the database level.
+- Added average goals away from the sweep to the native V2 tracker and video share.
+- Harmonised type, accessible focus, mobile filters, colour and architectural backgrounds across V2 Dashboard, Admin, Stat Centre and member surfaces.
+- Added `tests/v2-parity-contract.test.mjs` and extended the V2 guardrail workflow to protect the current Phase 4 PR.
+
+### Read-only Supabase verification
+
+- UK competition and round settings tables exist, with `fixture_round` in fixtures. Migration history records the October competition migrations.
+- As checked, there are zero competition and zero round override records (therefore no disabled selections from those tables); defaults remain unchanged.
+- For current season GWs 1–15, each has eight recorded picks, eight matching fixtures and eight settled fixtures.
+- The goals-away totals for GWs 1–15 are `5,3,3,3,3,5,3,3,7,4,3,2,3,3,2`, giving an overall average `52 / 15 = 3.47` (display 3.5).
+
+These are database **read-only checks**, not authenticated end-to-end tests.
+
+### Remaining verification, not sign-off
+
+- The latest deployment and guardrail CI must finish successfully for the final commit, not just earlier intermediate builds.
+- Authenticated Member, Admin, Ultimate Admin, Demo and public flows remain to be exercised in a real browser with access to their respective user contexts.
+- Visual screenshots at iPhone, iPad portrait/landscape and desktop sizes must be reviewed, including typography, decorative contrast and share exports.
+- Pick saving, admin fixture/competition changes, provider refresh, archive and history must be checked in **staging**. Do not toggle production competitions or mutate production picks for testing.
+- The browser-cache/reopen/upgrade regression that previously forced a V2 rollback must pass before any release.
+- A production promotion decision requires explicit approval and a documented rollback path.
+
+**Status: strong code-level parity improvements implemented; final like-for-like release validation still open.**
