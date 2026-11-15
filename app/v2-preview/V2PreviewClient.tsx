@@ -104,7 +104,27 @@ export default function V2PreviewClient({ profile, profiles: initialProfiles, ga
   useEffect(() => { if (!gameweekId) return; const timer = window.setInterval(() => void reloadSelectedGameweek(), 45_000); return () => window.clearInterval(timer); }, [gameweekId]);
   useEffect(() => { if (!livePollActive) return; void refreshFixtures(false); const timer = window.setInterval(() => void refreshFixtures(false), 15_000); return () => window.clearInterval(timer); }, [livePollActive, gameweekId]);
   async function refreshOdds() { if (!gameweekId || oddsRefreshing || !isAdmin || readOnly) { if (readOnly) setMessage("Read-only view: odds refresh is disabled."); return; } setOddsRefreshing(true); setMessage(""); try { const response = await fetch("/api/admin/provider-sync", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${await token()}` }, body: JSON.stringify({ gameweekIds: [gameweekId], oddsOnly: true }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error ?? "Could not refresh odds"); await reloadSelectedGameweek(); setMessage("BTTS odds refreshed"); } catch (error) { setMessage(error instanceof Error ? error.message : "Could not refresh odds"); } finally { setOddsRefreshing(false); } }
-  async function selectFixture(fixtureId: string) { if (!gameweek || !isOpen) return; if (readOnly) return setMessage("Read-only Demo/Emulation view: changes are disabled."); const taken = currentPredictions.find((row) => row.fixture_id === fixtureId && row.member_id !== viewerProfile.id); if (taken) return setMessage("That fixture has already been selected."); const client = createClient(); const existing = currentPredictions.find((row) => row.member_id === viewerProfile.id); if (existing) { const { error } = await client.from("predictions").update({ fixture_id: fixtureId, updated_at: new Date().toISOString() }).eq("id", existing.id); if (error) return setMessage(error.message); setPredictions((rows) => rows.map((row) => row.id === existing.id ? { ...row, fixture_id: fixtureId, updated_at: new Date().toISOString() } : row)); } else { const { data, error } = await client.from("predictions").insert({ gameweek_id: gameweek.id, member_id: viewerProfile.id, fixture_id: fixtureId }).select().single(); if (error) return setMessage(error.message.includes("duplicate") ? "That fixture has just been taken by another player." : error.message); if (data) setPredictions((rows) => [...rows, data as Prediction]); } setMessage("Pick saved ✓"); }
+  async function selectFixture(fixtureId: string) { if (!gameweek || !isOpen) return; if (readOnly) return setMessage("Read-only Demo/Emulation view: changes are disabled."); const taken = currentPredictions.find((row) => row.fixture_id === fixtureId && row.member_id !== viewerProfile.id); if (taken) return setMessage("That fixture has already been selected."); const client = createClient(); const existing = currentPredictions.find((row) => row.member_id === viewerProfile.id); if (existing) { const { error } = await client.from("predictions").update({ fixture_id: fixtureId, updated_at: new Date().toISOString() }).eq("id", existing.id); if (error) return setMessage(error.message); setPredictions((rows) => rows.map((row) => row.id === existing.id ? { ...row, fixture_id: fixtureId, updated_at: new Date().toISOString() } : row)); } else { const { data, error } = await client.from("predictions").insert({ gameweek_id: gameweek.id, member_id: viewerProfile.id, fixture_id: fixtureId }).select().single(); if (error) return setMessage(error.message.includes("duplicate") ? "That fixture has just been taken by another player." : error.message); if (data) setPredictions((rows) => [...rows, data as Prediction]); } setMessage("Pick saved ✓");
+    // Refresh just this selected fixture in the background; keep the saved pick immediate.
+    const selectedGameweekId = gameweek.id;
+    void (async () => {
+      try {
+        const bearer = await token();
+        if (!bearer) return;
+        const response = await fetch("/api/share/refresh-odds", {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${bearer}` },
+          body: JSON.stringify({ gameweekId: selectedGameweekId, fixtureId }),
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const result = await response.json();
+        if (!Array.isArray(result.fixtures)) return;
+        const refreshed = result.fixtures.find((fixture: { id: string }) => fixture.id === fixtureId);
+        if (refreshed) setFixtures(rows => rows.map(row => row.id === fixtureId ? { ...row, odds_fractional: refreshed.odds_fractional ?? row.odds_fractional } : row));
+      } catch { /* Saving the pick does not depend on the odds provider. */ }
+    })();
+  }
   async function signOut() { await createClient().auth.signOut(); window.location.href = "/"; }
   function navigate(id: string) { setMobileMenu(false); setActiveView(id); }
   function emulate(id: string) { setEmulatedProfileId(id); setActiveView("dashboard"); setMobileMenu(false); }
