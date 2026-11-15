@@ -40,7 +40,7 @@ export default async function V2PreviewPage() {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?next=%2Fv2-preview");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -48,7 +48,7 @@ export default async function V2PreviewPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile?.approved) redirect("/login");
+  if (!profile?.approved) redirect("/login?next=%2Fv2-preview");
 
   const [settingsResponse, seasonsResponse, profilesResponse] = await Promise.all([
     supabase.from("league_settings").select("*").eq("id", true).maybeSingle(),
