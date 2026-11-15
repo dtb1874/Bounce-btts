@@ -152,6 +152,22 @@ export default async function HomePage() {
   const allPredictions = (predictionResponse.data ?? []) as PredictionRow[];
   const allAdjustments = (adjustmentResponse.data ?? []) as ScoreAdjustmentRow[];
 
+  // The V2 compatibility root must not truncate historical selections at the
+  // default 1,000-row fixture limit. Load only the fixtures actually picked,
+  // and retain the selected-round fixture catalogue for normal browsing.
+  const pickedIds = [...new Set(allPredictions.map((prediction) => prediction.fixture_id).filter(Boolean))];
+  const pickedFixtures: any[] = [];
+  for (let offset = 0; offset < pickedIds.length; offset += 500) {
+    const { data, error } = await supabase.from("fixtures").select("*").in("id", pickedIds.slice(offset, offset + 500));
+    if (error) throw error;
+    pickedFixtures.push(...(data ?? []));
+  }
+  const completeFixtureMap = new Map([...fixtures, ...pickedFixtures].map((fixture) => [fixture.id, fixture]));
+  const completeFixtures = [...completeFixtureMap.values()].sort((a,b) =>
+    String(a.kickoff_at).localeCompare(String(b.kickoff_at)) ||
+    String(a.competition).localeCompare(String(b.competition))
+  );
+
   const predictions = allPredictions.filter((prediction) => currentGameweekIds.includes(prediction.gameweek_id));
   const adjustments = allAdjustments.filter((adjustment) => currentGameweekIds.includes(adjustment.gameweek_id));
   const profileRows = profiles as ProfileRow[];
@@ -164,7 +180,7 @@ export default async function HomePage() {
         initialProfiles={profileRows}
         initialGameweek={gameweek ?? null}
         initialGameweeks={seasonGameweeks}
-        initialFixtures={fixtures}
+        initialFixtures={completeFixtures}
         initialPredictions={predictions}
         initialAdjustments={adjustments}
         seasonLabel={seasonLabel}
@@ -183,17 +199,17 @@ export default async function HomePage() {
         profiles={profileRows}
         gameweeks={seasonGameweeks}
         predictions={predictions}
-        fixtures={fixtures}
+        fixtures={completeFixtures}
         seasonLabel={seasonLabel}
       />
       <SweepTracker
         seasonLabel={seasonLabel}
         gameweeks={seasonGameweeks}
         predictions={predictions}
-        fixtures={fixtures}
+        fixtures={pickedFixtures}
       />
       <StatsCentreEnhancer />
-      <ValueLeaderPortal profiles={profileRows} predictions={predictions} fixtures={fixtures} />
+      <ValueLeaderPortal profiles={profileRows} predictions={predictions} fixtures={completeFixtures} />
     </>
   );
 }
