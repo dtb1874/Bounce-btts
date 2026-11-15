@@ -17,3 +17,6 @@
 .filterInput{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:0 12px;border:1px solid rgba(99,43,66,.22);border-radius:4px;background:#fffaf4;color:#4b1d30;font-size:.78rem;font-weight:650}
 .filterInput:focus-visible{outline:2px solid #a47736;outline-offset:2px}
 @media(max-width:700px){.filterControls{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.filterControls .filterInput:first-child{grid-column:1/-1}.filterInput{font-size:.78rem}}
+
+
+.page .footer{background:linear-gradient(90deg,rgba(245,238,228,.97),rgba(245,238,228,.91)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat;color:#4b1d30;border-top:1px solid rgba(99,43,66,.15)}
