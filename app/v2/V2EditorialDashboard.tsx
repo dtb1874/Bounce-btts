@@ -74,7 +74,6 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
   const myPrediction = predictions.find((row) => row.member_id === myId);
   const myFixture = fixtures.find((row) => row.id === myPrediction?.fixture_id);
   const myStandingIndex = standings.findIndex((row) => row.id === myId);
-  const myStanding = myStandingIndex >= 0 ? standings[myStandingIndex] : undefined;
   const leader = standings[0];
   const activeMembers = profiles.filter((row) => row.active && row.role !== "guest");
   const submitted = predictions.length;
@@ -116,7 +115,6 @@ export default function V2EditorialDashboard({ gameweek, gameweeks, profiles, fi
   );
   const won = picks.filter((row) => row.result.tone === "won").length;
   const live = picks.filter((row) => row.fixture && isLiveFixtureStatus(row.fixture.status) && row.result.tone !== "won").length;
-  const missing = Math.max(0, activeMembers.length - submitted);
   const gameweekState = !gameweek ? "NO ACTIVE GAMEWEEK" : isOpen ? "PICKS OPEN" : gameweek.status === "complete" ? "COMPLETE" : "PICKS LOCKED";
 
   return (
