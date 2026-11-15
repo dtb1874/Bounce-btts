@@ -12,7 +12,7 @@ export default function V2LeagueHistory({seasonLabel}:{seasonLabel:string}){
   const[honoursOpen,setHonoursOpen]=useState(false);
   const[formRange,setFormRange]=useState<6|12|18>(6);
   return <section className={styles.page}>
-    <header className={styles.hero}><span>BOUNCE ARCHIVE · {seasonLabel}</span><h1>League History</h1><p>The permanent record of Bounce BTTS: current-season gameweek detail, champions, preserved final tables, selectable historic form windows and the full weekly archive.</p></header>
+    <header className={styles.hero}><span>BOUNCE ARCHIVE · {seasonLabel}</span><h1>League History</h1><p>Every champion. Every gameweek. Every twist in the league's history.</p></header>
     <main className={styles.content}>
       <div className={styles.title}><div><span className={styles.eyebrow}>ROLL OF HONOUR</span><h2>Bounce Cup</h2></div><button type="button" onClick={()=>setHonoursOpen(value=>!value)} aria-expanded={honoursOpen} style={{minHeight:38,border:"1px solid rgba(95,31,54,.2)",background:"transparent",color:"#5f1f36",padding:"0 11px",fontSize:".54rem",fontWeight:850,display:"flex",alignItems:"center",gap:8}}><img src="/assets/bounce-cup.png" alt="" style={{width:28,height:28,objectFit:"contain"}}/>{honoursOpen?"Hide honours":"View honours"}</button></div>
       {currentChampion?<div className={styles.champion}><div><span className={styles.eyebrow}>REIGNING CHAMPION · {currentChampion.season}</span><strong>{currentChampion.winner}</strong><small>Current holder of the Bounce Cup</small></div><b>{currentChampion.points} PTS</b></div>:null}
