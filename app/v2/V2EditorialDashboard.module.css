@@ -48,3 +48,164 @@
 .page .editorialSection{padding-top:clamp(28px,4vw,52px);padding-bottom:clamp(28px,4vw,52px)}
 .page .sectionHeader h2{font-size:clamp(1.8rem,3.3vw,3rem)}
 @media(max-width:900px){.page .hero{background:linear-gradient(180deg,rgba(248,244,237,.95),rgba(247,241,233,.91)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}.page .weekBrief{background:rgba(255,252,246,.85);border:1px solid rgba(99,43,66,.18);color:#4b1d30}.page .weekBrief :is(strong,small,span,time){color:inherit}}
+
+
+/* Phase 6: softened, club-led dashboard. Restrained contrast and compact match status.
+   Keep readable foreground text; lighten large surfaces rather than fading labels. */
+.page{
+  --ink:#382f32;
+  --paper:#eae6e0;
+  --stone:#e5e0d9;
+  --stone2:#eeeae4;
+  --muted:#766f6c;
+  --gold:#a08b70;
+  --maroon:#654b56;
+  --maroonDeep:#49343e;
+  background:var(--stone2);
+  color:var(--ink);
+}
+.page .hero{
+  min-height:252px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(220px,.56fr);
+  align-items:center;
+  gap:20px;
+  padding:32px clamp(24px,5vw,64px);
+  border-bottom:1px solid rgba(76,60,66,.14);
+  background:
+    linear-gradient(90deg,rgba(237,232,224,.96) 0%,rgba(237,232,224,.91) 53%,rgba(225,219,212,.82) 100%),
+    url('/assets/edinburgh-skyline.jpg') center 50%/cover no-repeat;
+}
+.page .hero::before{background:url('/assets/st-giles-heart.jpg') 90% 50%/360px auto no-repeat;opacity:.045;mix-blend-mode:multiply}
+.page .hero::after{display:none}
+.page .brandBlock{align-self:center;min-width:0}
+.page .brandTitle{padding-top:19px;line-height:.9}
+.page .brandThe{font-size:clamp(.9rem,1.3vw,1.15rem);left:2rem;color:#685159}
+.page .brandTitle>strong{font-size:clamp(3.15rem,5.9vw,5rem);font-weight:850;letter-spacing:-.064em;color:#503741}
+.page .brandTitle>span{font-size:clamp(1.3rem,2.35vw,2rem);color:#4a3b3e;margin-top:6px}
+.page .brandTitle>span i{color:#796962}
+.page .brandMeta{margin-top:14px;gap:9px}
+.page .brandCrest{width:28px;height:28px;filter:saturate(.68)}
+.page .seasonStamp{padding:4px 0;color:#78535e;border-color:rgba(99,75,86,.24);font-size:.65rem}
+.brandMotto{margin:12px 0 0;color:#746c68;font:500 .82rem/1.5 Georgia,"Times New Roman",serif;letter-spacing:.025em}
+.heroArt{
+  position:relative;
+  justify-self:stretch;
+  min-height:182px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-left:1px solid rgba(89,75,78,.14);
+  border-radius:45% 45% 4px 4px / 48% 48% 4px 4px;
+  background:
+    linear-gradient(180deg,rgba(222,216,210,.64),rgba(235,229,221,.85)),
+    url('/assets/st-giles-round.jpg') center 48%/260px auto no-repeat;
+  color:#7b6570;
+  overflow:hidden;
+}
+.heroArt::after{content:"";position:absolute;inset:10px 14px;border:1px solid rgba(94,74,82,.14);border-radius:45% 45% 3px 3px / 48% 48% 3px 3px;pointer-events:none}
+.heroArtKicker,.heroArtFoot{position:relative;z-index:1;font-size:.6rem;font-weight:850;letter-spacing:.18em;color:#7b6a66}
+.heroArtMark{font:700 clamp(5rem,10vw,8rem)/1 Georgia,"Times New Roman",serif;color:rgba(99,75,86,.28)}
+.heroArtFoot{letter-spacing:.24em}
+.page .selectionBand{
+  min-height:0;
+  gap:18px;
+  padding:16px clamp(24px,5vw,64px);
+  background:#e8e2da;
+  color:#493b41;
+  border-bottom-color:rgba(93,75,82,.14);
+}
+.page .selectionLabel,.page .pulse span{color:#806f63;font-size:.65rem;letter-spacing:.12em}
+.page .fixtureNames{margin-top:5px;gap:7px}
+.page .fixtureNames strong{font-size:clamp(1.15rem,2vw,1.52rem);line-height:1.1;color:#533d48}
+.page .fixtureNames span{color:#827b77}
+.page .fixtureMeta,.page .noSelection span{margin-top:5px;color:#766d69;font-size:.74rem}
+.page .noSelection strong{font-size:1.15rem}
+.page .outcome{
+  min-width:158px;
+  padding:8px 0 8px 17px;
+  gap:4px;
+  align-self:center;
+  justify-items:end;
+  background:transparent;
+  border-left:1px solid rgba(89,75,78,.18);
+  text-align:right;
+}
+.page .lockedState{justify-items:end}
+.page .lockedState strong{color:#54414b;font-size:.72rem}
+.page .lockedState span{font-size:.67rem;letter-spacing:.045em;color:#7b6a66}
+.page .outcome time{font-size:.69rem;color:#766d69}
+.page .outcome .textAction,.page .outcome .primaryAction{
+  min-height:26px;margin-top:0;padding:0;
+  border:0;color:#604852;font-size:.72rem;
+}
+.page .outcome :is(.textAction,.primaryAction) span{color:#80636b}
+.page .pulse{padding:0 clamp(24px,5vw,64px);background:#e2dbd2;border-bottom-color:rgba(93,75,82,.12)}
+.page .pulse>div{min-height:73px;gap:3px;padding:10px clamp(8px,2vw,20px);border-right-color:rgba(93,75,82,.12)}
+.page .pulse strong{font-size:clamp(1.15rem,2vw,1.6rem);color:#4d3c43}
+.page .pulse small{color:#776e69;font-size:.67rem}
+.page .editorialSection{background:#eeeae4}
+.page .tableSection{background:#e9e5de}
+.page .sectionHeader{border-bottom-color:rgba(95,77,82,.2)}
+.page .sectionHeader span,.page .tableSection .sectionHeader span{color:#816b60}
+.page .sectionHeader h2,.page .tableSection .sectionHeader h2{color:#46363e}
+.page .tableSection .tableRow strong,.page .tableSection .tableRow b{color:#533e49}
+.page .tableRow{border-top-color:rgba(95,77,82,.1)}
+.page .closingBand{background:linear-gradient(90deg,rgba(229,224,217,.97),rgba(229,224,217,.92)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}
+.page .resultPill.result_scoreNil{background:#e8dfc8;color:#775d32}
+.page .resultPill.result_won{background:#dfe7de;color:#3e624a}
+.page .resultPill.result_lost{background:#eadedf;color:#80535a}
+@media(max-width:900px){
+  .page .hero{grid-template-columns:minmax(0,1fr) minmax(145px,.4fr);min-height:220px;padding:25px 26px;gap:14px}
+  .heroArt{min-height:170px}
+  .page .brandTitle>strong{font-size:clamp(2.9rem,6vw,4.8rem)}
+  .page .brandTitle>span{font-size:clamp(1.25rem,2.7vw,1.8rem)}
+  .page .selectionBand{grid-template-columns:minmax(0,1fr) auto;padding:14px 26px;gap:13px}
+  .page .pulse{grid-template-columns:repeat(4,minmax(0,1fr));padding:0 26px}
+  .page .pulse>div{min-height:68px;padding:9px}
+  .page .pulse>div:nth-child(-n+2){border-bottom:0}
+  .page .pulse>div:nth-child(2){border-right:1px solid rgba(93,75,82,.12)}
+  .page .pulse>div:nth-child(3){padding-left:9px}
+}
+@media(max-width:680px){
+  .page .hero{grid-template-columns:minmax(0,1fr) 100px;min-height:198px;gap:8px;padding:22px 17px;background:linear-gradient(100deg,rgba(237,232,224,.96),rgba(230,224,218,.89)),url('/assets/edinburgh-skyline.jpg') center/cover no-repeat}
+  .page .brandTitle{padding-top:16px}
+  .page .brandThe{font-size:.82rem;left:1.55rem}
+  .page .brandTitle>strong{font-size:clamp(2.35rem,11vw,3.45rem)}
+  .page .brandTitle>span{font-size:clamp(.98rem,4vw,1.35rem);line-height:1.05}
+  .page .brandTitle>span i{font-size:.49em;white-space:normal}
+  .page .brandMeta{margin-top:10px}
+  .page .brandCrest{width:23px;height:23px}
+  .brandMotto{font-size:.7rem;line-height:1.4}
+  .heroArt{min-height:136px;border-radius:45% 45% 3px 3px / 36% 36% 3px 3px;background-size:auto,155px auto}
+  .heroArt::after{inset:6px}
+  .heroArtMark{font-size:4.7rem}
+  .heroArtKicker,.heroArtFoot{font-size:.45rem;letter-spacing:.06em}
+  .page .selectionBand{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px 17px;min-height:0}
+  .page .selectionBand>div:first-child{padding:0}
+  .page .fixtureNames strong{font-size:1.05rem}
+  .page .fixtureMeta{font-size:.66rem}
+  .page .outcome{min-width:108px;padding:4px 0 4px 10px;gap:3px}
+  .page .lockedState strong{font-size:.65rem}
+  .page .lockedState span{font-size:.6rem}
+  .page .outcome time{font-size:.6rem}
+  .page .outcome .textAction,.page .outcome .primaryAction{min-height:24px;margin:2px 0 0;justify-content:flex-end;font-size:.63rem}
+  .page .pulse{padding:0 17px;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .page .pulse>div{min-height:65px;gap:2px;padding:8px 6px;border-bottom:0}
+  .page .pulse>div:first-child{padding-left:0}
+  .page .pulse>div:nth-child(3){padding-left:6px}
+  .page .pulse span{font-size:.55rem;line-height:1.25;letter-spacing:.055em}
+  .page .pulse strong{font-size:clamp(.85rem,3.5vw,1.18rem);overflow-wrap:anywhere}
+  .page .pulse small{font-size:.58rem}
+  .page .sectionHeader h2{font-size:clamp(1.65rem,7vw,2.3rem)}
+}
+@media(max-width:390px){
+  .page .hero{grid-template-columns:minmax(0,1fr) 78px}
+  .page .brandTitle>strong{font-size:2.2rem}
+  .page .brandTitle>span{font-size:.95rem}
+  .heroArt{min-height:110px}
+  .heroArtMark{font-size:3.7rem}
+  .heroArtKicker,.heroArtFoot{font-size:.38rem}
+  .page .selectionBand{grid-template-columns:minmax(0,1fr) auto}
+}
