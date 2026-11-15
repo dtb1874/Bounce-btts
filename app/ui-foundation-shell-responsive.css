@@ -975,3 +975,12 @@
 @media(prefers-reduced-motion:reduce) {
   .uiFoundationShell.v2ShellFrame .v2NavItem {transition:none !important}
 }
+
+
+/* Soften bright blank shell surfaces; retain existing maroon/gold accents. */
+.uiFoundationShell.v2ShellFrame,
+.uiFoundationShell.v2ShellFrame .v2Main{background:#ebe6df}
+.uiFoundationShell.v2ShellFrame .v2DesktopGameweek{background:#eee9e2 !important}
+.uiFoundationShell.v2ShellFrame .v2MobileTopbar{background:#eee9e2 !important}
+.uiFoundationShell.v2ShellFrame .v2Sidebar{background:linear-gradient(180deg,rgba(235,230,223,.96),rgba(230,224,217,.95)),url("/assets/st-giles-heart.jpg") center/cover no-repeat,#ebe6df !important}
+.uiFoundationShell.v2ShellFrame .v2BottomNav{background:rgba(235,230,223,.97)}
