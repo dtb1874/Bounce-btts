@@ -30,3 +30,14 @@
 .page :is(button,a,input,select,textarea):focus-visible{outline:2px solid #a47736;outline-offset:3px}
 .page :is(button,select){touch-action:manipulation}
 @media (prefers-reduced-motion:reduce){.page :is(button,select,input){transition:none}}
+
+
+/* Shared light controls; selected tab is a maroon underline, not a dark bar. */
+.page .tabs{background:#f9f5ee;border-bottom:1px solid rgba(99,43,66,.17)}
+.page .tabs button{color:#786b66}
+.page .tabs .activeTab{color:#4b1d30}
+.page .statusSignal{background:#fffaf3;border:1px solid rgba(99,43,66,.17);border-top:3px solid #9b6f3b;color:#4b1d30;box-shadow:none}
+.page .statusSignal span{color:#885b37}
+.page .statusSignal strong{color:#4b1d30}
+.page .statusSignal small{color:#766d66}
+.page .hero{background:linear-gradient(90deg,rgba(248,244,237,.98),rgba(248,244,237,.9)),url('/assets/tynecastle-facade.svg') right center/54% auto no-repeat}
